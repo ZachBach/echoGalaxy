@@ -1,0 +1,25 @@
+{
+  "name": "echogalaxy",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A free, open educational tool for exploring galaxies and the universe.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
+    "@react-three/postprocessing": "^3.0.4",
+    "postprocessing": "^6.39.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "three": "^0.184.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.1",
+    "vite": "^8.0.12"
+  }
+}
