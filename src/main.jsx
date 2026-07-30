@@ -3,12 +3,17 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
-// ?lab=1 (dev only) swaps in the tsl-lib version-portability lab. The
-// DEV constant folds to false in prod, so the lab chunk is never built
-// into the production bundle.
-const useLab =
-  import.meta.env.DEV && new URLSearchParams(window.location.search).has('lab')
-const Root = useLab ? lazy(() => import('./Lab.jsx')) : App
+// Dev-only scenes (?lab=1 → tsl-lib portability lab; ?planet=1 → planet
+// core smoke). The DEV constant folds to false in prod, so neither chunk
+// is built into the production bundle.
+const devParams = import.meta.env.DEV
+  ? new URLSearchParams(window.location.search)
+  : null
+const Root = devParams?.has('lab')
+  ? lazy(() => import('./Lab.jsx'))
+  : devParams?.has('planet')
+    ? lazy(() => import('./PlanetLab.jsx'))
+    : App
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

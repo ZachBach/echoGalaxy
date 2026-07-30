@@ -1,9 +1,19 @@
-# TODOS — Phase G0: plumbing (the WebGPU bridge)
+# TODOS — echoGalaxy phase logs
 
-40 tasks breaking down [TSL-ROADMAP.md](TSL-ROADMAP.md) Phase G0 into concrete,
-verifiable steps. Repo state at writing: `scripts/sync-tsl-lib.mjs` and the
-first vendored copy of `src/tsl-lib/` exist; the app still runs the default
-WebGL renderer with `@react-three/postprocessing` bloom (three r184, R3F v9).
+Task breakdowns of [TSL-ROADMAP.md](TSL-ROADMAP.md) phases into concrete,
+verifiable steps, with evidence recorded per task.
+
+- **Phase G0 — plumbing (the WebGPU bridge): ✅ complete**, committed
+  `740b727` (2026-07-29).
+- **Phase G1 — planets: in progress** (initialized 2026-07-29, tasks below
+  after the G0 log).
+
+# Phase G0: plumbing (the WebGPU bridge) ✅
+
+40 tasks breaking down Phase G0 into concrete, verifiable steps. Repo state
+at writing: `scripts/sync-tsl-lib.mjs` and the first vendored copy of
+`src/tsl-lib/` exist; the app still runs the default WebGL renderer with
+`@react-three/postprocessing` bloom (three r184, R3F v9).
 
 ## A — Renderer bridge (WebGPURenderer in R3F v9)
 
@@ -303,3 +313,334 @@ WebGL renderer with `@react-three/postprocessing` bloom (three r184, R3F v9).
       companion edit in ../tsl-lib (BACKEND-NOTES.md entry 6 + Version
       portability section) is left uncommitted there — that repo's
       commits are yours.*
+
+# Phase G1: planets (mostly already in the library)
+
+40 tasks (G1-01..40). Ground truth at init: every node G1 needs is verified
+on r184 by the G0 lab (`?lab=1`) — trigLattice, terminator, latlonUv,
+atmosphereShell, spinY, fireRamp, streaks, and the magma/ice recipes all
+render clean on both backends. Key API facts (from the vendored doc blocks):
+`terminator(TSL, dir, lightDir, opts)` → `{ day, shade, night }`;
+`atmosphereShell(TSL, lightDir, opts)` → `{ color, opacity }` for an
+additive shell sphere; `latlonUv(TSL, dir)` → equirect uv; `spinY(TSL, dir,
+angle)`; `fireRamp(TSL, x, opts)` (internal 0.95 clamp is load-bearing);
+`streaks(TSL, angle, opts)`; materials are `apply(TSL, mat, { clock })`
+recipes. The C-section node (`bandedFlow`) is born here and promoted
+upstream per the roadmap checklist — upstream bench/docs run in
+`../tsl-lib` (its commits/pushes stay yours).
+
+## A — `<Planet>` core (the body-frame pipeline)
+
+- [x] G1-01 Design the `<Planet>` API before code: props `{ recipe, radius,
+      spinRate, atmosphere, sunDir }`; document the body-frame convention —
+      `dir` = normalized `positionLocal`, the *sampling* direction spins
+      (`spinY(dir, clock·rate)`), the mesh does not rotate, so lighting
+      stays fixed while the surface turns (Terra convention).
+
+  > **G1-01 design (the contract G1-02..09 implement):**
+  >
+  > **Props** — `<Planet recipe radius spinRate atmosphere sun frozen>`:
+  > - `recipe`: `(TSL, ctx) => { surface, nightLights?, emissive? }` — all
+  >   vec3 nodes. Planet core owns terminator composition (one place):
+  >   `color = surface·shade + nightLights·night + emissive`. `surface` is
+  >   lit (shade floor 0.18 keeps night readable), `nightLights` gated by
+  >   the night mask (city lights), `emissive` unshaded (lava glow).
+  >   Recipes never call terminator themselves.
+  > - `ctx = { dir, spunDir, sun, clock, cfg }` — recipes sample patterns
+  >   with `spunDir`, never `dir` (that's the whole spin story), and derive
+  >   ALL animation from `ctx.clock` (never `TSL.time` directly).
+  > - `radius` (default 1.7 — lab framing), `spinRate` (rad·s⁻¹, default
+  >   0.04), `atmosphere`: `false` | `{ inner, outer, power, strength,
+  >   dayEdges, scale=1.03 }` (atmosphereShell opts + shell multiplier),
+  >   `sun`: TSL uniform node (below), `frozen`: bool.
+  >
+  > **Body frame** — `dir = positionLocal.normalize()`: unit sphere at
+  > origin ⇒ `dir` *is* the surface direction terminator/latlonUv expect
+  > (and the normal). `spunDir = spinY(TSL, dir, clock.mul(spinRate))` is
+  > the sampling direction. The mesh never rotates; lighting terms
+  > (terminator, atmosphereShell) use unspun `dir` against a world-anchored
+  > sun, so the terminator stays put while the surface drifts beneath it.
+  > *Note vs upstream Terra:* Terra keeps the pattern glued to the frame
+  > and rotates `positionNode` instead (spinY source block); spinning the
+  > sampling dir is the static-mesh equivalent (opposite drift sign,
+  > irrelevant), avoids touching positionNode, and keeps normal = dir.
+  >
+  > **Sun** — one module-scope `sunDir = uniform(vec3)` exported from
+  > Planet.jsx (default ≈ normalize(-0.8, 0.35, 0.55)); scene mutates
+  > `sunDir.value`, all consumers (terminator + atmosphereShell + future
+  > star placement) share it. That's G1-02.
+  >
+  > **Materials** — body: `MeshBasicNodeMaterial` (library does its own
+  > lighting; no scene lights). Atmosphere: second sphere ×`scale`,
+  > `MeshBasicNodeMaterial` additive, `depthWrite:false`, colorNode/
+  > opacityNode from `atmosphereShell(TSL, sun, opts)`, renderOrder after
+  > the body. Recipe swap rebuilds materials (key per type) + dispose on
+  > unmount — Lab pattern.
+  >
+  > **Determinism** — `ctx.clock` is `TSL.time` normally, `float(0)` when
+  > `frozen` (G0's `?freeze` extended to planets). Because recipes only
+  > animate via ctx.clock, frozen frames are fully deterministic ⇒ G1-37's
+  > cross-backend pixel diffs work without skew tolerance.
+  >
+  > **Scope call** — `<Planet>` is for *lit* bodies. The star (section D)
+  > is a separate `<Star>`: no terminator, emissive-only + streaks corona
+  > shell; it reuses sunDir only as a position hint. Keeps the recipe
+  > contract from growing a `lit:false` special case.
+- [x] G1-02 Shared sun: one `sunDir` uniform (TSL `uniform(vec3)`) owned by
+      the planet scene, normalized, passed into terminator +
+      atmosphereShell; a tiny helper so all consumers agree.
+      *`src/sun.js` (own module, amending G1-01's "in Planet.jsx" — so
+      `<Star>` can import it without `<Planet>`): `sunDir =
+      uniform(Vector3)` defaulting to normalize(-0.8, 0.35, 0.55), and
+      `setSunDir(x,y,z)` which always re-normalizes. Node-smoked: default
+      length 1.000000, setSunDir(3,4,0) → (0.60, 0.80, 0.00) len 1;
+      `terminator(TSL, dir, sunDir)` → {day, shade, night} and
+      `atmosphereShell(TSL, sunDir, {})` → {color, opacity} both accept
+      the uniform and the combined graph builds on a node material.*
+- [x] G1-03 `src/Planet.jsx`: sphere + `MeshBasicNodeMaterial`, `colorNode`
+      from `recipe(TSL, { dir, spunDir, sun, clock })` — the library does
+      its own lighting via terminator, no scene lights.
+      *Split for testability: `src/planetMaterial.js` is the pure graph
+      builder (buildPlanetMaterial — spinY sampling dir, terminator
+      composition `surface·shade + nightLights·night + emissive`,
+      `cfg.terminator` opts passthrough, frozen → clock float(0));
+      `src/Planet.jsx` is the thin mesh wrapper (memoized material,
+      dispose on unmount, mesh never rotates). Vendored-lib imports use
+      explicit `.js` extensions so the builder is node-smokeable.
+      Node-smoked: trigLattice stub recipe exercising all three
+      composition slots builds frozen and unfrozen; surface-only recipe
+      (optional slots absent) builds; terminator passthrough accepted;
+      prod build green. Browser render is G1-09's smoke.*
+- [x] G1-04 Spin wiring: surface pattern samples the spun dir; verify
+      continents drift while the terminator stays put (screenshot two
+      moments, terminator edge static).
+      *Quantified with a control: patterned surface at spin 0.5, 4 s apart
+      → 56.5% of interior pixels changed (surface drifts); same test with
+      a flat surface (`?flat=1` lab flag — no pattern, only lighting could
+      move) → **0.00%** changed. Surface moves, lighting anchored.*
+- [x] G1-05 Terminator wiring: `{ day, shade, night }` — day shade
+      multiplies surface color (floor keeps night readable), dawn band
+      visible at the edge.
+      *With a side sun (`?sun=-1,0.25,0` lab flag): day interior 115.6 vs
+      night interior 44.8 (ratio 2.58), night comfortably above background
+      0.33 — the 0.18 shade floor doing its job. Dawn gradient visible in
+      g1-shade screenshots; city-light slot exercised by the debug recipe.*
+- [x] G1-06 Atmosphere: second sphere ×~1.03, additive, depthWrite off,
+      `{ color, opacity }` from atmosphereShell assigned to
+      colorNode/opacityNode; day-side brightest.
+      *`buildAtmosphereMaterial` in planetMaterial.js + shell mesh in
+      `<Planet>` (radius ×scale, renderOrder 1). Verification lesson: the
+      first day-vs-night gain measurement straddled the body and showed
+      ~1:1 — ACES compresses the additive shell over the bright day
+      surface. Measured on the shell-only annulus over black instead:
+      day limb 140.7 vs night limb 48.7 (**ratio 2.89**) — matching the
+      library's deliberate 0.5 night floor in `dayA` (a design fact worth
+      knowing: the night limb is never fully dark). Not a bug, verified
+      working as designed.*
+- [ ] G1-07 City lights: `night` mask × a trigLattice-derived land/settlement
+      pattern, warm point glow on the dark side (rocky planet only).
+- [ ] G1-08 Material hygiene: recipe swap rebuilds the material (key per
+      type), dispose on unmount — same pattern as the Lab.
+- [x] G1-09 Core smoke: one planet renders on both backends, zero errors,
+      before the type work starts.
+      *Vehicle: `src/PlanetLab.jsx` behind `?planet=1` (dev-only, lazy —
+      prod bundle unchanged), debug rocky recipe + harness flags (`atmo`,
+      `spin`, `flat`, `sun`, `freeze`). Both backends: zero page/console
+      errors, frozen disc brightness **identical to 0.01** (121.01 both) —
+      the frozen-clock determinism from G1-01 already paying off.
+      Screenshot: continents, day limb + atmosphere ring, night falloff.*
+
+## B — planet types (recipes on the core)
+
+- [x] G1-10 `src/planetRecipes.js`: one module, each recipe
+      `(TSL, ctx) => colorNode` sharing the body-frame ctx from A.
+      *Four recipes on the G1-01 contract (surface/nightLights/emissive),
+      all sampling `spunDir`; view-dependent terms (ice's fresnel glaze)
+      deliberately unspun. Educational palette, not library brand colors.
+      All four + atmosphere presets node-smoke green (frozen + live).*
+- [x] G1-11 Rocky: trigLattice continents (terms/freq per cfg) → ramp
+      ocean/land/snow palette; polar snow via |dir.y| band.
+      *trigLattice (terms 3, freq 3.2) + fbm detail octave (the tuning
+      pass — pure trigLattice was too blobby) → 6-stop height ramp
+      ocean→shore→lowland→highland→peaks; polar snow on |y| (spinY
+      preserves y, caps stable).*
+- [x] G1-12 Rocky night: G1-07 city lights integrated; tune so day side
+      shows no lights.
+      *Warm lights = land × trigLattice(freq 11) clusters × ¬snow, entering
+      only through the `nightLights·night` composition slot — structurally
+      zero on the day side (night mask is 0 there), verified visually in
+      the section-A debug run.*
+- [x] G1-13 Lava: magma recipe adapted to the body frame (its warped-fbm
+      driver sampled by spun dir; fireRamp clamp keeps the melt orange);
+      faint emissive night side — lava glows in the dark.
+      *Melt + crack edges go out as `emissive` (night-glowing), cooled
+      crust as lit surface. Tuning pass inverted the balance from the lab
+      knot's melt-dominant look to crust-dominant (crust smoothstep
+      0.38–0.52, melt remap 0.5–3.2) — dark shell laced with glowing
+      networks.*
+- [x] G1-14 Ice: ice recipe (worley crack veins — deliberately the fallback
+      impl, it benches faster) + pale atmosphereShell tint override.
+      *Kept upstream's `impl:'fallback'` choice; rimLight dropped from the
+      original (the atmosphere shell owns the rim); crack veins read
+      perfectly first try.*
+- [x] G1-15 Gas giant: bandedFlow surface (section C) + no terminator floor
+      change needed; slightly stronger limb glow.
+      *Consumes the in-repo `bandedFlowProto` (G1-19 substantially
+      advanced): wobbled-latitude sin bands through a tan/cream ramp,
+      darkened poles. Reads Jupiter-ish first try — promotion material.*
+- [x] G1-16 Per-type atmosphere presets: color/strength per planet type
+      (rocky cyan, lava ember, ice pale, gas tan).
+      *`ATMOSPHERES` map in planetRecipes.js, fed straight to
+      buildAtmosphereMaterial via `<Planet atmosphere>`.*
+- [x] G1-17 Type parity pass: all four types × both backends, brightness +
+      zero errors (harness).
+      *All 4 × 2: zero page/console errors, frozen disc means
+      **byte-identical** across backends (delta 0.00 on every type, both
+      before and after the tuning pass).*
+- [x] G1-18 Eyeball pass on all four: screenshots reviewed, palette/contrast
+      tuned once.
+      *One pass, two fixes: rocky (detail octave + tighter ramp stops —
+      was blobby with concentric shore rings) and lava (crust-dominant
+      inversion — was melt-everywhere). Ice and gas shipped untouched.
+      After: rocky reads Earth-like, lava reads cooled-crust-with-veins,
+      screenshots kept.*
+
+## C — `bandedFlow` (born here, promoted upstream)
+
+- [x] G1-19 Prototype in-repo (planetRecipes): latitude bands —
+      `sin(dir.y·freq + phase)` family through a 2-stop palette — warped by
+      the library `warp`/`turbulence` nodes for flow turbulence.
+      *Born during G1-15 (section B) as `bandedFlowProto`: wobbled-y sin
+      bands, fbm turbulence wobble, driven by the gas giant.*
+- [x] G1-20 Options design per upstream CONVENTIONS: factory
+      `bandedFlow(TSL, dir, { bands, warpAmp, warpFreq, drift, palette })`,
+      derived `source()`, doc block with @cost/@backend.
+      *Final surface: `bandedFlow(TSL, dir, { bands, warpAmp, warpFreq,
+      seed, drift })` → float 0..1 — `palette` dropped (callers own color,
+      matching the library's field-node convention), `seed` added (vary
+      per body). Doc block, `source()`, conventions-compliant.*
+- [x] G1-21 Optional storm spot: worley-based oval vortex opt (Great Red
+      Spot) — decide in or out of v1 of the node (keep the option surface
+      small; out is fine, note it).
+      *OUT of v1 — recorded in the node's doc block: callers composite
+      their own ovals (worley) until real demand appears.*
+- [x] G1-22 Tune on the gas giant until it reads as Jupiter-ish at a glance.
+      *Achieved in the G1-18 eyeball (first try); the shipped values
+      (bands 6, warpAmp 0.22, warpFreq 2.4) became the node's defaults.*
+- [x] G1-23 Extract to `../tsl-lib/src/pattern/bandedFlow.js` (upstream
+      working tree) per the conventions; wire a bench entry.
+      *Node file + `pattern-bandedflow` bench entry (quad, uv-derived dir,
+      2-point sweep) + gallery chip (Lab knot, gold/blue) + GALLERY_SOURCES.*
+- [x] G1-24 Upstream gate: `node bench/verify-all.mjs bandedFlow` — parity +
+      cost recorded; gen-docs; gallery chip.
+      *`verify-all.mjs pattern-bandedflow`: **PASS — parity 0%, impl
+      native/native, gpu 2.69 ms → class ③** (matching the doc-block
+      estimate). REGISTRY.json merged, NODES.md regenerated (53 entries).
+      Upstream changes left uncommitted — yours to commit/push.*
+- [x] G1-25 `npm run sync:tsl` back here (gate green), gas giant switches to
+      the vendored node — the first full born-here→promoted→synced loop.
+      *Sync stamped upstream `0024533`+working tree; gate green (57 files
+      self-contained, 27 gallery entries build). Gas recipe switched to
+      the vendored node, proto deleted; render check: gas disc mean
+      **151.03 on both backends — identical to the prototype's value**, a
+      pixel-perfect drop-in. The promotion loop is proven end to end.*
+
+## D — star (the El-Sol recipe)
+
+- [x] G1-26 Star surface: turbulence/fbm driver → fireRamp plasma sphere
+      (El-Sol §2 recipe), slow churn via drift.
+      *`src/starMaterial.js` buildStarBodyMaterial: spun turbulence →
+      remap 0.8–4.0 → fireRamp (clamp untouched), plus limb darkening
+      (fresnel.oneMinus → 0.45..1) — physical and keeps the silhouette
+      from blowing out. `src/Star.jsx` wraps body + corona shell; STAR
+      not a <Planet> per the G1-01 scope call.*
+- [x] G1-27 Corona: streaks(angle around view axis) on an additive shell —
+      lobes + slow precession (`drift: clock·rate`), fresnel falloff so it
+      lives at the limb.
+      *The plan's "fresnel falloff" was wrong twice in practice and the
+      final fix is recorded for posterity: (1) fresnel peaks at the
+      SHELL's silhouette → hard-edged annulus; (2) `positionView.xy`
+      lateral distance is perspective-shrunk on the shell face (a ray
+      grazing the body limb hits the shell at ~0.7·R) → detached ring.
+      Correct radial coordinate = the view ray's **impact parameter**
+      `|C − v·(C·v)|` (C = star center in view space) — body limb and
+      shell silhouette land exactly at bodyRadius/shellRadius on it.
+      Streaks tuned to lobes 3 / sharpness 3 / floor 0.45 (7 lobes read
+      as gear teeth).*
+- [x] G1-28 Bloom interplay: the hot core should bloom naturally under the
+      G0 pipeline (threshold 0.04); verify no blowout — adjust fireRamp
+      gain, not bloom, if it does.
+      *With bloom running: disc mean 158, std 21 (granulation structure
+      survives), **0.00% saturated pixels** — no blowout at default
+      fireRamp gain 2.4; nothing to adjust. Gain stays the tuning knob if
+      future scenes change exposure.*
+- [x] G1-29 Star renders on both backends, zero errors, screenshots kept.
+      *Both backends: zero page/console errors, frozen disc stats
+      identical (158.18 / 21.29 on both). Screenshots kept per backend.*
+- [x] G1-30 Star educational copy: fusion, blackbody color-temperature,
+      "the clamp exists because real plasma ordering inverts" is a fun fact
+      candidate.
+      *`STAR_INFO` exported from Star.jsx (name, label, description, 3
+      facts: color-is-temperature blackbody physics, the corona-heating
+      problem, granulation-as-convection) — consumed by planetData in
+      G1-31.*
+
+## E — app integration + HUD (the educational payload)
+
+- [x] G1-31 `src/planetData.js`: PLANET_TYPES (rocky, lava, ice, gas giant,
+      star) — name, class label, description, 3 facts each, cfg (seeded
+      params, palette, spin rate, atmosphere preset).
+      *Five entries, each recipe + atmosphere preset + spinRate (gas spins
+      fastest — it's a fact AND a cfg value) + 3 facts of real physics;
+      star merges STAR_INFO from Star.jsx.*
+- [x] G1-32 View switcher: Galaxies | Planets in the HUD (state + `?view=`
+      param); Canvas content swaps scene, renderer/bloom/badge carry over
+      untouched.
+      *Segmented control atop the HUD; `?view=planets` read at boot and
+      kept in sync via history.replaceState (links share). Per-view index
+      state preserved when switching back and forth.*
+- [x] G1-33 Planet HUD: same layout as galaxies — kicker/name/class/
+      description/facts/nav; Prev/Next cycles planet types.
+      *Same skeleton, `label` in the class slot; nav cycles the active
+      view's list (1/5 vs 1/4).*
+- [x] G1-34 Camera/controls per view: planet-scale min/max distance,
+      sensible default framing; galaxy view keeps its current numbers.
+      *VIEWS table (galaxies [0,6,12] min4/max28 — untouched; planets
+      [0,0.8,5.6] min2.6/max12) + a ViewRig that repositions the camera on
+      switch (Canvas camera prop is initial-only) with OrbitControls
+      makeDefault.*
+- [x] G1-35 README: structure + planets section, view switcher documented.
+      *Intro rewritten around the two views; structure list covers the
+      whole planet pipeline + dev scenes.*
+
+## F — verification + close-out
+
+- [x] G1-36 Harness: planets pass — cycle all 5 types on both backends,
+      brightness + errors + per-type screenshots (G0 harness pattern:
+      puppeteer-core + system Chrome + `--enable-unsafe-webgpu`).
+      *All 5 types cycled in the REAL app view (`?view=planets&freeze`)
+      on both backends: zero page/console errors, correct HUD names,
+      screenshots kept. Galaxy-view regression in the same run: spiral
+      renders, zero errors.*
+- [x] G1-37 Pixel parity per type across backends (freeze spin for
+      determinism — extend `?freeze` to planet spin via a shared frozen-
+      clock/flag so TSL drift is capture-comparable, or diff with
+      animation-skew tolerance like G0-E).
+      *The G1-01 frozen-clock design made this exact: full-frame diffs per
+      type of 0.014–0.063/255 mean with ≤0.13% pixels over 8 — including
+      the star (0.01%). No skew tolerance needed anywhere.*
+- [x] G1-38 Perf: FPS with planet + atmosphere shell + bloom on both
+      backends; compare against the G0 galaxy numbers.
+      *Planets view live (rocky + shell + bloom, dpr 2): WebGPU 43.5 /
+      WebGL2 40.8 fps vs the G0 galaxy baseline 54.7 / 45.7 — planets are
+      heavier (two spheres + shell shading) but comfortably interactive,
+      WebGPU still ahead.*
+- [x] G1-39 Tick Phase G1 in TSL-ROADMAP.md with decisions (bandedFlow
+      option surface, star/bloom balance, view-switcher shape).
+      *All four roadmap bullets ticked with notes; header ✅ 2026-07-30.
+      Honest caveat recorded: latlonUv went unused (procedural surfaces
+      beat textures) — kept available for catalogue imagery later.*
+- [x] G1-40 Commit Phase G1 on main (upstream bandedFlow commits in
+      ../tsl-lib remain yours).
+      *Single commit; upstream side already committed/pushed by you as
+      `51f6f2c`.*

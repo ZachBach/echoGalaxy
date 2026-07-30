@@ -56,18 +56,32 @@ Task-level detail and evidence live in TODOS.md (G0-01..40).
   upstream (BACKEND-NOTES.md "Version portability"): **r184 clean, no
   library-code changes** — the dependency-injection design paid off.*
 
-## Phase G1 — planets (mostly already in the library)
+## Phase G1 — planets (mostly already in the library) ✅ 2026-07-30
 
-The hero's Terra/sun work came *from* these nodes; now they make worlds:
+The hero's Terra/sun work came *from* these nodes; now they make worlds.
+Task-level detail and evidence: TODOS.md (G1-01..40).
 
-- [ ] `<Planet>` component: sphere + library nodes — `trigLattice`
+- [x] `<Planet>` component: sphere + library nodes — `trigLattice`
   continents, `terminator` day/night + city lights, `latlonUv` texture
   mapping, `atmosphereShell` limb glow, `spinY` rotation.
-- [ ] Planet types: rocky (trigLattice + ramp), lava (magma recipe), ice
+  *Body-frame pipeline (`planetMaterial.js`): sampling dir spins, mesh and
+  terminator stay world-anchored; terminator composition lives in the core
+  once (`surface·shade + nightLights·night + emissive`); atmosphere is a
+  ×1.03 additive shell. latlonUv unused so far (procedural surfaces beat
+  textures here) — stays available for catalogue imagery later.*
+- [x] Planet types: rocky (trigLattice + ramp), lava (magma recipe), ice
   (ice recipe), gas giant — **new node candidate: `bandedFlow`** (latitude
   bands + warp turbulence — born here, promoted upstream).
-- [ ] Star: fireRamp plasma sphere (El-Sol recipe) + corona streaks.
-- [ ] HUD facts per planet type (educational payload).
+  *All four shipped; `bandedFlow` completed the first full promotion loop —
+  upstream `51f6f2c`, parity 0%, gpu 2.69 ms → class ③, then consumed back
+  vendored as a pixel-perfect drop-in.*
+- [x] Star: fireRamp plasma sphere (El-Sol recipe) + corona streaks.
+  *Separate `<Star>` (no terminator). Corona lesson recorded in TODOS: the
+  falloff coordinate is the view ray's impact parameter, not fresnel and
+  not positionView.xy. Zero saturated pixels under bloom.*
+- [x] HUD facts per planet type (educational payload).
+  *planetData.js catalogue + Galaxies|Planets switcher (`?view=planets`);
+  all five worlds byte-stable across backends in the real app view.*
 
 ## Phase G2 — galaxies go TSL
 

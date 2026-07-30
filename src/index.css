@@ -61,6 +61,32 @@ body {
   pointer-events: none;
 }
 
+.hud .views {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  pointer-events: auto;
+}
+
+.hud .views button {
+  background: transparent;
+  border: 1px solid #2a3350;
+  color: #7d8bb0;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-family: ui-monospace, "SFMono-Regular", monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.hud .views button.active {
+  border-color: #4a7dff;
+  color: #e8ecf5;
+}
+
 .hud .kicker {
   font-family: ui-monospace, "SFMono-Regular", monospace;
   font-size: 10px;

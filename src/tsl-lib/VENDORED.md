@@ -1,6 +1,6 @@
 # VENDORED COPY — do not edit
 
-Synced from ../tsl-lib/src (upstream commit 666284f) on 2026-07-29 by scripts/sync-tsl-lib.mjs.
+Synced from ../tsl-lib/src (upstream commit 51f6f2c) on 2026-07-30 by scripts/sync-tsl-lib.mjs.
 Edit upstream (bench-gated), then re-sync.
 
 ## Vendor gate

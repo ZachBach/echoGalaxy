@@ -2,9 +2,16 @@
 
 A free, open educational tool for exploring galaxies and the universe.
 
-**v0.1** is an interactive galaxy-type explorer: orbit a procedurally generated
-galaxy and cycle through the four broad Hubble classes — spiral, barred spiral,
-elliptical, and irregular — each with a short explainer and a few facts.
+Two views, switchable in the HUD (or `?view=planets`):
+
+- **Galaxies** — orbit a procedurally generated galaxy and cycle the four
+  broad Hubble classes — spiral, barred spiral, elliptical, irregular.
+- **Planets** — five worlds built from tsl-lib shader nodes: rocky (with
+  city lights on the night side), lava, ice, gas giant (the `bandedFlow`
+  node born here and promoted upstream), and a star with a live corona.
+
+Every entry ships with a short explainer and a few facts — the educational
+payload is the point.
 
 ## Stack
 
@@ -24,13 +31,21 @@ Open the printed localhost URL. `npm run build` produces a production bundle.
 
 ## Structure
 
-- `src/App.jsx` — the canvas, orbit controls, HUD panel, and dev backend badge.
+- `src/App.jsx` — canvas, the Galaxies|Planets view switcher, HUD, badge.
 - `src/renderer.js` — async WebGPURenderer factory (backend pick + dev flags).
 - `src/Effects.jsx` — node-based bloom (`RenderPipeline`, owns the frame).
 - `src/Galaxy.jsx` — the galaxy as instanced sprites (WebGPU can't size point
   primitives, so stars are `Sprite` + `PointsNodeMaterial` instances).
-- `src/galaxyData.js` — the galaxy classes, their educational copy, and the
-  seeded procedural generator that shapes each one.
+- `src/galaxyData.js` — galaxy classes, educational copy, seeded generator.
+- `src/Planet.jsx` + `src/planetMaterial.js` — the lit-body pipeline: body-frame
+  sampling (`spunDir`), terminator composition, atmosphere shell.
+- `src/planetRecipes.js` — rocky / lava / ice / gas surface recipes +
+  atmosphere presets, built from vendored tsl-lib nodes.
+- `src/planetData.js` — the planet catalogue (copy + cfg per type).
+- `src/Star.jsx` + `src/starMaterial.js` — fireRamp plasma + streaks corona.
+- `src/sun.js` — the one shared sun-direction uniform.
+- `src/Lab.jsx` / `src/PlanetLab.jsx` — dev-only scenes (`?lab=1` /
+  `?planet=1`) for node portability and planet verification.
 - `src/tsl-lib/` — **vendored copy** of the Aurelius TSL library. Do not edit;
   see below.
 
