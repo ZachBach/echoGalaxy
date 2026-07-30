@@ -38,6 +38,20 @@ body {
   pointer-events: none;
 }
 
+.scale-fade {
+  position: absolute;
+  inset: 0;
+  background: #02030a;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+
+.scale-fade.active {
+  opacity: 1;
+  transition: opacity 0.06s ease;
+}
+
 .backend-badge {
   position: absolute;
   top: 16px;

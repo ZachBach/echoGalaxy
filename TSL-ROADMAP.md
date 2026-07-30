@@ -111,12 +111,34 @@ Task-level detail and evidence: TODOS.md (G2-01..40).
   enforced (3 fbm octaves, veil-disc geometry); veil bake-to-texture
   recorded as the G3 optimization.*
 
-## Phase G3 — the universe
+## Phase G3 — the universe ✅ 2026-07-30
 
-- [ ] STARFIELD material (already in the library) as the deep-space skybox.
-- [ ] Scale journey: planet → system → galaxy → local group (drei controls +
+Task-level detail and evidence: TODOS.md (G3-01..40). The roadmap is done.
+
+- [x] STARFIELD material (already in the library) as the deep-space skybox.
+  *BackSide sphere with the recipe's star-lattice machinery (its
+  fullscreen fbm wisp cost 14 fps for a sub-perceptual term — credited
+  adaptation, recipe stays canonical upstream), baked to an equirect at
+  boot and sampled back through `latlonUv` — G1's unused node earning its
+  keep. Twinkle survives the bake via phase-in-alpha.*
+- [x] Scale journey: planet → system → galaxy → local group (drei controls +
   staged LOD scenes).
-- [ ] Facts ladder at every scale — the tool's whole reason to exist.
+  *Four rungs, one state machine; ladder UI + `?scale=` links + literal
+  zoom-through (scroll past a rung's stop to climb). New rungs: a star
+  system on literal Kepler-third-law orbits with per-planet sun uniforms,
+  and the real Local Group (barred Milky Way, Andromeda + companions,
+  Triangulum) inside a single 24k-star budget. Performance bakes landed
+  first: star positions via compute (WebGPU, byte-perfect; WebGL2 gated
+  by a real re-dispatch divergence → ledger watch list), veil + sky to
+  textures. Final FPS: 33–45 WebGPU / 27–35 WebGL2 across all rungs.*
+- [x] Facts ladder at every scale — the tool's whole reason to exist.
+  *Every rung feeds the same HUD skeleton: planets (5 entries), system
+  (Kepler live, AU, 99.86%), galaxies (4 Hubble classes, blackbody-true
+  colors), Local Group (blueshift collision, "a view no probe we have
+  ever built will live to photograph"). The library gained three nodes
+  end-to-end (bandedFlow, blackbody + the STARFIELD/latlonUv payoffs),
+  one confirmed backend divergence, one watch-list entry, and an r184
+  clean bill — the proving ground did its job.*
 
 ## Promotion checklist (per new node born here)
 

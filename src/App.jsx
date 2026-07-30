@@ -1,10 +1,13 @@
 import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Galaxy from './Galaxy'
 import Planet from './Planet'
 import Star from './Star'
+import System, { SYSTEM_INFO } from './System'
+import LocalGroup, { GROUP_INFO } from './LocalGroup'
 import Effects from './Effects'
+import { createSkybox, bakeSkybox } from './skybox'
 import { GALAXY_TYPES } from './galaxyData'
 import { PLANET_TYPES } from './planetData'
 import { createRenderer, backendName } from './renderer'
@@ -12,52 +15,123 @@ import { createRenderer, backendName } from './renderer'
 const params = new URLSearchParams(window.location.search)
 const FROZEN = import.meta.env.DEV && params.has('freeze')
 
-// Per-view camera + controls framing (G1-34). Galaxy numbers are the
-// v0.1 originals; planets sit closer with a tighter zoom range.
-const VIEWS = {
-  galaxies: { position: [0, 6, 12], min: 4, max: 28 },
-  planets: { position: [0, 0.8, 5.6], min: 2.6, max: 12 },
+// The scale journey (G3-28): four rungs, one state machine. Each rung
+// carries its scene, camera framing, controls range, skybox radius, and
+// its slot in the facts ladder.
+const SCALES = [
+  { id: 'planet', label: 'Planet', camera: [0, 0.8, 5.6], min: 2.6, max: 12, sky: 60 },
+  { id: 'system', label: 'System', camera: [0, 4.5, 11], min: 3, max: 24, sky: 60 },
+  { id: 'galaxy', label: 'Galaxy', camera: [0, 6, 12], min: 4, max: 28, sky: 60 },
+  { id: 'group', label: 'Local Group', camera: [0, 16, 40], min: 12, max: 90, sky: 140 },
+]
+
+function initialScale() {
+  const i = SCALES.findIndex((s) => s.id === params.get('scale'))
+  if (i !== -1) return i
+  if (params.get('view') === 'planets') return 0 // legacy links keep working
+  return 2 // galaxy — the app's historical home
 }
 
-// Repositions the camera when the view changes — the Canvas camera prop
-// is initial-only.
-function ViewRig({ view }) {
+// Repositions the camera when the rung changes (Canvas camera is
+// initial-only).
+function ViewRig({ scale }) {
   const camera = useThree((s) => s.camera)
   const controls = useThree((s) => s.controls)
   useEffect(() => {
-    camera.position.set(...VIEWS[view].position)
+    camera.position.set(...SCALES[scale].camera)
     camera.lookAt(0, 0, 0)
     controls?.update?.()
-  }, [view, camera, controls])
+  }, [scale, camera, controls])
+  return null
+}
+
+// G3-30: zoom-through — scrolling out while parked at the controls'
+// outer stop climbs a rung; scrolling in at the inner stop descends.
+// Debounced so one wheel gesture moves one rung.
+function ZoomThrough({ scale, onShift }) {
+  const camera = useThree((s) => s.camera)
+  const controls = useThree((s) => s.controls)
+  const gl = useThree((s) => s.gl)
+  const lastShift = useRef(0)
+  useEffect(() => {
+    const el = gl.domElement
+    const onWheel = (e) => {
+      if (!controls) return
+      const now = performance.now()
+      if (now - lastShift.current < 700) return
+      const d = camera.position.distanceTo(controls.target)
+      const { min, max } = SCALES[scale]
+      if (e.deltaY > 0 && d >= max - 0.05 && scale < SCALES.length - 1) {
+        lastShift.current = now
+        onShift(scale + 1)
+      } else if (e.deltaY < 0 && d <= min + 0.05 && scale > 0) {
+        lastShift.current = now
+        onShift(scale - 1)
+      }
+    }
+    el.addEventListener('wheel', onWheel, { passive: true })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [gl, camera, controls, scale, onShift])
   return null
 }
 
 export default function App() {
-  const [view, setView] = useState(
-    params.get('view') === 'planets' ? 'planets' : 'galaxies',
-  )
+  const [scale, setScale] = useState(initialScale)
   const [galaxyIndex, setGalaxyIndex] = useState(0)
   const [planetIndex, setPlanetIndex] = useState(0)
   // The renderer, captured once init() has resolved — backend identity is
   // only final after that, so all backend reads go through this state.
   const [gl, setGl] = useState(null)
+  const [fading, setFading] = useState(false)
 
-  const planets = view === 'planets'
-  const list = planets ? PLANET_TYPES : GALAXY_TYPES
-  const index = planets ? planetIndex : galaxyIndex
-  const setIndex = planets ? setPlanetIndex : setGalaxyIndex
-  const type = list[index]
+  // One deep-space backdrop for every rung, app-lifetime; radius follows
+  // the rung.
+  const skybox = useMemo(() => createSkybox({ frozen: FROZEN }), [])
+  useEffect(
+    () => () => {
+      skybox.material.dispose()
+      skybox.geometry.dispose()
+    },
+    [skybox],
+  )
+  const rung = SCALES[scale]
+  useEffect(() => {
+    skybox.scale.setScalar(rung.sky / 7)
+  }, [rung, skybox])
 
-  const go = (delta) =>
-    setIndex((i) => (i + delta + list.length) % list.length)
-
-  const switchView = (v) => {
-    setView(v)
+  const shiftScale = (next) => {
+    if (next === scale) return
+    setFading(true)
+    setScale(next)
     const url = new URL(window.location)
-    if (v === 'planets') url.searchParams.set('view', 'planets')
-    else url.searchParams.delete('view')
+    url.searchParams.set('scale', SCALES[next].id)
+    url.searchParams.delete('view')
     window.history.replaceState(null, '', url)
+    setTimeout(() => setFading(false), 260)
   }
+
+  // The facts ladder (G3-33): every rung feeds the same HUD skeleton.
+  let info
+  let list = null
+  let index = 0
+  let setIndex = null
+  if (rung.id === 'planet') {
+    list = PLANET_TYPES
+    index = planetIndex
+    setIndex = setPlanetIndex
+    info = list[index]
+  } else if (rung.id === 'galaxy') {
+    list = GALAXY_TYPES
+    index = galaxyIndex
+    setIndex = setGalaxyIndex
+    info = list[index]
+  } else if (rung.id === 'system') {
+    info = SYSTEM_INFO
+  } else {
+    info = GROUP_INFO
+  }
+
+  const go = (delta) => setIndex?.((i) => (i + delta + list.length) % list.length)
 
   return (
     <div className="app">
@@ -66,38 +140,42 @@ export default function App() {
         onCreated={(state) => {
           setGl(state.gl)
           if (import.meta.env.DEV) window.__r3f = state
+          bakeSkybox(skybox, state.gl, { frozen: FROZEN })
         }}
-        camera={{ position: VIEWS.galaxies.position, fov: 55 }}
+        camera={{ position: SCALES[2].camera, fov: 55 }}
         dpr={[1, 2]}
       >
         <color attach="background" args={['#02030a']} />
-        <ViewRig view={view} />
-        {planets ? (
-          type.star ? (
+        <ViewRig scale={scale} />
+        <ZoomThrough scale={scale} onShift={shiftScale} />
+        <primitive object={skybox} />
+        {rung.id === 'planet' &&
+          (info.star ? (
             <Star frozen={FROZEN} />
           ) : (
             <Planet
-              key={type.id}
-              recipe={type.recipe}
-              spinRate={type.spinRate}
-              atmosphere={type.atmosphere}
+              key={info.id}
+              recipe={info.recipe}
+              spinRate={info.spinRate}
+              atmosphere={info.atmosphere}
               frozen={FROZEN}
             />
-          )
-        ) : (
-          <Galaxy type={type} />
-        )}
+          ))}
+        {rung.id === 'system' && <System frozen={FROZEN} />}
+        {rung.id === 'galaxy' && <Galaxy type={GALAXY_TYPES[galaxyIndex]} />}
+        {rung.id === 'group' && <LocalGroup frozen={FROZEN} />}
         <OrbitControls
           makeDefault
           enablePan={false}
-          minDistance={VIEWS[view].min}
-          maxDistance={VIEWS[view].max}
+          minDistance={rung.min}
+          maxDistance={rung.max}
           rotateSpeed={0.5}
         />
         <Effects />
       </Canvas>
 
       {!gl && <div className="boot">initializing renderer…</div>}
+      <div className={'scale-fade' + (fading ? ' active' : '')} />
 
       {import.meta.env.DEV && gl && (
         <div className="backend-badge">{backendName(gl)}</div>
@@ -105,36 +183,37 @@ export default function App() {
 
       <div className="hud">
         <div className="views">
-          <button
-            className={planets ? '' : 'active'}
-            onClick={() => switchView('galaxies')}
-          >
-            Galaxies
-          </button>
-          <button
-            className={planets ? 'active' : ''}
-            onClick={() => switchView('planets')}
-          >
-            Planets
-          </button>
+          {SCALES.map((s, i) => (
+            <button
+              key={s.id}
+              className={i === scale ? 'active' : ''}
+              onClick={() => shiftScale(i)}
+            >
+              {s.label}
+            </button>
+          ))}
         </div>
         <div className="kicker">echoGalaxy · a free tool for exploring the universe</div>
-        <h1>{type.name}</h1>
-        <div className="cls">{planets ? type.label : type.hubble}</div>
-        <p>{type.description}</p>
+        <h1>{info.name}</h1>
+        <div className="cls">{info.label ?? info.hubble}</div>
+        <p>{info.description}</p>
         <ul>
-          {type.facts.map((f, i) => (
+          {info.facts.map((f, i) => (
             <li key={i}>{f}</li>
           ))}
         </ul>
-        <div className="nav">
-          <button onClick={() => go(-1)}>‹ Prev</button>
-          <span>
-            {index + 1} / {list.length}
-          </span>
-          <button onClick={() => go(1)}>Next ›</button>
+        {list && (
+          <div className="nav">
+            <button onClick={() => go(-1)}>‹ Prev</button>
+            <span>
+              {index + 1} / {list.length}
+            </span>
+            <button onClick={() => go(1)}>Next ›</button>
+          </div>
+        )}
+        <div className="hint">
+          drag to orbit · scroll to zoom · zoom past the edge to change scale
         </div>
-        <div className="hint">drag to orbit · scroll to zoom</div>
       </div>
     </div>
   )

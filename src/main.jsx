@@ -13,7 +13,11 @@ const Root = devParams?.has('lab')
   ? lazy(() => import('./Lab.jsx'))
   : devParams?.has('planet')
     ? lazy(() => import('./PlanetLab.jsx'))
-    : App
+    : devParams?.has('system')
+      ? lazy(() => import('./SystemLab.jsx'))
+      : devParams?.has('group')
+        ? lazy(() => import('./LocalGroupLab.jsx'))
+        : App
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

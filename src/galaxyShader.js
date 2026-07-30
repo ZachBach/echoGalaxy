@@ -1,5 +1,5 @@
 import * as TSL from 'three/tsl'
-import { AdditiveBlending, Color, DoubleSide } from 'three'
+import { AdditiveBlending, Color, DoubleSide, NoBlending } from 'three'
 import { PointsNodeMaterial, MeshBasicNodeMaterial } from 'three/webgpu'
 import { hashChannels } from './tsl-lib/noise/hashChannels.js'
 import { spriteDisc } from './tsl-lib/pattern/spriteDisc.js'
@@ -148,19 +148,35 @@ export function applyNebulaCfg(N, cfg) {
   return (cfg.radius ?? 8) * 1.2 // veil radius — the rig scales the mesh
 }
 
-export function buildNebulaMaterial(N, { frozen = false } = {}) {
-  const clock = frozen ? TSL.float(0) : TSL.time
-  const p01 = TSL.uv().sub(0.5).mul(2) // -1..1 over the unit circle
-  const rN = p01.length()
-  const mask = TSL.smoothstep(N.falloffStart, 1.0, rN).oneMinus()
+// The veil field itself — one expression for the live path and the bake.
+// Budget: 3 fbm octaves total (G2-34 — the pretty 4-eval warp+fbm version
+// cost two thirds of the frame rate). Soft clouds are honest for gas.
+function nebulaField(N, clock) {
+  const p01 = TSL.uv().sub(0.5).mul(2) // -1..1 over the unit circle/quad
   const q = TSL.vec3(p01.x.mul(N.worldFreq), p01.y.mul(N.worldFreq), clock.mul(0.015))
-  // Budget: 3 fbm octaves total (G2-34 — the pretty 4-eval warp+fbm
-  // version cost two thirds of the frame rate). Soft clouds are honest
-  // for gas anyway.
   const w = fbm(TSL, q.mul(0.5), { octaves: 1 }).mul(0.9)
-  const veil = fbm(TSL, q.add(TSL.vec3(w, w.negate(), 0)), { octaves: 2 })
+  return fbm(TSL, q.add(TSL.vec3(w, w.negate(), 0)), { octaves: 2 })
     .mul(0.5)
     .add(0.5)
+}
+
+// G3-10: the field baked to a small texture at type-switch time (static —
+// drift is dropped in baked mode; the group's spin provides motion).
+export function buildNebulaBakeMaterial(N) {
+  const mat = new MeshBasicNodeMaterial()
+  mat.colorNode = TSL.vec3(nebulaField(N, TSL.float(0)))
+  mat.blending = NoBlending
+  return mat
+}
+
+export function buildNebulaMaterial(N, { frozen = false, veilTexture = null } = {}) {
+  const clock = frozen ? TSL.float(0) : TSL.time
+  const p01 = TSL.uv().sub(0.5).mul(2)
+  const rN = p01.length()
+  const mask = TSL.smoothstep(N.falloffStart, 1.0, rN).oneMinus()
+  const veil = veilTexture
+    ? TSL.texture(veilTexture, TSL.uv()).r
+    : nebulaField(N, clock)
   const mat = new MeshBasicNodeMaterial()
   mat.colorNode = TSL.mix(N.colB, N.colA, veil)
   mat.opacityNode = veil.pow(1.6).mul(mask).mul(N.strength)
@@ -171,11 +187,39 @@ export function buildNebulaMaterial(N, { frozen = false } = {}) {
   return mat
 }
 
-export function buildGalaxyMaterial(family, U, { frozen = false } = {}) {
+export const MAX_GALAXY_COUNT = 24000
+
+// G3-07/08 — the star-position bake: the SAME position expressions,
+// evaluated once per type switch by a compute pass into a vec4 storage
+// array (xyz = position, w = rN) instead of per-vertex per-frame. One
+// buffer serves every family — in baked mode the family lives only in
+// which compute ran last. Reads follow the upstream ledger's entry-1
+// rule: `.toAttribute()` then take `.xyz` before widening.
+export function buildGalaxyBake(U) {
+  const buffer = TSL.instancedArray(MAX_GALAXY_COUNT, 'vec4')
+  const computes = {}
+  for (const family of Object.keys(POSITION)) {
+    computes[family] = TSL.Fn(() => {
+      const h = hashChannels(TSL, TSL.instanceIndex, 12)
+      const { pos, rN } = POSITION[family](h, U)
+      buffer.element(TSL.instanceIndex).assign(TSL.vec4(pos, rN))
+    })().compute(MAX_GALAXY_COUNT)
+  }
+  return { buffer, computes }
+}
+
+export function buildGalaxyMaterial(family, U, { frozen = false, bakedBuffer = null, sizeScale = 1 } = {}) {
   const clock = frozen ? TSL.float(0) : TSL.time
   const h = hashChannels(TSL, TSL.instanceIndex, 12)
 
-  const { pos, rN } = POSITION[family](h, U)
+  let pos, rN
+  if (bakedBuffer) {
+    const packed = bakedBuffer.toAttribute()
+    pos = packed.xyz
+    rN = packed.w
+  } else {
+    ;({ pos, rN } = POSITION[family](h, U))
+  }
 
   const mat = new PointsNodeMaterial({
     transparent: true,
@@ -188,6 +232,6 @@ export function buildGalaxyMaterial(family, U, { frozen = false } = {}) {
   mat.opacityNode = spriteDisc(TSL, TSL.uv(), { edge: 0.06, core: 0.4 })
     .mul(flicker(TSL, clock, { rate: 1.6, phase: h[11].mul(Math.PI * 2), depth: 0.22 }))
     .mul(densityFalloff(TSL, rN))
-  mat.sizeNode = TSL.float(0.09).mul(h[10].mul(0.6).add(0.7)) // mean-1 jitter
+  mat.sizeNode = TSL.float(0.09 * sizeScale).mul(h[10].mul(0.6).add(0.7)) // mean-1 jitter
   return mat
 }

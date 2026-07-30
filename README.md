@@ -2,7 +2,11 @@
 
 A free, open educational tool for exploring galaxies and the universe.
 
-Two views, switchable in the HUD (or `?view=planets`):
+**The scale journey**: four rungs — Planet → Star System → Galaxy → Local
+Group — climbable from the HUD ladder, `?scale=` links, or by zooming past
+the edge of any rung (scroll out at the stop to go up a scale). Every rung
+carries its own facts ladder; legacy `?view=planets` links still work.
+Within the rungs:
 
 - **Galaxies** — orbit a procedurally generated galaxy and cycle the four
   broad Hubble classes — spiral, barred spiral, elliptical, irregular.
@@ -15,6 +19,14 @@ Two views, switchable in the HUD (or `?view=planets`):
 - **Planets** — five worlds built from tsl-lib shader nodes: rocky (with
   city lights on the night side), lava, ice, gas giant (the `bandedFlow`
   node born here and promoted upstream), and a star with a live corona.
+
+- **Star System** — the star and four worlds on literal Kepler-third-law
+  orbits (the inner molten world laps the outer ice world), each
+  terminator tracking its own sun direction.
+- **Local Group** — the real neighbourhood: the barred Milky Way with the
+  Magellanic Clouds, Andromeda with M32/M110, Triangulum — 24,000 stars
+  total, the same budget as one galaxy. A deep-space STARFIELD skybox
+  (baked to an equirect at boot) sits behind every rung.
 
 Every entry ships with a short explainer and a few facts — the educational
 payload is the point.

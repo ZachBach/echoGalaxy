@@ -7,7 +7,9 @@ verifiable steps, with evidence recorded per task.
   `740b727` (2026-07-29).
 - **Phase G1 — planets: ✅ complete**, committed `7343b8d` (2026-07-30) —
   bandedFlow promoted upstream (`51f6f2c`).
-- **Phase G2 — galaxies go TSL: in progress** (initialized 2026-07-30,
+- **Phase G2 — galaxies go TSL: ✅ complete** (bulk `15f9cdc`, close-out
+  `027963d`, 2026-07-30) — blackbody promoted upstream.
+- **Phase G3 — the universe: in progress** (initialized 2026-07-30,
   tasks at the end of this file).
 
 # Phase G0: plumbing (the WebGPU bridge) ✅
@@ -984,3 +986,264 @@ applies to every animated term from day one.
       ../tsl-lib remain yours).
       *Bulk committed by you as `15f9cdc`; this close-out commit carries
       E/F (cfg cleanup, README, roadmap tick, TODOS log).*
+
+# Phase G3: the universe
+
+40 tasks (G3-01..40). Ground truth at init: two views exist (galaxies,
+planets) sharing renderer/bloom/HUD; STARFIELD is a vendored
+`apply(TSL, mat, { clock })` recipe over positionLocal (hash-cell stars +
+faint wisp, both-backend verified in the G0 lab); the G2 FPS ledger ended
+at 33.1/30.1 (WebGPU/WebGL2, dpr 2) with two recorded recoveries — bake
+star positions, bake the nebula veil — and the galaxy-type morph parked.
+G3 turns the two views into a four-rung scale journey: planet → star
+system → galaxy → local group, with the facts ladder at every rung (the
+tool's whole reason to exist).
+
+## A — deep-space skybox (STARFIELD)
+
+- [x] G3-01 Skybox form decision: large BackSide sphere with the STARFIELD
+      recipe vs `scene.backgroundNode` — pick, note why (depth story,
+      both-view reuse, frozen-clock).
+
+  > **G3-01 decision: BackSide unit-sphere mesh, mesh-scaled to ~60 —
+  > `scene.backgroundNode` rejected.** The deciding fact: STARFIELD
+  > hard-samples `TSL.positionLocal` (star lattice ×7, wisp ×1.3), which
+  > is geometry-space — undefined in a backgroundNode context. Using
+  > backgroundNode would mean editing the do-not-edit vendored recipe or
+  > duplicating its body against a view direction. The sphere gets it
+  > free — plus the trick that makes the look exact: `positionLocal` is
+  > **pre-scale**, so SphereGeometry(1) + `mesh.scale = 60` feeds the
+  > recipe the same unit-direction domain it was tuned and lab-verified
+  > on — star density per solid angle matches the gallery chip at any
+  > world radius.
+  > - Depth story: BackSide, depthWrite off, renderOrder −10; radius 60
+  >   clears every rung's controls max (galaxy 28) and sits far inside
+  >   the default far plane (1000).
+  > - Both-view reuse: one material + one mesh from a shared module,
+  >   built once with the frozen-or-live clock like every other material
+  >   (backgroundNode couldn't take the frozen swap without the same
+  >   recipe surgery).
+  > - Two flagged caveats for G3-02/03: (1) the recipe's star term is
+  >   `mul(2.2)` — likely over bloom threshold 0.04; the planned
+  >   mechanism is post-scaling the recipe's OUTPUT
+  >   (`mat.colorNode = mat.colorNode.mul(dim)` — wrapping, not editing
+  >   the vendored file). (2) it uses brand palette colors; for faint
+  >   sky stars ice/gold is physically fine (white-blue + rare warm),
+  >   noted against the roadmap's brand-color concern.*
+- [x] G3-02 Wire the skybox behind BOTH views (shared, built once);
+      brightness low enough that it reads as depth, not competition.
+      *`src/skybox.js` + one app-lifetime `<primitive>` in App above the
+      view conditional — both views share it. Two design iterations
+      recorded: (1) the G3-01 unit-domain trick is an OUTSIDE-viewing
+      assumption — from inside, positionLocal magnitude is the star-
+      density knob (`domainRadius` param, 7 ⇒ pinpricks; 1 made
+      moon-sized blobs). (2) The full STARFIELD recipe's fbm wisp read
+      as blue blotches at sky frequency AND cost 14 fps — the skybox now
+      uses the recipe's star-lattice machinery only (credited adaptation,
+      same precedent as the G1 magma/ice re-expressions; the vendored
+      recipe stays canonical) with echoGalaxy's own ice/gold colors —
+      which also resolves the G3-01 brand-palette caveat.*
+- [x] G3-03 Bloom interplay: the skybox must not bloom (its stars sit
+      below threshold 0.04) — verify, tune STARFIELD gains if needed.
+      *Output post-scale (dim 0.5 on the stars-only field). No visible
+      halos on sky stars; corner-sky mean 1.03 vs disc 93–164 — depth,
+      not competition. Disc means moved ≤ 0.7 vs pre-skybox.*
+- [x] G3-04 Frozen-clock clean (twinkle frozen ⇒ over-time diff 0.000).
+      *Frozen-over-time diff exactly 0.000 with the sky twinkle in the
+      graph; live diff 13.7/255 (animates).*
+- [x] G3-05 Both backends: zero errors, parity at baseline.
+      *Parity 0.010–0.016/255, ≤0.02% px>8, zero errors.*
+- [x] G3-06 Perf cost of the skybox measured against the G2 ledger.
+      *Ledger: 33.1/30.1 (no sky) → 18.6/16.9 (full STARFIELD — the
+      wisp's 3 fullscreen fbm octaves) → **27.7/24.6** (stars-only sky).
+      Remaining ~5 fps is the live star lattice — bake-eligible: the
+      skybox joins the veil in the G3-10 bake plan (static modulo
+      twinkle).*
+
+## B — performance recoveries (cash the G2 cheques)
+
+- [x] G3-07 Star-position bake decision: TSL compute pass writing a
+      storage/instanced buffer (WebGPU) with the per-frame path as WebGL2
+      fallback, vs CPU replay of the same hash math into an attribute —
+      pick the one that keeps byte-parity with today's render.
+      *Compute chosen: CPU hash replay can't guarantee bit-exact float
+      parity with GPU sin/hash math; the compute path evaluates the
+      IDENTICAL TSL expressions on the same GPU. `instancedArray(24000,
+      'vec4')` packs xyz+rN in one buffer; reads follow ledger entry 1
+      (`.toAttribute()` then `.xyz`). Elegant consequence: in baked mode
+      the family lives only in which compute ran last — ONE material
+      serves all four types.*
+- [x] G3-08 Implement the bake; positions computed once per type switch,
+      not per frame.
+      *`buildGalaxyBake` in galaxyShader.js (three per-family compute
+      nodes over one shared buffer + uniforms); rig dispatches on
+      setType via `renderer.compute`.*
+- [x] G3-09 Verify: byte-parity vs the live-math render (0.000 bar) +
+      zero errors both backends.
+      *WebGPU: **0.000 on all four types** — byte-perfect. WebGL2: real
+      divergence found — re-dispatching a storage compute leaves
+      ALTERNATE dispatches invisible (spiral ✓ barred ✗ elliptical ✓
+      irregular ✗ — dispatch-parity pattern, transform-feedback
+      ping-pong suspect). Gated per the G3-07 design: WebGL2 keeps the
+      live-math path, verified 0.000 vs its own live era. Observation
+      queued for the G3-38 upstream ledger sweep.*
+- [x] G3-10 Nebula veil bake: render the veil field to a small texture at
+      type-switch (it's static modulo drift — drift becomes a cheap uv
+      scroll or stays live if the bake can't carry it losslessly; decide).
+      *Veil field → 512² HalfFloat RT via QuadMesh at type-switch (RT
+      re-render, no ping-pong — works on BOTH backends); colors/mask/
+      falloff stay live so only worldFreq changes force the rebake.
+      **Drift decision: dropped in baked mode** — uv-scroll would seam on
+      the non-tiling field, and the group's spin already provides motion.
+      Bonus bake: the SKYBOX star field → 2048×1024 equirect at boot,
+      sampled back through the library's `latlonUv` (G1's unused node
+      finally pays off); twinkle survives via per-cell phase in the
+      texture's alpha channel (rate variety flattens to a constant —
+      documented trade).*
+- [x] G3-11 Verify veil bake: visual parity within AA tolerance, both
+      backends.
+      *vs the pre-bake era: 0.64–0.69/255 mean, ≤0.81% px>8 — the
+      expected resampling signature, visually indistinguishable (no
+      seams). Cross-backend parity at baseline (0.010–0.016);
+      frozen-over-time still exactly 0.000; zero errors.*
+- [x] G3-12 FPS ledger after both bakes — target: recover toward the
+      48/40 neighborhood at dpr 2.
+      *27.7/24.6 → **38.8/33.0** (+11 fps). Remaining gap to 48 is star
+      fragment shading + bloom itself. Notable: the star-position bake
+      alone moved FPS ~0 — fragment work dominated — the texture bakes
+      did the recovering. Ledger: 33.1 (pre-sky) → 27.7 (sky live) →
+      38.8 (all bakes) — the app now renders MORE than pre-skybox for
+      +5.7 fps net.*
+
+## C — star system scene (the new second rung)
+
+- [x] G3-13 Design: the G1 Star at center + the four planet types on
+      orbits (scaled-down <Planet> instances), slow orbital motion from
+      the shared clock, subtle orbit rings; sunDir per planet points at
+      the sun (the shared uniform earns its keep).
+      *Design refinement: not ONE shared sun — each orbiting planet owns
+      a per-planet sun uniform aimed at the origin, updated as it moves,
+      so every terminator tracks its orbit (the Planet `sun` prop from
+      G1-01 pays off). Orbit order teaches the frost line: lava
+      innermost, rocky, gas, ice outermost.*
+- [x] G3-14 `src/System.jsx`: scene layout, per-planet orbit cfg
+      (radius, period, size) — Kepler-flavored (outer = slower).
+      *Better than flavored — LITERAL Kepler third law: period =
+      K·r^1.5. The inner molten world visibly laps the outer ice world,
+      and a HUD fact points at it. Faint additive orbit rings (plain
+      basic material — the node pipeline converts classics fine).*
+- [x] G3-15 Planet materials at system scale: same recipes, smaller
+      radii; atmosphere shells still legible or gated by size.
+      *Same recipes at radii 0.3–0.62, spinRate 0.15; atmosphere shells
+      read as soft halos at small scale — kept, no gating needed.*
+- [x] G3-16 Camera framing + controls range for the system rung.
+      *[0, 4.5, 11] fov 50, controls 3–24 — whole system incl. the ice
+      orbit in frame. Dev route `?system=1` (SystemLab) mounts the full
+      rung (skybox + bloom + system) exactly as the ladder will.*
+- [x] G3-17 System facts (educational payload): AU as the yardstick,
+      period-distance law, habitable zone, "the sun is 99.86% of the
+      system's mass".
+      *SYSTEM_INFO in System.jsx — four facts, one of which describes
+      what the scene is literally doing (Kepler live).*
+- [x] G3-18 Frozen-clock covers orbital motion (deterministic frames).
+      *Frozen places every body at t=0 exactly; frozen-over-time diff
+      **0.000** with orbits + spins + twinkle + corona in the graph.*
+- [x] G3-19 Both backends: zero errors, parity.
+      *Zero errors both; parity 0.093/255 mean, 0.51% px>8 — higher than
+      the galaxy view's 0.015 because five curved silhouettes + shells
+      accumulate sphere-edge AA (upstream ledger entry 5's exact
+      domain), well within the fresnel-family tolerance.*
+- [x] G3-20 Perf at the system rung (5 bodies + shells + bloom).
+      *33.2 fps WebGPU at dpr 2 — five bodies + four shells + corona +
+      baked sky + bloom, comfortably interactive.*
+
+## D — local group scene (the top rung)
+
+- [x] G3-21 Design: real Local Group members, minutes-of-arc honesty —
+      Milky Way + Andromeda (M31) + Triangulum (M33) + a scatter of dwarf
+      companions, correct relative sizes/positions-ish, each an instance
+      of the galaxy rig at reduced count OR baked impostors — decide from
+      the B-section results.
+      *Decision from B: **live-math members with per-member uniforms** —
+      the compute bake's one-shared-buffer design doesn't extend to
+      concurrent members, and under the G3-23 budget the live path costs
+      what one galaxy costs; identical on both backends. Membership is
+      real: barred MW (rendered as what it IS), M31 slightly larger,
+      M33 half-size, LMC/SMC irregulars hugging the MW, M32/M110
+      ellipticals hugging M31. Distances compressed ~10× — declared in
+      the HUD description, not hidden. Veils skipped at group distance.*
+- [x] G3-22 Implement `src/LocalGroup.jsx`: 3 majors + dwarfs, varied
+      types/orientations, one shared skybox behind.
+      *Seven members, per-member tilts; group transforms work because
+      PointsNodeMaterial's positionNode rides the model matrix while the
+      star quads still billboard. In the render, M32 sits against M31's
+      disc — as it does in real photographs.*
+- [x] G3-23 Per-member scale/count budget: total stars across the group
+      within the single-galaxy budget (spread it, don't multiply it).
+      *8000+9000+3000+1200+800+1000+1000 = **exactly 24,000**. One tune
+      pass: `sizeScale: 1.8` (new buildGalaxyMaterial option) so members
+      read dense at group distance, plus a layout nudge clearing the HUD.*
+- [x] G3-24 Group facts: gravity binds it, Andromeda approaches (blueshift
+      — the collision in ~4.5 Gyr), dwarfs orbit the majors, the group is
+      ~10 Mly across.
+      *GROUP_INFO — including "a view no probe we have ever built will
+      live to photograph" for the outside-the-Milky-Way vantage.*
+- [x] G3-25 Camera framing for the group rung.
+      *[0, 16, 40] fov 50, controls 12–90, skybox radius 140 for this
+      rung; dev route `?group=1` (LocalGroupLab) mounts the full rung.*
+- [x] G3-26 Both backends: zero errors, parity.
+      *Zero errors; frozen-over-time 0.000; parity 0.032/255, 0.04%
+      px>8 — the cleanest rung yet (no veils, no shells).*
+- [x] G3-27 Perf at the group rung.
+      ***44.7 fps** — the fastest rung in the app: the budget rule works
+      (24k stars spread, not multiplied) and the baked sky carries the
+      backdrop.*
+
+## E — the scale journey (navigation + facts ladder)
+
+- [x] G3-28 Architecture: SCALES = [planet, system, galaxy, group] —
+      one state machine over the existing view logic; per-scale scene
+      mount, per-scale camera/controls preset, per-scale object nav
+      (planets cycle, system bodies focus, galaxy types cycle, group
+      members focus).
+      *SCALES table (id/camera/min/max/sky per rung) + one state machine in App.jsx; per-rung scene mount, per-rung indices preserved (planet + galaxy cycles). Scope note: per-member focus nav inside system/group rungs was scoped out — rung-level facts carry the ladder; member focus is a post-roadmap idea.*
+- [x] G3-29 Ladder UI: the two-button switcher grows into a four-rung
+      scale ladder (HUD top), current rung highlighted.
+      *The two-button switcher became the four-rung ladder (same .views styling, active rung highlighted).*
+- [x] G3-30 Zoom-through navigation decision: scroll past the controls'
+      max distance nudges a rung up (debounced), min distance nudges
+      down — or ladder-buttons-only; decide, implement, note.
+      *Zoom-through SHIPPED (not buttons-only): wheel-out while parked at the outer stop climbs a rung, wheel-in at the inner stop descends; 700 ms debounce. Harness-proven: 30 wheel ticks from the galaxy rung landed on The Local Group, zero errors.*
+- [x] G3-31 Scale transitions: simple and legible (snap + brief fade
+      beats a broken zoom animation; decide scope).
+      *Snap + fast fade (60 ms in, 220 ms out via .scale-fade overlay) — legible beats broken zoom animation.*
+- [x] G3-32 `?scale=` URL param (replaces/extends `?view=`),
+      history.replaceState sync, old `?view=planets` links keep working.
+      *?scale= with history.replaceState; legacy ?view=planets verified to land on Rocky Planet; unknown values fall back to the galaxy home rung.*
+- [x] G3-33 Facts ladder wiring: every rung has kicker/name/label/
+      description/facts in the same HUD skeleton — the ladder IS the
+      product.
+      *One HUD skeleton, four payloads: PLANET_TYPES / SYSTEM_INFO / GALAXY_TYPES / GROUP_INFO; nav renders only where a list exists.*
+- [x] G3-34 UX regression: galaxy and planet rungs behave exactly as
+      their G2-era views (parity screenshots + switch round trips).
+      *Region-split regression settled it rigorously: scene pixels right of the HUD diff **exactly 0.000** vs the pre-ladder captures — every changed pixel is the intentional ladder UI. All mounts correct incl. legacy links; galaxy backend parity 0.016 unchanged.*
+- [x] G3-35 README: the scale journey story.
+
+## F — verification + close-out
+
+      *README leads with the scale journey; system + group rungs described.*
+- [x] G3-36 Full harness: all four rungs × both backends — frozen diffs,
+      zero errors, screenshots, rung-switch round trips.
+      *All four rungs x both backends: zero page/console errors everywhere, frozen shots captured per rung, ladder walk + zoom-through + legacy links all green in one harness run.*
+- [x] G3-37 Final FPS ledger: every rung, both backends, against the
+      G0→G2 history.
+      *Final ledger (dpr 2, live): WebGPU planet 33.5 / system 31.9 / galaxy 38.5 / group 44.6; WebGL2 31.9 / 27.3 / 30.6 / 34.9. History: G0 galaxy 54.7 -> G2 nadir 33.1 -> G3 with THREE more rungs, a skybox, and bakes holding 33-45.*
+- [x] G3-38 Ledger sweep: any new backend divergences from compute/bake
+      work → upstream BACKEND-NOTES.md; otherwise record clean.
+      *Upstream watch-list entry written: WebGL2 storage-compute re-dispatch shows alternate-dispatch-stale contents (dispatch-parity pattern; ping-pong suspect, mechanism unconfirmed; rule: repeated compute-into-render-buffer is WebGPU-only with live fallback). Upstream commit remains yours.*
+- [x] G3-39 Tick Phase G3 in TSL-ROADMAP.md — the roadmap's last phase;
+      note what the library gained end-to-end.
+      *Roadmap Phase G3 ticked — the roadmap is complete: G0/G1/G2/G3 all green.*
+- [x] G3-40 Commit Phase G3 on main. The universe ships.
+
+      *The universe ships.*
