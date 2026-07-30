@@ -83,15 +83,33 @@ Task-level detail and evidence: TODOS.md (G1-01..40).
   *planetData.js catalogue + Galaxies|Planets switcher (`?view=planets`);
   all five worlds byte-stable across backends in the real app view.*
 
-## Phase G2 — galaxies go TSL
+## Phase G2 — galaxies go TSL ✅ 2026-07-30
 
-- [ ] Points → TSL sprite material: per-star color via `cosinePalette`
+Task-level detail and evidence: TODOS.md (G2-01..40).
+
+- [x] Points → TSL sprite material: per-star color via `cosinePalette`
   (blackbody-ish preset — **candidate: `blackbody(temp)` ramp node**),
   twinkle via `flicker`, soft discs via `spriteDisc`.
-- [ ] Density done in-shader — **candidates: `spiralArm(p, {arms, twist})`,
+  *`blackbody` became a dedicated ramp node, not a preset — anchored to
+  the published 10deg-CMF table on the mired axis, validated to 8/255
+  worst error, promoted upstream (parity 0%, class ②). spriteDisc killed
+  the CanvasTexture and improved cross-backend parity 30–100×; flicker
+  twinkle + sizeNode depth. Faster than the texture era.*
+- [x] Density done in-shader — **candidates: `spiralArm(p, {arms, twist})`,
   `densityFalloff`** — CPU `generateGalaxy` becomes seed/layout only.
-- [ ] Nebula backdrop per galaxy type (fbm veil, brand-free palette —
+  *Went further: generateGalaxy is DELETED — every per-star quantity
+  derives from instanceIndex via hashChannels, zero attributes, and type
+  switching is a uniform swap on one persistent sprite (spiral IS barred
+  with bar=0). spiralArm/densityFalloff reviewed and PARKED as in-app
+  prototypes (app-level composition / one-liner — below the node bar);
+  morph/crossfade parked for G3.*
+- [x] Nebula backdrop per galaxy type (fbm veil, brand-free palette —
   educational colors, not Aurelius gold).
+  *Disc-plane veil = the galaxy's own gas, emission-physics palettes (Hα
+  pink, reflection blue, warm dust, teal knots) — and the elliptical's
+  veil nearly absent because ellipticals ARE gas-poor. Frame budget
+  enforced (3 fbm octaves, veil-disc geometry); veil bake-to-texture
+  recorded as the G3 optimization.*
 
 ## Phase G3 — the universe
 

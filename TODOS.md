@@ -945,21 +945,42 @@ applies to every animated term from day one.
 
 ## E — integration + polish
 
-- [ ] G2-35 galaxyData cfg era update: per-type shader params (arms,
+- [x] G2-35 galaxyData cfg era update: per-type shader params (arms,
       twist, temp distribution, density, nebula palette) — copy/facts
       untouched, cfg becomes the single source the uniforms read.
-- [ ] G2-36 Galaxy view UX regression: HUD, nav, view switcher, camera
+      *temps + nebula blocks landed during A/D; close-out removed the
+      orphaned coreColor/armColor fields (zero references remained).
+      Byte-regression after cleanup: 0.000 on all four types. (One CRLF
+      lesson: line-ending-aware regex needed on this repo.)*
+- [x] G2-36 Galaxy view UX regression: HUD, nav, view switcher, camera
       numbers all unchanged; `?freeze` covers every animated term
       (twinkle, nebula drift).
-- [ ] G2-37 README + VENDORED notes: the galaxies-go-TSL story, new
+      *Harness: galaxy index preserved through a galaxies→planets→
+      galaxies round trip, URL sync (?view=planets) works, frozen-over-
+      time diff exactly 0.000 with twinkle + drift live-verified
+      animating. Zero errors.*
+- [x] G2-37 README + VENDORED notes: the galaxies-go-TSL story, new
       vendored nodes listed.
+      *README: GPU-generation story in the galaxies view blurb +
+      structure list updated (galaxyShader.js, galaxyData as pure data).
+      VENDORED.md self-updates via the sync stamp.*
 
 ## F — verification + close-out
 
-- [ ] G2-38 Full harness in the real app: 4 types × 2 backends (frozen
+- [x] G2-38 Full harness in the real app: 4 types × 2 backends (frozen
       diffs, errors, screenshots) + galaxy↔planets switcher regression +
       FPS vs all prior baselines.
-- [ ] G2-39 Tick Phase G2 in TSL-ROADMAP.md with decisions (promotion
+      *Types: parity 0.010–0.015/255 both backends, screenshots per type,
+      zero errors. Switcher: round trip clean, all 5 planets render.
+      FPS ledger (WebGPU/WebGL2, dpr 2): G0 galaxy 54.7/45.7 → G2-A
+      in-shader shading 56.7/47.4 → G2-B in-shader positions 48.4/39.3 →
+      G2-D nebula 33.1/30.1 — the two recorded G3 optimizations (bake
+      star positions, bake veil texture) recover most of it when needed.*
+- [x] G2-39 Tick Phase G2 in TSL-ROADMAP.md with decisions (promotion
       calls, morph scope, nebula layering).
-- [ ] G2-40 Commit Phase G2 on main (upstream candidate commits in
+      *All three roadmap bullets ticked with decisions; header ✅
+      2026-07-30.*
+- [x] G2-40 Commit Phase G2 on main (upstream candidate commits in
       ../tsl-lib remain yours).
+      *Bulk committed by you as `15f9cdc`; this close-out commit carries
+      E/F (cfg cleanup, README, roadmap tick, TODOS log).*

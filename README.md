@@ -6,6 +6,12 @@ Two views, switchable in the HUD (or `?view=planets`):
 
 - **Galaxies** — orbit a procedurally generated galaxy and cycle the four
   broad Hubble classes — spiral, barred spiral, elliptical, irregular.
+  Since G2 the galaxy is generated **entirely on the GPU**: every star's
+  position, blackbody color (Kelvin through the published Planckian-locus
+  table), size, and twinkle derives in-shader from its instance index —
+  zero buffers, and switching types is a uniform swap. Each galaxy floats
+  in its own fbm nebula veil, palette-keyed to real emission physics
+  (the gas-poor elliptical's veil is nearly absent on purpose).
 - **Planets** — five worlds built from tsl-lib shader nodes: rocky (with
   city lights on the night side), lava, ice, gas giant (the `bandedFlow`
   node born here and promoted upstream), and a star with a live corona.
@@ -34,9 +40,14 @@ Open the printed localhost URL. `npm run build` produces a production bundle.
 - `src/App.jsx` — canvas, the Galaxies|Planets view switcher, HUD, badge.
 - `src/renderer.js` — async WebGPURenderer factory (backend pick + dev flags).
 - `src/Effects.jsx` — node-based bloom (`RenderPipeline`, owns the frame).
-- `src/Galaxy.jsx` — the galaxy as instanced sprites (WebGPU can't size point
-  primitives, so stars are `Sprite` + `PointsNodeMaterial` instances).
-- `src/galaxyData.js` — galaxy classes, educational copy, seeded generator.
+- `src/Galaxy.jsx` — the persistent galaxy rig (one sprite for the app
+  lifetime; uniform/material swaps on type change).
+- `src/galaxyShader.js` — the in-shader generation: disc/elliptical/
+  irregular position fields from `instanceIndex` hashes, blackbody star
+  color, twinkle, and the nebula veil (spiralArm/densityFalloff prototypes
+  live here).
+- `src/galaxyData.js` — galaxy classes: educational copy + the cfg numbers
+  the shader uniforms read (pure data since G2).
 - `src/Planet.jsx` + `src/planetMaterial.js` — the lit-body pipeline: body-frame
   sampling (`spunDir`), terminator composition, atmosphere shell.
 - `src/planetRecipes.js` — rocky / lava / ice / gas surface recipes +

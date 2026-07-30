@@ -28,8 +28,6 @@ export const GALAXY_TYPES = [
       radius: 8,
       randomness: 0.32,
       thickness: 0.34,
-      coreColor: '#ffdca0',
-      armColor: '#4a7dff',
     },
   },
   {
@@ -55,8 +53,6 @@ export const GALAXY_TYPES = [
       randomness: 0.28,
       thickness: 0.34,
       bar: 0.42,
-      coreColor: '#ffd39a',
-      armColor: '#5a86ff',
     },
   },
   {
@@ -78,8 +74,6 @@ export const GALAXY_TYPES = [
       count: 22000,
       radius: 7,
       thickness: 0.4,
-      coreColor: '#ffe0c4',
-      armColor: '#c9663f',
     },
   },
   {
@@ -101,8 +95,6 @@ export const GALAXY_TYPES = [
       count: 18000,
       radius: 6.5,
       thickness: 0.5,
-      coreColor: '#dff0ff',
-      armColor: '#5aa0ff',
     },
   },
 ]
