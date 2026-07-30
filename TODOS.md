@@ -5,8 +5,10 @@ verifiable steps, with evidence recorded per task.
 
 - **Phase G0 — plumbing (the WebGPU bridge): ✅ complete**, committed
   `740b727` (2026-07-29).
-- **Phase G1 — planets: in progress** (initialized 2026-07-29, tasks below
-  after the G0 log).
+- **Phase G1 — planets: ✅ complete**, committed `7343b8d` (2026-07-30) —
+  bandedFlow promoted upstream (`51f6f2c`).
+- **Phase G2 — galaxies go TSL: in progress** (initialized 2026-07-30,
+  tasks at the end of this file).
 
 # Phase G0: plumbing (the WebGPU bridge) ✅
 
@@ -644,3 +646,320 @@ upstream per the roadmap checklist — upstream bench/docs run in
       ../tsl-lib remain yours).
       *Single commit; upstream side already committed/pushed by you as
       `51f6f2c`.*
+
+# Phase G2: galaxies go TSL
+
+40 tasks (G2-01..40). Ground truth at init: Galaxy.jsx is already
+`Sprite` + `PointsNodeMaterial` with instanced position/color (the G0
+conversion) — G2 moves the remaining CPU work into the shader. Library
+signatures that matter: `spriteDisc(TSL, uv, { edge, core })` takes the
+raw sprite-quad uv (no texture needed); `flicker(TSL, clock, { rate,
+phase, depth })` is built for a per-instance phase channel;
+`cosinePalette(TSL, t, { a,b,c,d, preset })` is the ramp family the
+`blackbody(temp)` candidate joins. `noise/hashChannels` exists upstream
+for deriving several random channels from one seed. Three candidate
+nodes get born here: `blackbody`, `spiralArm`, `densityFalloff` — same
+promotion loop bandedFlow proved (upstream bench gate in ../tsl-lib;
+its commits stay yours). Frozen-clock determinism (G1 discipline)
+applies to every animated term from day one.
+
+## A — TSL sprite material (per-star shading in-shader)
+
+- [x] G2-01 Replace the CanvasTexture star sprite with `spriteDisc` on the
+      sprite-quad uv — procedural disc, `useStarTexture` deleted. Eyeball
+      + frozen cross-backend check before anything else changes.
+      *`spriteDisc(TSL, uv(), { edge: 0.06, core: 0.4 })` as opacityNode,
+      colorNode = the per-star tint attr; useStarTexture + the texture/
+      vec4 wiring deleted. A/B: ~24% brighter across all four types
+      (uniform exposure shift) — accepted deliberately: the pinpoint core
+      resolves individual stars as glints (the shipped 500k-field look)
+      and reads better than the fuzzy canvas gradient. Bonus finding:
+      cross-backend diffs improved **30–100×** (0.010–0.014/255 mean,
+      ≤0.02% px>8, vs 0.19–0.53 and 0.6–2.3% in the texture era) — the
+      procedural disc removes texture filtering from the equation
+      entirely; what remains is pure math. Also confirms reversed-edge
+      smoothstep is fine in TSL (spriteDisc uses it, parity-gated) — the
+      G1 corona suspicion is formally closed as my geometry error. Zero
+      errors both backends; build green.*
+- [x] G2-02 Redesign per-instance attributes: drop precomputed RGB; per
+      star carry `temp` (0..1 blackbody driver), `sizeJitter`, `phase`
+      (twinkle), packed in one interleaved or few flat attributes.
+      *One vec3 `params` attribute per star: [t (core→rim — the future
+      temp driver), sizeJitter 0.75–1.4, twinklePhase]. RGB buffer and
+      the CPU color lerp deleted; transitional colorNode = the same
+      core→arm mix done in-shader from t. Two disciplines paid off
+      immediately: the shading params draw from a **separate PRNG
+      stream** (`seed ^ 0x9e3779b9`) so the position stream — and every
+      layout — is untouched, and the era-regression diff proved it:
+      **0.000 mean / 0.00% on all four types** vs the G2-01 captures.
+      In-shader linear-space mix reproduces THREE.Color.lerp exactly.
+      Backend parity unchanged at the 0.010–0.014 baseline; zero errors;
+      build green. sizeJitter/phase ride along unconsumed until
+      G2-05/06.*
+- [x] G2-03 `blackbody(t)` prototype in-repo: Planckian-locus-ish ramp
+      red → white-yellow → blue-white (educational accuracy matters: cool
+      stars are red, hot stars are blue). Compare against published
+      color-temperature swatches, not vibes.
+      *`src/blackbody.js`: 9 anchor stops from Mitchell Charity's
+      published 10deg-CMF table (fetched, not remembered — memory had 5
+      of 9 anchors wrong, up to 23/255 off), placed on the **mired axis**
+      (1e6/T, where color shift is perceptually ~linear) and blended by
+      the library's parity-gated `ramp`; `TSL.color()` handles sRGB→
+      linear of the published hexes. Validated at five NON-anchor temps
+      (3500/5000/7000/12000/20000 K) with a JS replica of ramp's exact
+      smoothstep-mix semantics: **worst channel error 8/255, most within
+      1–3** — the ramp tracks the Planckian locus. Signature
+      `blackbody(TSL, T)` — Kelvin in, chromaticity out (max channel ≈ 1;
+      brightness stays the caller's business).*
+- [x] G2-04 Wire `blackbody(temp)` as the per-star colorNode; galaxy cfg
+      maps core→rim temperature distribution (hot young blue arms, old
+      red core — the astronomy the old RGB lerp faked).
+      *cfg gains tempCore/tempRim per type: spiral 4200→11000 K, barred
+      4000→10000, elliptical 3900→**3200** (reddening outward — old
+      stars everywhere), irregular 6500→12000. colorNode =
+      blackbody(mix(tempCore, tempRim, t)). The look: golden cores →
+      white → pale blue-white arms (honest true-color, not cartoon
+      blue), elliptical a perfect amber old-population swarm — the HUD
+      copy is now literally what the shader computes. Zero errors;
+      backend parity at baseline (0.009–0.016/255); build green.
+      coreColor/armColor stay in cfg for the D-section nebula palettes.*
+- [x] G2-05 Twinkle: `flicker(clock, { phase: instance phase, depth })` —
+      subtle (depth ≤ 0.25), frozen-clock clean.
+      *opacity = spriteDisc × flicker(clock, { rate 1.6, phase, depth
+      0.22 }). Gotcha caught by reading the node: flicker adds phase RAW
+      into sin — the 0..1 channel must scale ×2π or the whole field
+      twinkles in sync. Frozen-determinism proven over wall time: two
+      frozen shots 2.5 s apart diff **exactly 0.000**; live shots 1.5 s
+      apart diff 15.4/255 with 28.6% px changed (the field animates).*
+- [x] G2-06 Per-star size variation via `sizeNode` from `sizeJitter`
+      (replaces uniform 0.09; keep the mean identical).
+      *Jitter regenerated mean-1.0 (0.7–1.3; same rnd2 draw count so the
+      phase channel is untouched), `sizeNode = 0.09 × jitter` replaces
+      the material size. Disc means shifted ~-4% (size redistribution
+      under the disc² alpha, mean size itself preserved) — accepted; the
+      field gains genuine deep-sky depth (bright glints over a dust of
+      faint stars). Backend parity at baseline (0.010–0.016); zero
+      errors; build green.*
+- [x] G2-07 Both backends, all 4 types with the new material: zero errors,
+      frozen diffs at G1-37 levels.
+      *Better than G1-37 levels: 0.010–0.016/255 mean, ≤0.02% px>8 on all
+      four types (the procedural-disc parity dividend from G2-01 holds
+      through blackbody + twinkle + sizeNode). Zero page/console errors
+      on both backends.*
+- [x] G2-08 Eyeball pass vs the pre-G2 look: arms bluer, core warmer,
+      twinkle visible but not noisy; tune once.
+      *All four reviewed; **zero tunes spent** — the physics landed right:
+      spiral golden-core → pale blue-white arms (honest true-color; the
+      additive wash toward white at density IS how real exposures
+      behave), barred's dense bar a warm blade under bloom, elliptical an
+      amber old-population swarm, irregular's blue knots literally its
+      own HUD copy. Twinkle subtle at depth 0.22.*
+- [x] G2-09 Perf: 24k stars with in-shader color/twinkle vs the G0/G1
+      baselines, both backends.
+      *WebGPU 56.7 / WebGL2 47.4 fps — **faster than the G0 texture-era
+      baseline (54.7/45.7)**: dropping the CanvasTexture sample more than
+      pays for blackbody ramp + flicker + sizeNode ALU.*
+- [x] G2-10 Ledger note if any sprite-path divergence shows up (entry 2/6
+      territory — watch `positionView`-adjacent terms in the sprite path).
+      *None to record: the sprite path uses only uv + instanced
+      attributes (no positionView terms), and parity improved 30–100×
+      when the texture left. Nothing added upstream — the ledger records
+      divergences, and there aren't any.*
+
+## B — density/layout in-shader (CPU becomes seed only)
+
+- [x] G2-11 Design the seed attribute layout: per star `{ u (radius
+      param), branch, seed3 }` — type-independent; document how each
+      current CPU branch (spiral/barred/elliptical/irregular) maps onto it.
+      *Design discovery: **the layout is empty.** `hashChannels` takes
+      `instanceIndex` as its seed, so every per-star random (radius
+      param, branch, all scatter, size, twinkle phase) derives in-shader
+      — zero attributes, zero buffers. The G2-02 attributes were deleted
+      along with the concept. CPU contribution per type: a count and ~9
+      uniform floats.*
+- [x] G2-12 `spiralArm` prototype: `(TSL, u, branch, { arms, twist,
+      radius })` → vec3 base position — the spiral/barred math from
+      generateGalaxy, in-shader, driven by cfg uniforms.
+      *`spiralArm(TSL, u, branchRand, h, U)` in `src/galaxyShader.js`:
+      radial shaping (pow shapeExp), arm assignment from a branch random
+      (statistically identical to the CPU's round-robin), winding
+      (branch + r·spin), plus the barred bar branch mixed in by
+      `step(r, radius·bar)` — **spiral IS barred with bar=0**, one graph
+      for the whole disc family.*
+- [x] G2-13 In-shader jitter: gaussian-ish scatter from `seed3` via
+      `hashChannels` (mirror the CPU `gauss`/`jitter` shapes; lattice
+      offset positive — upstream hash gotcha in the ledger watch list).
+      *12 hash channels per star; `gauss3` (sum-of-three) and `jit`
+      (cubic-biased signed) mirror the CPU shapes. Disc means landed
+      within ~1% of the mulberry32 era on every type — the hash
+      distributions statistically reproduce the CPU's. (The ledger's
+      lattice-offset gotcha doesn't apply — instanceIndex seeds are
+      already positive integers.)*
+- [x] G2-14 `densityFalloff` prototype: radial amplitude shaping →
+      per-star alpha/size damping (outer stars fade instead of hard
+      cutoff); define semantics before code.
+      *Semantics: `densityFalloff(TSL, rN, { start=0.85, end=1.02 })` →
+      1 inside, easing to 0 past the rim, multiplied into opacity. The
+      elliptical visibly benefits (graded halo instead of a hard shell).*
+- [x] G2-15 Elliptical + irregular variants in-shader (ellipsoid power
+      falloff; clump offsets from seeds) — all four types from one
+      attribute layout + per-type uniforms.
+      *Three family graphs (disc / elliptical / irregular) sharing one
+      uniforms object; elliptical = pow-2 shaped gaussian ellipsoid,
+      irregular = 5 hash-assigned clumps with gaussian scatter, both
+      reproducing the CPU formulas node-for-node.*
+- [x] G2-16 `generateGalaxy` reduced to seed/layout attributes only (no
+      positions, no colors) — the Float32Array shrinks accordingly;
+      seeded PRNG (mulberry32) stays.
+      *Went further than planned: `generateGalaxy`, mulberry32, gauss,
+      jitter, and the THREE import are **deleted** — galaxyData.js is
+      now pure data (copy + cfg). Determinism no longer needs a CPU
+      seed: hash(instanceIndex) is deterministic by the upstream
+      determinism contract, frozen-clock handles time.*
+- [x] G2-17 Type switching via uniform swap on one persistent sprite —
+      geometry never rebuilds; decide whether a morph/crossfade between
+      types ships in G2 or parks (scope call, note it).
+      *`createGalaxyRig` in Galaxy.jsx: one Sprite for the app lifetime;
+      spiral↔barred is a pure uniform swap (shared disc graph),
+      cross-family swaps to a lazily-built cached material; count is
+      per-type. **Scope call: morph/crossfade parked** — it needs a
+      single cross-family graph (select chains or dual-position mix) and
+      earns its keep in G3's scale journey, not here.*
+- [x] G2-18 Regression: shader galaxies vs CPU-era screenshots per type —
+      eyeball equivalence (exact match impossible; the shapes and palette
+      character must hold).
+      *All four eyeballed: spiral winds identically in character, the
+      bar reads, elliptical's graded halo improves on the CPU hard rim,
+      irregular clumps hold. Disc brightness within ~1% of the CPU era
+      on every type.*
+- [x] G2-19 Both backends, all 4 types, frozen diffs + zero errors.
+      *Parity 0.010–0.015/255, ≤0.02% px>8 — the G2-01 baseline holds
+      through the full in-shader generation. Zero errors, including
+      through the 12-cycle switch stress.*
+- [x] G2-20 Perf: uniform-swap type change vs the old rebuild (should be
+      ~free); frame rate vs G2-09 numbers.
+      *Switches: 25–81 ms on first family visit (one-time shader
+      compile), then ~33 ms measured — which is the two-frame
+      measurement wait itself, i.e. **effectively free**. Honest cost on
+      the other side: FPS 48.4/39.3 vs G2-09's 56.7/47.4 — the per-frame
+      position math (12 hashes + trig × 24k stars, recomputed every
+      frame) buys the zero-buffer design with ~8 fps at dpr 2. Still
+      comfortably interactive; candidate optimization recorded: bake
+      positions once via compute pass (G3-era, when the scale journey
+      needs the headroom).*
+
+## C — candidate promotions (blackbody, spiralArm, densityFalloff)
+
+- [x] G2-21 Promotion review: which candidates are general enough to
+      promote now? (blackbody: clear yes. spiralArm/densityFalloff:
+      promote if the API stands on its own without echoGalaxy context —
+      decide and record.)
+      *Verdicts: **blackbody PROMOTED** (published-data-backed, general —
+      stars, embers, heat glow). **spiralArm PARKED** — its real
+      signature consumes a raw hash-channel array plus the app's uniform
+      object; a standalone API needs ~10 options for one consumer. It's
+      an app-level composition; revisit at G3 or a second consumer.
+      **densityFalloff PARKED** — one `smoothstep.oneMinus()`; the
+      bench/registry/docs overhead of a node exceeds the value of the
+      name. Both stay exported prototypes in galaxyShader.js.*
+- [x] G2-22 `blackbody` options design per CONVENTIONS (factory, opts,
+      derived source(), @cost/@backend) — relationship to cosinePalette
+      documented (dedicated node vs preset: decide, note why).
+      *Dedicated node in the ramp family, NOT a cosinePalette preset:
+      it's data-anchored (published table on the mired axis), not
+      parametric-cosine — a preset would fake the physics the node
+      exists to keep honest. **Zero options** — the physics has no
+      knobs; callers remap T before the call. Provenance + the 8/255
+      validation recorded in the doc block.*
+- [x] G2-23 blackbody upstream: extract + bench entry + gate
+      (`verify-all.mjs`) + gallery chip + gen-docs.
+      *`src/ramp/blackbody.js` upstream + `ramp-blackbody` bench entry
+      (mired-linear temperature strip, 2-point sweep) + gallery chip
+      (Planckian strip along the knot) + GALLERY_SOURCES. Gate: **PASS —
+      parity 0%, gpu 0.68 ms → class ②** (doc block corrected from the
+      estimated ① to the measured ②). NODES.md at 54 entries.*
+- [x] G2-24 spiralArm options design + upstream extraction (if promoted).
+      *Not promoted — see G2-21 verdict.*
+- [x] G2-25 densityFalloff options design + upstream extraction (if
+      promoted). *Not promoted — see G2-21 verdict.*
+- [x] G2-26 Gate run for the B-section nodes promoted in 24/25; parity +
+      cost recorded in REGISTRY. *Only blackbody promoted; its gate ran
+      in G2-23 (parity 0%, class ②, REGISTRY merged).*
+- [x] G2-27 `npm run sync:tsl` back; echoGalaxy switches to vendored
+      copies; render byte-parity with the prototypes (the bandedFlow bar).
+      *Sync green (58 files, 28 gallery entries — both +1); galaxyShader
+      switched to `tsl-lib/ramp/blackbody.js`, in-repo prototype deleted.
+      Byte-parity: **0.000 mean / 0.00% on all four types** vs the
+      prototype-era captures — identical stops, identical math, perfect
+      drop-in. Upstream changes uncommitted — yours (suggested message:
+      "ramp/blackbody: Kelvin → Planckian-locus color — born on
+      echoGalaxy G2, parity 0%, class ②").*
+
+## D — nebula backdrops (per galaxy type)
+
+- [x] G2-28 Design: layering (large background plane vs skysphere),
+      brand-free educational palettes per type (spiral blue-pink
+      star-forming veil, barred warm-core veil, elliptical faint amber
+      halo, irregular patchy teal knots) — write the palette table first.
+      *Layering call: the veil is the galaxy's OWN interstellar medium —
+      a disc-plane circle inside the galaxy group (tilts/spins with it),
+      additive, rendered before the stars. Palette table keyed to real
+      emission physics: spiral Hα pink 0xd46a9e + reflection blue
+      0x5a8fd6; barred warm dust 0xc98a5a; elliptical amber 0xc9a06a at
+      **strength 0.05 — nearly absent, because ellipticals are gas-poor:
+      the rendering itself teaches the gas budget**; irregular pink +
+      teal 0x4ec9b0 patchwork.*
+- [x] G2-29 `src/Nebula.jsx`: fbm veil (warp for wisps) on an additive
+      backdrop, per-type cfg, behind the sprites (renderOrder/depth
+      story explicit).
+      *Lives in galaxyShader.js (uniform-swapped like the star material,
+      no separate component): unit-circle mesh scaled to the veil radius
+      per type, renderOrder −1, depthWrite off, DoubleSide. `nebula` cfg
+      block per type in galaxyData.*
+- [x] G2-30 Density/brightness balance: the veil must never swamp the
+      stars or the bloom (measure: background mean stays ≪ disc mean).
+      *Disc-mean deltas vs the star-only era: elliptical +2.3% (the
+      gas-poor point as data), spiral +11%, irregular +8%, barred +17%
+      worst — stars dominate everywhere.*
+- [x] G2-31 Slow drift animation, frozen-clock clean.
+      *Drift on clock·0.015; frozen-over-time diff **exactly 0.000**,
+      live diff 13.8/255 (animates).*
+- [x] G2-32 Per-type eyeball + tune once (all four).
+      *All four reviewed, zero tunes: spiral wisps weave the disk,
+      barred's amber hugs the bar ("funnels gas inward" made visible),
+      elliptical barely-there halo, irregular Magellanic pink-teal
+      patchwork.*
+- [x] G2-33 Both backends: zero errors, frozen diffs.
+      *Parity 0.010–0.015/255, ≤0.02% px>8 with the veil on; zero
+      errors.*
+- [x] G2-34 Perf: fullscreen fbm cost measured (watch class-③ territory);
+      drop octaves if the frame budget complains.
+      *It complained loudly and got two rounds of cuts: v1 (warp() + fbm
+      = 4 fbm evals, full-bleed plane) → **15 fps**; v2 (2 evals,
+      geometry shrunk to the veil disc so dead fragments stop paying) →
+      25.5; v3 (3 octaves total, radius 1.2×) → **33.1/30.1 fps**.
+      Veil visual quality held (soft clouds are honest for gas).
+      Recorded future fix: the veil is static modulo slow drift — bake
+      it to a small texture at type-switch time (G3 candidate, near-free
+      at runtime).*
+
+## E — integration + polish
+
+- [ ] G2-35 galaxyData cfg era update: per-type shader params (arms,
+      twist, temp distribution, density, nebula palette) — copy/facts
+      untouched, cfg becomes the single source the uniforms read.
+- [ ] G2-36 Galaxy view UX regression: HUD, nav, view switcher, camera
+      numbers all unchanged; `?freeze` covers every animated term
+      (twinkle, nebula drift).
+- [ ] G2-37 README + VENDORED notes: the galaxies-go-TSL story, new
+      vendored nodes listed.
+
+## F — verification + close-out
+
+- [ ] G2-38 Full harness in the real app: 4 types × 2 backends (frozen
+      diffs, errors, screenshots) + galaxy↔planets switcher regression +
+      FPS vs all prior baselines.
+- [ ] G2-39 Tick Phase G2 in TSL-ROADMAP.md with decisions (promotion
+      calls, morph scope, nebula layering).
+- [ ] G2-40 Commit Phase G2 on main (upstream candidate commits in
+      ../tsl-lib remain yours).
