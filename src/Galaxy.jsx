@@ -1,7 +1,15 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { PointsNodeMaterial } from 'three/webgpu'
+import { instancedBufferAttribute, texture, vec4 } from 'three/tsl'
 import { generateGalaxy } from './galaxyData'
+
+// Dev flag ?freeze stops the spin so renders are deterministic — needed
+// for pixel-level parity checks between backends.
+const FROZEN =
+  import.meta.env.DEV &&
+  new URLSearchParams(window.location.search).has('freeze')
 
 // Soft round star sprite, generated once on the client.
 function useStarTexture() {
@@ -23,39 +31,42 @@ function useStarTexture() {
   }, [])
 }
 
+// WebGPU can't size point primitives (always 1px), so the node pipeline
+// renders sized/textured "points" as instanced sprites instead:
+// Sprite + PointsNodeMaterial with per-instance position/color attributes.
+// This is also the base G2 builds on (per-star TSL color, twinkle, discs).
 export default function Galaxy({ type }) {
   const ref = useRef()
   const star = useStarTexture()
-  const { positions, colors } = useMemo(
-    () => generateGalaxy(type.cfg),
-    [type],
-  )
+
+  const sprite = useMemo(() => {
+    const { positions, colors } = generateGalaxy(type.cfg)
+    const posAttr = new THREE.InstancedBufferAttribute(positions, 3)
+    const colAttr = new THREE.InstancedBufferAttribute(colors, 3)
+
+    const mat = new PointsNodeMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      sizeAttenuation: true,
+      size: 0.09,
+    })
+    mat.positionNode = instancedBufferAttribute(posAttr)
+    const tex = texture(star)
+    mat.colorNode = vec4(tex.rgb.mul(instancedBufferAttribute(colAttr)), tex.a)
+
+    const s = new THREE.Sprite(mat)
+    s.count = positions.length / 3
+    s.frustumCulled = false
+    return s
+  }, [type, star])
+
+  useEffect(() => () => sprite.material.dispose(), [sprite])
 
   // Slow differential-ish spin — the whole disk turns.
   useFrame((_, dt) => {
-    if (ref.current) ref.current.rotation.y += dt * 0.05
+    if (ref.current && !FROZEN) ref.current.rotation.y += dt * 0.05
   })
 
-  // key={type.id} remounts the geometry when the galaxy class changes.
-  return (
-    <points ref={ref} key={type.id} rotation={[0.32, 0, 0]}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[positions, 3]}
-        />
-        <bufferAttribute attach="attributes-color" args={[colors, 3]} />
-      </bufferGeometry>
-      <pointsMaterial
-        size={0.09}
-        sizeAttenuation
-        map={star}
-        alphaMap={star}
-        transparent
-        depthWrite={false}
-        blending={THREE.AdditiveBlending}
-        vertexColors
-      />
-    </points>
-  )
+  return <primitive ref={ref} object={sprite} rotation={[0.32, 0, 0]} />
 }

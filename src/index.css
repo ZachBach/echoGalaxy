@@ -24,6 +24,35 @@ body {
   height: 100vh;
 }
 
+.boot {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #02030a;
+  font-family: ui-monospace, "SFMono-Regular", monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #5c6889;
+  pointer-events: none;
+}
+
+.backend-badge {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  font-family: ui-monospace, "SFMono-Regular", monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #7d8bb0;
+  border: 1px solid #2a3350;
+  border-radius: 6px;
+  padding: 4px 8px;
+  pointer-events: none;
+}
+
 .hud {
   position: absolute;
   left: 24px;

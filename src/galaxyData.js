@@ -95,14 +95,27 @@ export const GALAXY_TYPES = [
   },
 ]
 
+// Deterministic PRNG (mulberry32) — the same galaxy on every load, so
+// visuals are stable per type and cross-backend renders are comparable
+// pixel for pixel.
+function mulberry32(seed) {
+  let a = seed >>> 0
+  return function () {
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
 // Roughly bell-shaped random in [-1, 1].
-function gauss() {
-  return (Math.random() + Math.random() + Math.random() - 1.5) / 1.5
+function gauss(rnd) {
+  return (rnd() + rnd() + rnd() - 1.5) / 1.5
 }
 
 // Cubic-biased jitter that keeps most particles tight to the arm.
-function jitter(scale) {
-  return Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * scale
+function jitter(rnd, scale) {
+  return Math.pow(rnd(), 3) * (rnd() < 0.5 ? 1 : -1) * scale
 }
 
 /**
@@ -121,8 +134,10 @@ export function generateGalaxy(cfg) {
     bar = 0.4,
     coreColor = '#ffd9a0',
     armColor = '#4a7dff',
+    seed = 20260729,
   } = cfg
 
+  const rnd = mulberry32(seed)
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
   const cCore = new THREE.Color(coreColor)
@@ -138,8 +153,8 @@ export function generateGalaxy(cfg) {
 
     if (type === 'elliptical') {
       // Dense-cored 3-D ellipsoid; no arms.
-      const r = Math.pow(Math.random(), 2) * radius
-      const dir = new THREE.Vector3(gauss(), gauss() * 0.72, gauss() * 0.86)
+      const r = Math.pow(rnd(), 2) * radius
+      const dir = new THREE.Vector3(gauss(rnd), gauss(rnd) * 0.72, gauss(rnd) * 0.86)
       if (dir.lengthSq() < 1e-6) dir.set(0, 0.001, 0)
       dir.normalize().multiplyScalar(r)
       x = dir.x
@@ -149,31 +164,31 @@ export function generateGalaxy(cfg) {
     } else if (type === 'irregular') {
       // A handful of star-forming clumps loosely strewn about.
       const clumps = 5
-      const c = Math.floor(Math.random() * clumps)
-      const ca = (c / clumps) * Math.PI * 2 + gauss() * 0.4
+      const c = Math.floor(rnd() * clumps)
+      const ca = (c / clumps) * Math.PI * 2 + gauss(rnd) * 0.4
       const cr = radius * (0.25 + 0.4 * ((c % 3) / 2))
-      x = Math.cos(ca) * cr + gauss() * radius * 0.32
-      z = Math.sin(ca) * cr + gauss() * radius * 0.32
-      y = gauss() * thickness * 1.6
+      x = Math.cos(ca) * cr + gauss(rnd) * radius * 0.32
+      z = Math.sin(ca) * cr + gauss(rnd) * radius * 0.32
+      y = gauss(rnd) * thickness * 1.6
       t = Math.min(1, Math.hypot(x, z) / radius)
     } else {
       // Spiral / barred spiral.
-      const r = Math.pow(Math.random(), 0.7) * radius
+      const r = Math.pow(rnd(), 0.7) * radius
       const branch = ((i % arms) / arms) * Math.PI * 2
 
       if (type === 'barred' && r < radius * bar) {
         // Inner region is a straight bar along one axis.
         const end = branch < Math.PI ? 0 : Math.PI
-        x = Math.cos(end) * r + jitter(randomness * radius * 0.25)
-        z = Math.sin(end) * r * 0.22 + gauss() * randomness * 0.9
-        y = gauss() * thickness
+        x = Math.cos(end) * r + jitter(rnd, randomness * radius * 0.25)
+        z = Math.sin(end) * r * 0.22 + gauss(rnd) * randomness * 0.9
+        y = gauss(rnd) * thickness
         t = r / radius
       } else {
         const angle = branch + r * spin
         const rr = randomness * r
-        x = Math.cos(angle) * r + jitter(rr)
-        z = Math.sin(angle) * r + jitter(rr)
-        y = gauss() * thickness * (1 - (r / radius) * 0.5)
+        x = Math.cos(angle) * r + jitter(rnd, rr)
+        z = Math.sin(angle) * r + jitter(rnd, rr)
+        y = gauss(rnd) * thickness * (1 - (r / radius) * 0.5)
         t = r / radius
       }
     }

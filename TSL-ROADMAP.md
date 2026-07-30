@@ -19,19 +19,42 @@ registered before it counts as done.** The library grows with the universe.
 - Educational mission first: every visual ships with a HUD fact. Keep it
   free, keep it light, keep it separate from the business projects.
 
-## Phase G0 — plumbing (the WebGPU bridge)
+## Phase G0 — plumbing (the WebGPU bridge) ✅ 2026-07-29
 
-- [ ] WebGPURenderer in R3F v9: `gl` async factory (`three/webgpu`,
+Task-level detail and evidence live in TODOS.md (G0-01..40).
+
+- [x] WebGPURenderer in R3F v9: `gl` async factory (`three/webgpu`,
   `await renderer.init()`), WebGL2 auto-fallback — same dual-backend story
   the library is verified for.
-- [ ] Bloom decision: current `@react-three/postprocessing` is WebGL-only.
+  *`src/renderer.js`. Fallback is three's own (no app code); test flags
+  `?backend=webgl` (forceWebGL) and `?simulate-no-webgpu` (dev, hides the
+  adapter — same trick as the upstream bench, ledger entry 4). Dev badge
+  shows the active backend. Cross-backend parity: channel means identical
+  to ±0.01 on all four galaxy types; WebGPU ~20% faster headless.*
+- [x] Bloom decision: current `@react-three/postprocessing` is WebGL-only.
   Replace with three/webgpu's own PostProcessing + bloom node (preferred) or
   gate bloom to the WebGL path during transition.
-- [ ] `scripts/sync-tsl-lib.mjs` + first vendored copy; smoke: v0.1 galaxy
+  *Preferred path taken — no gating needed; the old composer hard-crashes
+  the Canvas under WebGPURenderer, so it's gone entirely. Note: r183
+  renamed PostProcessing → `RenderPipeline`, and `bloom` is an addon
+  (`three/addons/tsl/display/BloomNode.js`) speaking strength/radius/
+  threshold — tuned to 0.55/0.25/0.04 in `src/Effects.jsx` to match the
+  old look. Runs on both backends, numerically equivalent.*
+- [x] `scripts/sync-tsl-lib.mjs` + first vendored copy; smoke: v0.1 galaxy
   renders unchanged under WebGPURenderer on both backends.
-- [ ] Version-portability smoke: a test scene cycling library nodes (fbm,
+  *"Unchanged" needed one structural fix: WebGPU can't size point
+  primitives, so `<points>` drew nothing — the galaxy is now instanced
+  sprites (`Sprite` + `PointsNodeMaterial`), which is also G2's base
+  (ledger entry 6). Sync grew into a full vendor gate: `npm run sync:tsl`
+  = sync → self-containment + TSL-surface checks → 26-entry runtime smoke
+  → build, upstream commit stamped in VENDORED.md.*
+- [x] Version-portability smoke: a test scene cycling library nodes (fbm,
   worley, fresnel, trigLattice, curtain) on r184 — divergences → upstream
   ledger.
+  *`?lab=1` (dev-only) cycles all 26 gallery entries, not just the five —
+  zero errors, zero dark renders on both backends. Verdict recorded
+  upstream (BACKEND-NOTES.md "Version portability"): **r184 clean, no
+  library-code changes** — the dependency-injection design paid off.*
 
 ## Phase G1 — planets (mostly already in the library)
 
