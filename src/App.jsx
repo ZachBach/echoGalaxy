@@ -11,9 +11,31 @@ import { createSkybox, bakeSkybox } from './skybox'
 import { GALAXY_TYPES } from './galaxyData'
 import { PLANET_TYPES } from './planetData'
 import { createRenderer, backendName } from './renderer'
+import CaptureRig from './capture/CaptureRig'
+import { shotById, ASPECTS } from './capture/shots'
 
 const params = new URLSearchParams(window.location.search)
 const FROZEN = import.meta.env.DEV && params.has('freeze')
+
+// Capture mode: ?capture=<shotId>&aspect=4x5&fps=60
+// Dev only. Pins the rung and object index, hands the camera to the rig,
+// and steps the frame loop by hand.
+const CAPTURE = import.meta.env.DEV ? shotById(params.get('capture')) : null
+const CAPTURE_FPS = Number(params.get('fps')) || 60
+const CAPTURE_SIZE = ASPECTS[params.get('aspect') ?? '4x5'] ?? ASPECTS['4x5']
+
+// Capture determinism: three's core Timer captures performance.now() at
+// renderer creation (`_startTime`) and reads it on every node-frame
+// update — TSL.time therefore runs on wall clock no matter what the R3F
+// clock does. Patch it at MODULE scope, before the renderer or any bake
+// exists, so the veil/sky bakes and every animated material live on one
+// fixed timeline that CaptureRig advances frame by frame. (Found by
+// capturing the same shot twice and diffing hashes — the twinkle and the
+// veil bake drifted on wall time.)
+if (CAPTURE) {
+  window.__captureClock = { t: 0 }
+  performance.now = () => window.__captureClock.t
+}
 
 // The scale journey (G3-28): four rungs, one state machine. Each rung
 // carries its scene, camera framing, controls range, skybox radius, and
@@ -26,6 +48,10 @@ const SCALES = [
 ]
 
 function initialScale() {
+  if (CAPTURE) {
+    const c = SCALES.findIndex((s) => s.id === CAPTURE.scale)
+    if (c !== -1) return c
+  }
   const i = SCALES.findIndex((s) => s.id === params.get('scale'))
   if (i !== -1) return i
   if (params.get('view') === 'planets') return 0 // legacy links keep working
@@ -77,8 +103,12 @@ function ZoomThrough({ scale, onShift }) {
 
 export default function App() {
   const [scale, setScale] = useState(initialScale)
-  const [galaxyIndex, setGalaxyIndex] = useState(0)
-  const [planetIndex, setPlanetIndex] = useState(0)
+  const [galaxyIndex, setGalaxyIndex] = useState(
+    CAPTURE?.scale === 'galaxy' ? (CAPTURE.index ?? 0) : 0,
+  )
+  const [planetIndex, setPlanetIndex] = useState(
+    CAPTURE?.scale === 'planet' ? (CAPTURE.index ?? 0) : 0,
+  )
   // The renderer, captured once init() has resolved — backend identity is
   // only final after that, so all backend reads go through this state.
   const [gl, setGl] = useState(null)
@@ -134,7 +164,14 @@ export default function App() {
   const go = (delta) => setIndex?.((i) => (i + delta + list.length) % list.length)
 
   return (
-    <div className="app">
+    <div
+      className="app"
+      style={
+        CAPTURE
+          ? { width: CAPTURE_SIZE.w, height: CAPTURE_SIZE.h }
+          : undefined
+      }
+    >
       <Canvas
         gl={createRenderer}
         onCreated={(state) => {
@@ -143,11 +180,12 @@ export default function App() {
           bakeSkybox(skybox, state.gl, { frozen: FROZEN })
         }}
         camera={{ position: SCALES[2].camera, fov: 55 }}
-        dpr={[1, 2]}
+        dpr={CAPTURE ? 1 : [1, 2]}
+        frameloop={CAPTURE ? 'never' : 'always'}
       >
         <color attach="background" args={['#02030a']} />
-        <ViewRig scale={scale} />
-        <ZoomThrough scale={scale} onShift={shiftScale} />
+        {!CAPTURE && <ViewRig scale={scale} />}
+        {!CAPTURE && <ZoomThrough scale={scale} onShift={shiftScale} />}
         <primitive object={skybox} />
         {rung.id === 'planet' &&
           (info.star ? (
@@ -172,15 +210,30 @@ export default function App() {
           rotateSpeed={0.5}
         />
         <Effects />
+        {CAPTURE && (
+          <CaptureRig
+            shot={CAPTURE}
+            fps={CAPTURE_FPS}
+            width={CAPTURE_SIZE.w}
+            height={CAPTURE_SIZE.h}
+          />
+        )}
       </Canvas>
 
-      {!gl && <div className="boot">initializing renderer…</div>}
-      <div className={'scale-fade' + (fading ? ' active' : '')} />
+      {!CAPTURE && !gl && <div className="boot">initializing renderer…</div>}
+      {!CAPTURE && <div className={'scale-fade' + (fading ? ' active' : '')} />}
 
-      {import.meta.env.DEV && gl && (
+      {!CAPTURE && import.meta.env.DEV && gl && (
         <div className="backend-badge">{backendName(gl)}</div>
       )}
 
+      {CAPTURE && (
+        <div className="hud">
+          <div className="kicker">capture · {CAPTURE.id} · click to choose the frames folder</div>
+        </div>
+      )}
+
+      {!CAPTURE && (
       <div className="hud">
         <div className="views">
           {SCALES.map((s, i) => (
@@ -215,6 +268,7 @@ export default function App() {
           drag to orbit · scroll to zoom · zoom past the edge to change scale
         </div>
       </div>
+      )}
     </div>
   )
 }

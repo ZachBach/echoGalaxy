@@ -24,6 +24,12 @@ body {
   height: 100vh;
 }
 
+/* capture mode sizes .app to the delivery resolution — let the page
+   scroll instead of clipping it */
+body:has(.app[style*='width']) {
+  overflow: auto;
+}
+
 .boot {
   position: absolute;
   inset: 0;
