@@ -20,48 +20,145 @@ import {
 // uniforms; the B-section compute bake's one-shared-buffer design
 // doesn't extend to concurrent members, and at this budget it wouldn't
 // pay anyway). Nebula veils are skipped at group distance.
-const MEMBERS = [
+export const MEMBERS = [
   {
     id: 'milkyway',
     cfg: { type: 'barred', count: 8000, arms: 2, spin: 1.05, radius: 8, bar: 0.42, randomness: 0.28, thickness: 0.34, tempCore: 4000, tempRim: 10000 },
     pos: [-8, 0, 10],
     rot: [0.35, 0.4, 0.1],
+    info: {
+      name: 'Milky Way', label: 'Barred spiral · home',
+      description:
+        'Our galaxy, seen from a vantage point no camera will ever reach. ' +
+        'Somewhere in one of those outer arms, two-thirds of the way from ' +
+        'the center, is the Sun — and everyone you have ever met.',
+      facts: [
+        'It holds 100–400 billion stars — count one per second and you’d ' +
+          'need over 3,000 years for the low estimate.',
+        'At its heart sits Sagittarius A*, a black hole of 4 million solar ' +
+          'masses.',
+        'The Sun has completed only ~20 laps of the galaxy in its whole ' +
+          '4.6-billion-year life — one orbit takes about 230 million years.',
+      ],
+    },
   },
   {
     id: 'andromeda',
     cfg: { type: 'spiral', count: 9000, arms: 2, spin: 1.3, radius: 9, randomness: 0.3, thickness: 0.36, tempCore: 4300, tempRim: 10500 },
     pos: [16, 4, -10],
     rot: [1.15, -0.3, 0.35],
+    info: {
+      name: 'Andromeda (M31)', label: 'Spiral · 2.5 million light-years',
+      description:
+        'The Milky Way’s big sibling and its destiny: the two spirals are ' +
+        'falling toward each other and will merge into one giant galaxy in ' +
+        'roughly 4.5 billion years.',
+      facts: [
+        'It is the farthest thing human eyes can see unaided — a smudge of ' +
+          'light that left home 2.5 million years ago.',
+        'It holds roughly a trillion stars — a few times our own count.',
+        'Its light is blueshifted: unlike almost everything else in the ' +
+          'sky, it is coming TOWARD us at ~110 km/s.',
+      ],
+    },
   },
   {
     id: 'triangulum',
     cfg: { type: 'spiral', count: 3000, arms: 3, spin: 1.4, radius: 4, randomness: 0.34, thickness: 0.3, tempCore: 5000, tempRim: 11500 },
     pos: [24, -2, 2],
     rot: [0.5, 0.9, -0.2],
+    info: {
+      name: 'Triangulum (M33)', label: 'Spiral · the Group’s third giant',
+      description:
+        'The third-largest galaxy in the Local Group — a loose, star-forming ' +
+        'spiral riding near Andromeda, and possibly its satellite.',
+      facts: [
+        'About 40 billion stars — a tenth of the Milky Way’s count.',
+        'It hosts one of the largest star-forming regions in the entire ' +
+          'Local Group, NGC 604.',
+        'It may already be gravitationally bound to Andromeda — a giant ' +
+          'with a giant moon.',
+      ],
+    },
   },
   {
     id: 'lmc',
     cfg: { type: 'irregular', count: 1200, radius: 2, thickness: 0.5, tempCore: 6500, tempRim: 12000 },
     pos: [-4.5, -2.5, 13.5],
     rot: [0.2, 0, 0.4],
+    info: {
+      name: 'Large Magellanic Cloud', label: 'Irregular · our closest big neighbour',
+      description:
+        'A ragged satellite galaxy orbiting the Milky Way, close enough to ' +
+        'see with the naked eye from the southern hemisphere — a bright ' +
+        'cloud that never moves with the weather.',
+      facts: [
+        'Home to the Tarantula Nebula, the most furious star factory in ' +
+          'the Local Group.',
+        'Supernova 1987A exploded here — the closest supernova seen since ' +
+          'telescopes were invented.',
+        'It sits about 160,000 light-years away — next door, as galaxies go.',
+      ],
+    },
   },
   {
     id: 'smc',
     cfg: { type: 'irregular', count: 800, radius: 1.4, thickness: 0.5, tempCore: 6800, tempRim: 12500 },
     pos: [-3, -3.5, 16],
     rot: [0.6, 0.3, 0],
+    info: {
+      name: 'Small Magellanic Cloud', label: 'Irregular · the LMC’s companion',
+      description:
+        'The Large Cloud’s smaller partner, torn and stretched by the ' +
+        'gravity of both its sibling and the Milky Way.',
+      facts: [
+        'A bridge of gas — the Magellanic Bridge — physically connects it ' +
+          'to the Large Cloud: galaxies holding hands.',
+        'Studying its pulsing stars is how astronomers first learned to ' +
+          'measure distances across the universe.',
+        'The Milky Way is slowly pulling both Clouds apart — in a few ' +
+          'billion years they will be absorbed.',
+      ],
+    },
   },
   {
     id: 'm32',
     cfg: { type: 'elliptical', count: 1000, radius: 1.3, thickness: 0.4, tempCore: 3900, tempRim: 3300 },
     pos: [14.5, 5.5, -8],
     rot: [0, 0, 0],
+    info: {
+      name: 'M32', label: 'Compact elliptical · Andromeda’s satellite',
+      description:
+        'A dense little ball of old stars pressed against Andromeda’s disc. ' +
+        'It may be the surviving core of a much larger galaxy that Andromeda ' +
+        'stripped bare.',
+      facts: [
+        'One of the densest galaxies known — millions of stars crammed ' +
+          'into a space our neighbourhood would fit thousands in.',
+        'Its missing outer layers are the evidence: galaxies EAT each other.',
+        'You saw it in this scene before you knew its name — the bright dot ' +
+          'against Andromeda’s disc.',
+      ],
+    },
   },
   {
     id: 'm110',
     cfg: { type: 'elliptical', count: 1000, radius: 1.6, thickness: 0.4, tempCore: 3800, tempRim: 3200 },
     pos: [18.5, 2, -13],
     rot: [0.3, 0, 0.5],
+    info: {
+      name: 'M110', label: 'Dwarf elliptical · Andromeda’s satellite',
+      description:
+        'Andromeda’s other close companion — a soft, spread-out swarm of ' +
+        'old stars on the far side of the great spiral from M32.',
+      facts: [
+        'A “dwarf” that still holds around 10 billion stars.',
+        'Unusually for an elliptical, it shows traces of recent star ' +
+          'formation — a small mystery.',
+        'Charles Messier drew it in 1773 but never gave it a number; it ' +
+          'joined his catalogue two centuries late, in 1967.',
+      ],
+    },
   },
 ]
 

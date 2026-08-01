@@ -91,9 +91,15 @@ every `TSL.<member>` the library touches exists in the installed three),
 material), then a production build. `src/tsl-lib/VENDORED.md` records the
 upstream commit of the current copy.
 
-## Roadmap ideas
+## Ideas for future voyages
 
-- Real catalogue objects (Messier / NGC) with imagery, distances, and redshift.
-- Scale context — zoom from planet → star → galaxy → cluster → cosmic web.
+The original roadmap (see `TSL-ROADMAP.md`) is complete — scale context
+shipped as the four-rung journey, and the System/Local Group rungs now
+have member focus (click through to Andromeda, the Magellanic Clouds,
+each orbiting world). Still open:
+
+- Real catalogue imagery (Messier / NGC) mapped via `latlonUv`, with
+  distances and redshift.
+- Galaxy-type morphing — a continuous crossfade between Hubble classes.
 - Star lifecycle / stellar-nursery mode.
 - Guided tours and a search box for named objects.

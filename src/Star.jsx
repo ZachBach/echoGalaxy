@@ -34,6 +34,8 @@ export const STAR_INFO = {
     'nuclei together into helium — nuclear fusion. The energy released ' +
     'holds the star up against collapse and lights everything around it.',
   facts: [
+    'How big is a star? If the Sun were a bowling ball, Earth would be a ' +
+      'peppercorn beside it — about 1.3 million Earths would fit inside.',
     'A star’s color IS its temperature: red ≈ 3,000 K, our sun’s ' +
       'white-yellow ≈ 5,800 K, blue giants pass 20,000 K — the same ' +
       'blackbody physics as a heating iron bar.',

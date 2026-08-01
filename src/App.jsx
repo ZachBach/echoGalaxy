@@ -1,11 +1,12 @@
-import { Canvas, useThree } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Vector3 } from 'three'
 import Galaxy from './Galaxy'
 import Planet from './Planet'
 import Star from './Star'
-import System, { SYSTEM_INFO } from './System'
-import LocalGroup, { GROUP_INFO } from './LocalGroup'
+import System, { SYSTEM_INFO, ORBITS, orbitPosition } from './System'
+import LocalGroup, { GROUP_INFO, MEMBERS } from './LocalGroup'
 import Effects from './Effects'
 import { createSkybox, bakeSkybox } from './skybox'
 import { GALAXY_TYPES } from './galaxyData'
@@ -71,6 +72,54 @@ function ViewRig({ scale }) {
   return null
 }
 
+// Member focus (post-roadmap): snaps the camera to a focused body and,
+// for orbiting bodies, follows it — the controls target rides the orbit
+// so drag/zoom stay natural around a moving world. Runs after ViewRig in
+// the tree, so on rung entry the persisted focus wins over the default
+// framing.
+function FocusRig({ scale, focus }) {
+  const camera = useThree((s) => s.camera)
+  const controls = useThree((s) => s.controls)
+  const clock = useThree((s) => s.clock)
+  const scratch = useMemo(() => new Vector3(), [])
+
+  useEffect(() => {
+    if (!controls) return
+    let target = [0, 0, 0]
+    let dist = null
+    if (focus?.kind === 'static') {
+      target = focus.pos
+      dist = focus.dist
+    } else if (focus?.kind === 'orbit') {
+      const p = orbitPosition(focus.orbit, FROZEN ? 0 : clock.elapsedTime, scratch)
+      target = [p.x, p.y, p.z]
+      dist = focus.dist
+    }
+    controls.target.set(...target)
+    if (dist == null) {
+      camera.position.set(...SCALES[scale].camera)
+    } else {
+      camera.position.set(
+        target[0] + dist * 0.22,
+        target[1] + dist * 0.36,
+        target[2] + dist * 0.9,
+      )
+    }
+    camera.lookAt(controls.target)
+    controls.update()
+  }, [scale, focus, camera, controls, clock, scratch])
+
+  useFrame(() => {
+    if (focus?.kind !== 'orbit' || !controls || FROZEN) return
+    const delta = orbitPosition(focus.orbit, clock.elapsedTime, scratch).sub(
+      controls.target,
+    )
+    controls.target.add(delta)
+    camera.position.add(delta)
+  })
+  return null
+}
+
 // G3-30: zoom-through — scrolling out while parked at the controls'
 // outer stop climbs a rung; scrolling in at the inner stop descends.
 // Debounced so one wheel gesture moves one rung.
@@ -109,6 +158,8 @@ export default function App() {
   const [planetIndex, setPlanetIndex] = useState(
     CAPTURE?.scale === 'planet' ? (CAPTURE.index ?? 0) : 0,
   )
+  const [systemIndex, setSystemIndex] = useState(0)
+  const [groupIndex, setGroupIndex] = useState(0)
   // The renderer, captured once init() has resolved — backend identity is
   // only final after that, so all backend reads go through this state.
   const [gl, setGl] = useState(null)
@@ -140,25 +191,52 @@ export default function App() {
     setTimeout(() => setFading(false), 260)
   }
 
-  // The facts ladder (G3-33): every rung feeds the same HUD skeleton.
+  // The facts ladder (G3-33) + member focus: every rung feeds the same
+  // HUD skeleton, and every rung now has a cycle — the system and group
+  // rungs lead with their overview, then focus each body in turn.
+  const starEntry = PLANET_TYPES.find((t) => t.star)
+  const systemList = useMemo(
+    () => [SYSTEM_INFO, starEntry, ...ORBITS.map((o) => o.info)],
+    [starEntry],
+  )
+  const groupList = useMemo(() => [GROUP_INFO, ...MEMBERS.map((m) => m.info)], [])
+
   let info
-  let list = null
-  let index = 0
-  let setIndex = null
+  let list
+  let index
+  let setIndex
   if (rung.id === 'planet') {
     list = PLANET_TYPES
     index = planetIndex
     setIndex = setPlanetIndex
-    info = list[index]
   } else if (rung.id === 'galaxy') {
     list = GALAXY_TYPES
     index = galaxyIndex
     setIndex = setGalaxyIndex
-    info = list[index]
   } else if (rung.id === 'system') {
-    info = SYSTEM_INFO
+    list = systemList
+    index = systemIndex
+    setIndex = setSystemIndex
   } else {
-    info = GROUP_INFO
+    list = groupList
+    index = groupIndex
+    setIndex = setGroupIndex
+  }
+  info = list[index]
+
+  // Camera focus target for the focused entry (null = overview framing).
+  let focus = null
+  if (rung.id === 'group' && groupIndex > 0) {
+    const m = MEMBERS[groupIndex - 1]
+    const r = m.cfg.radius ?? 2
+    focus = { kind: 'static', pos: m.pos, dist: r * 2.6, min: r * 0.9 }
+  } else if (rung.id === 'system' && systemIndex > 0) {
+    if (systemIndex === 1) {
+      focus = { kind: 'static', pos: [0, 0, 0], dist: 4.4, min: 1.8 }
+    } else {
+      const o = ORBITS[systemIndex - 2]
+      focus = { kind: 'orbit', orbit: o, dist: o.size * 7.5, min: o.size * 2.5 }
+    }
   }
 
   const go = (delta) => setIndex?.((i) => (i + delta + list.length) % list.length)
@@ -185,7 +263,10 @@ export default function App() {
       >
         <color attach="background" args={['#02030a']} />
         {!CAPTURE && <ViewRig scale={scale} />}
-        {!CAPTURE && <ZoomThrough scale={scale} onShift={shiftScale} />}
+        {!CAPTURE && <FocusRig scale={scale} focus={focus} />}
+        {/* zoom-through suspends while focused: focus zoom ranges sit
+            below the rung's stops and would false-trigger a descent */}
+        {!CAPTURE && !focus && <ZoomThrough scale={scale} onShift={shiftScale} />}
         <primitive object={skybox} />
         {rung.id === 'planet' &&
           (info.star ? (
@@ -205,7 +286,7 @@ export default function App() {
         <OrbitControls
           makeDefault
           enablePan={false}
-          minDistance={rung.min}
+          minDistance={focus?.min ?? rung.min}
           maxDistance={rung.max}
           rotateSpeed={0.5}
         />

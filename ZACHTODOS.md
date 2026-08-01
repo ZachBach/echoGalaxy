@@ -60,12 +60,18 @@ eyes, or your accounts. Ordered by dependency.
 
 ## Parked ideas (post-roadmap, whenever a new voyage calls)
 
-- [ ] Member-focus nav on the System/Local Group rungs (click Andromeda,
-      get Andromeda's facts).
+- [x] Member-focus nav on the System/Local Group rungs — SHIPPED: both
+      rungs now cycle overview → each body (8 group entries with real
+      facts for the Milky Way, Andromeda, Triangulum, LMC, SMC, M32,
+      M110; 6 system entries with an orbit-following camera). Bonus per
+      the father's suggestion: a child-scale fact on the star — if the
+      Sun were a bowling ball, Earth would be a peppercorn; 1.3 million
+      Earths fit inside.
 - [ ] Galaxy type morph/crossfade (needs a single cross-family shader
       graph — parked in G2-17).
 - [ ] Real catalogue imagery (Messier/NGC) mapped via `latlonUv` — the
       original README roadmap idea that's still open.
-- [ ] Refresh the README "roadmap ideas" list — most of it shipped.
+- [x] Refresh the README "roadmap ideas" list — done ("Ideas for future
+      voyages").
 - [ ] Consider writing up the bandedFlow/blackbody promotion story — the
       born-here→bench-gated→synced-back loop is a good engineering tale.
