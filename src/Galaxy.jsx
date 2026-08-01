@@ -7,12 +7,14 @@ import {
   makeGalaxyUniforms,
   applyGalaxyCfg,
   buildGalaxyMaterial,
-  buildGalaxyBake,
+  buildGalaxyMorphBake,
   makeNebulaUniforms,
   applyNebulaCfg,
   buildNebulaMaterial,
   familyOf,
 } from './galaxyShader'
+
+const MORPH_SECONDS = 1.1
 
 // Dev flag ?freeze stops all animation so renders are deterministic —
 // needed for pixel-level parity checks between backends.
@@ -39,12 +41,19 @@ function createGalaxyRig() {
   nebula.rotation.x = -Math.PI / 2
   nebula.renderOrder = -1
 
-  // G3-08: positions bake to a storage buffer via compute, dispatched per
-  // type switch — one baked material serves every family. If compute
-  // fails on a backend, fall back to the live-math per-frame materials.
-  const bake = buildGalaxyBake(uniforms)
+  // G3-08 + morph: positions bake to TWO storage buffers via compute,
+  // ping-ponged per type switch so the material can glide between the
+  // previous and next galaxy (positions, rN, and temperatures all ride
+  // one progress uniform). WebGL2 keeps the live-math instant swap —
+  // its path would need every family's position graph resident at once.
+  const morph = buildGalaxyMorphBake(uniforms)
   let bakedMaterial = null
   let bakeWorks = null // unknown until the first renderer-armed setType
+  let bakedOnce = false
+  let side = 1 // last-written buffer (0 = A, 1 = B)
+  let morphing = false
+  let pendingCount = null
+  let veilTarget = null
 
   // G3-10: veil field baked to a small texture per type switch (RT
   // re-render — no ping-pong involved, works on both backends).
@@ -60,6 +69,8 @@ function createGalaxyRig() {
     sprite,
     nebula,
     setType(cfg, renderer) {
+      const prevCore = uniforms.tempCore.value
+      const prevRim = uniforms.tempRim.value
       applyGalaxyCfg(uniforms, cfg)
       const veilRadius = applyNebulaCfg(nebUniforms, cfg)
       nebula.scale.setScalar(veilRadius)
@@ -93,12 +104,39 @@ function createGalaxyRig() {
       }
       if (bakeWorks !== false && renderer) {
         try {
-          renderer.compute(bake.computes[family])
+          const target = bakedOnce ? 1 - side : side
+          renderer.compute(morph.computes[target][family])
           bakedMaterial ??= buildGalaxyMaterial('baked', uniforms, {
             frozen: FROZEN,
-            bakedBuffer: bake.buffer,
+            morph,
           })
           if (sprite.material !== bakedMaterial) sprite.material = bakedMaterial
+
+          if (!bakedOnce || FROZEN) {
+            // first fill, or deterministic mode: land instantly
+            morph.sideFrom.value = target
+            morph.sideTo.value = target
+            morph.p.value = 1
+            sprite.count = cfg.count ?? 20000
+            morphing = false
+          } else {
+            // glide: previous shape is wherever the mix currently sits
+            morph.sideFrom.value =
+              morph.sideFrom.value +
+              (morph.sideTo.value - morph.sideFrom.value) * morph.p.value
+            morph.sideTo.value = target
+            morph.prevTempCore.value = prevCore
+            morph.prevTempRim.value = prevRim
+            morph.p.value = 0
+            pendingCount = cfg.count ?? 20000
+            sprite.count = Math.max(sprite.count || 0, pendingCount)
+            // veil fades in with the morph instead of popping
+            veilTarget = nebUniforms.strength.value
+            nebUniforms.strength.value = 0
+            morphing = true
+          }
+          side = target
+          bakedOnce = true
           bakeWorks = true
         } catch (err) {
           console.warn('galaxy position bake unavailable — live path:', err.message)
@@ -108,8 +146,21 @@ function createGalaxyRig() {
       if (bakeWorks === false || !renderer) {
         materials[family] ??= buildGalaxyMaterial(family, uniforms, { frozen: FROZEN })
         if (sprite.material !== materials[family]) sprite.material = materials[family]
+        sprite.count = cfg.count ?? 20000
       }
-      sprite.count = cfg.count ?? 20000
+    },
+    // Advances the morph; called from the component's frame loop.
+    tick(dt) {
+      if (!morphing) return
+      morph.p.value = Math.min(1, morph.p.value + dt / MORPH_SECONDS)
+      if (veilTarget != null) nebUniforms.strength.value = veilTarget * morph.p.value
+      if (morph.p.value >= 1) {
+        morphing = false
+        if (pendingCount != null) sprite.count = pendingCount
+        if (veilTarget != null) nebUniforms.strength.value = veilTarget
+        pendingCount = null
+        veilTarget = null
+      }
     },
     dispose() {
       for (const m of Object.values(materials)) m.dispose()
@@ -130,9 +181,11 @@ export default function Galaxy({ type }) {
   useEffect(() => rig.setType(type.cfg, gl), [rig, type, gl])
   useEffect(() => () => rig.dispose(), [rig])
 
-  // Slow differential-ish spin — the whole disk turns.
+  // Slow differential-ish spin — the whole disk turns — plus the morph
+  // progress when a type glide is in flight.
   useFrame((_, dt) => {
     if (ref.current && !FROZEN) ref.current.rotation.y += dt * 0.05
+    rig.tick(dt)
   })
 
   // Nebula first (renderOrder -1, additive) — the stars draw over their

@@ -67,8 +67,13 @@ eyes, or your accounts. Ordered by dependency.
       the father's suggestion: a child-scale fact on the star — if the
       Sun were a bowling ball, Earth would be a peppercorn; 1.3 million
       Earths fit inside.
-- [ ] Galaxy type morph/crossfade (needs a single cross-family shader
-      graph — parked in G2-17).
+- [x] Galaxy type morph/crossfade — SHIPPED (WebGPU): the compute bake's
+      two buffers ping-pong per type switch and the material glides
+      positions, rN, and temperatures over ~1.1 s — stars physically
+      migrate between Hubble classes, the veil fades in alongside.
+      WebGL2 keeps the instant swap (its live path can't afford all
+      families resident); frozen mode snaps for determinism. End state
+      byte-identical (0.000) to the pre-morph app on both backends.
 - [ ] Real catalogue imagery (Messier/NGC) mapped via `latlonUv` — the
       original README roadmap idea that's still open.
 - [x] Refresh the README "roadmap ideas" list — done ("Ideas for future

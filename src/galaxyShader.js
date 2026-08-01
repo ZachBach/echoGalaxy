@@ -189,36 +189,57 @@ export function buildNebulaMaterial(N, { frozen = false, veilTexture = null } = 
 
 export const MAX_GALAXY_COUNT = 24000
 
-// G3-07/08 — the star-position bake: the SAME position expressions,
-// evaluated once per type switch by a compute pass into a vec4 storage
-// array (xyz = position, w = rN) instead of per-vertex per-frame. One
-// buffer serves every family — in baked mode the family lives only in
-// which compute ran last. Reads follow the upstream ledger's entry-1
-// rule: `.toAttribute()` then take `.xyz` before widening.
-export function buildGalaxyBake(U) {
-  const buffer = TSL.instancedArray(MAX_GALAXY_COUNT, 'vec4')
-  const computes = {}
+// G3-07/08 + morph — the star-position bake: the SAME position
+// expressions, evaluated once per type switch by a compute pass into
+// vec4 storage (xyz = position, w = rN) instead of per-vertex per-frame.
+// TWO buffers, ping-ponged per switch, let the material MORPH between
+// the previous and next galaxy: positionNode = mix(bufA, bufB, factor),
+// so the stars physically glide from one shape to the other (the G2-17
+// parked idea, unlocked by the bake architecture). Reads follow the
+// upstream ledger's entry-1 rule: `.toAttribute()` then `.xyz`.
+export function buildGalaxyMorphBake(U) {
+  const bufA = TSL.instancedArray(MAX_GALAXY_COUNT, 'vec4')
+  const bufB = TSL.instancedArray(MAX_GALAXY_COUNT, 'vec4')
+  const computes = { 0: {}, 1: {} }
   for (const family of Object.keys(POSITION)) {
-    computes[family] = TSL.Fn(() => {
-      const h = hashChannels(TSL, TSL.instanceIndex, 12)
-      const { pos, rN } = POSITION[family](h, U)
-      buffer.element(TSL.instanceIndex).assign(TSL.vec4(pos, rN))
-    })().compute(MAX_GALAXY_COUNT)
+    for (const [key, buf] of [[0, bufA], [1, bufB]]) {
+      computes[key][family] = TSL.Fn(() => {
+        const h = hashChannels(TSL, TSL.instanceIndex, 12)
+        const { pos, rN } = POSITION[family](h, U)
+        buf.element(TSL.instanceIndex).assign(TSL.vec4(pos, rN))
+      })().compute(MAX_GALAXY_COUNT)
+    }
   }
-  return { buffer, computes }
+  return {
+    bufA,
+    bufB,
+    computes,
+    // morph state: p runs 0→1 per switch; the buffer mix factor runs
+    // sideFrom→sideTo (0 = bufA, 1 = bufB); colors run prev→current cfg.
+    p: TSL.uniform(1),
+    sideFrom: TSL.uniform(1),
+    sideTo: TSL.uniform(1),
+    prevTempCore: TSL.uniform(4500),
+    prevTempRim: TSL.uniform(9000),
+  }
 }
 
-export function buildGalaxyMaterial(family, U, { frozen = false, bakedBuffer = null, sizeScale = 1 } = {}) {
+export function buildGalaxyMaterial(family, U, { frozen = false, morph = null, sizeScale = 1 } = {}) {
   const clock = frozen ? TSL.float(0) : TSL.time
   const h = hashChannels(TSL, TSL.instanceIndex, 12)
 
-  let pos, rN
-  if (bakedBuffer) {
-    const packed = bakedBuffer.toAttribute()
+  let pos, rN, tempCore, tempRim
+  if (morph) {
+    const mixAB = TSL.mix(morph.sideFrom, morph.sideTo, morph.p)
+    const packed = TSL.mix(morph.bufA.toAttribute(), morph.bufB.toAttribute(), mixAB)
     pos = packed.xyz
     rN = packed.w
+    tempCore = TSL.mix(morph.prevTempCore, U.tempCore, morph.p)
+    tempRim = TSL.mix(morph.prevTempRim, U.tempRim, morph.p)
   } else {
     ;({ pos, rN } = POSITION[family](h, U))
+    tempCore = U.tempCore
+    tempRim = U.tempRim
   }
 
   const mat = new PointsNodeMaterial({
@@ -228,7 +249,7 @@ export function buildGalaxyMaterial(family, U, { frozen = false, bakedBuffer = n
     sizeAttenuation: true,
   })
   mat.positionNode = pos
-  mat.colorNode = blackbody(TSL, TSL.mix(U.tempCore, U.tempRim, rN))
+  mat.colorNode = blackbody(TSL, TSL.mix(tempCore, tempRim, rN))
   mat.opacityNode = spriteDisc(TSL, TSL.uv(), { edge: 0.06, core: 0.4 })
     .mul(flicker(TSL, clock, { rate: 1.6, phase: h[11].mul(Math.PI * 2), depth: 0.22 }))
     .mul(densityFalloff(TSL, rN))

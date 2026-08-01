@@ -100,6 +100,9 @@ each orbiting world). Still open:
 
 - Real catalogue imagery (Messier / NGC) mapped via `latlonUv`, with
   distances and redshift.
-- Galaxy-type morphing — a continuous crossfade between Hubble classes.
 - Star lifecycle / stellar-nursery mode.
 - Guided tours and a search box for named objects.
+
+(Galaxy-type morphing shipped: on WebGPU, switching Hubble classes now
+glides every star to its new seat — the Galaxy rung's Prev/Next is the
+demo.)
