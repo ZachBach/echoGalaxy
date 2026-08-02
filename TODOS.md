@@ -1926,5 +1926,9 @@ Roche limit (inside: rings; outside: moons).
       would be an options-soup around four smoothsteps. Single
       consumer, the spiralArm rule, revisit never unless a Uranus/
       Neptune ring family appears. Memory updated.*
-- [ ] SR-16 Commit on main; site redeploy (dist → ../galaxy + Aurelius
+- [x] SR-16 Commit on main; site redeploy (dist → ../galaxy + Aurelius
       commit, both left for the user's push).
+      *`5acf3d8` on main (452 insertions); site redeploy `6879d2b` in
+      the Aurelius repo. Both awaiting the user's push. Note: PC
+      (Pillars) rides in the same deploy if the previous push hasn't
+      happened yet — the bundles are cumulative.*
