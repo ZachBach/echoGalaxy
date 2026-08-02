@@ -1472,5 +1472,8 @@ redshift-space distortion (NED/Wikipedia).
       *Star System bullet grew the God's Hands story (fling → the three
       fates → the dial → the real sky-hands); structure list gains
       orbitPhysics.js.*
-- [ ] GH-16 Commit on main (user pushes; site redeploy needed — this one
+- [x] GH-16 Commit on main (user pushes; site redeploy needed — this one
       changes the production bundle).
+      *`75e9da6` on main; site redeploy committed in the Aurelius repo
+      as `825d5d8` (dist copied to /galaxy/, stale bundles pruned) —
+      both awaiting the user's push. The heavens are in mortal hands.*
