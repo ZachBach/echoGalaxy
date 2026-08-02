@@ -14,6 +14,7 @@ import System, {
   LIVE_BODIES,
   GOD_DIAL,
 } from './System'
+import Pillars, { NEBULA_INFO } from './Pillars'
 import LocalGroup, { GROUP_INFO, MEMBERS } from './LocalGroup'
 import Effects from './Effects'
 import { createSkybox, bakeSkybox } from './skybox'
@@ -52,6 +53,7 @@ if (CAPTURE) {
 const SCALES = [
   { id: 'planet', label: 'Planet', camera: [0, 0.8, 5.6], min: 2.6, max: 12, sky: 60 },
   { id: 'system', label: 'System', camera: [0, 4.5, 11], min: 3, max: 24, sky: 60 },
+  { id: 'nebula', label: 'Nebula', camera: [0, 0.2, 4.6], min: 2.6, max: 9, sky: 60 },
   { id: 'galaxy', label: 'Galaxy', camera: [0, 6, 12], min: 4, max: 28, sky: 60 },
   { id: 'group', label: 'Local Group', camera: [0, 16, 40], min: 12, max: 90, sky: 140 },
 ]
@@ -64,7 +66,9 @@ function initialScale() {
   const i = SCALES.findIndex((s) => s.id === params.get('scale'))
   if (i !== -1) return i
   if (params.get('view') === 'planets') return 0 // legacy links keep working
-  return 2 // galaxy — the app's historical home
+  // the app's historical home — by id, never by index (PC-11: inserting
+  // a rung must not silently move the front door)
+  return SCALES.findIndex((s) => s.id === 'galaxy')
 }
 
 // Repositions the camera when the rung changes (Canvas camera is
@@ -267,12 +271,16 @@ export default function App() {
     list = systemList
     index = systemIndex
     setIndex = setSystemIndex
+  } else if (rung.id === 'nebula') {
+    list = null // one formation, no cycle — the facts ARE the payload
+    index = 0
+    setIndex = null
   } else {
     list = groupList
     index = groupIndex
     setIndex = setGroupIndex
   }
-  info = list[index]
+  info = list ? list[index] : NEBULA_INFO
 
   // GH-12 call: while the god is at work (a body held or off its rail),
   // the info panel becomes the God's Hands payload — the facts arrive at
@@ -350,6 +358,7 @@ export default function App() {
             restoreSignal={restoreCount}
           />
         )}
+        {rung.id === 'nebula' && <Pillars frozen={FROZEN} />}
         {rung.id === 'galaxy' && <Galaxy type={GALAXY_TYPES[galaxyIndex]} />}
         {rung.id === 'group' && <LocalGroup frozen={FROZEN} />}
         <OrbitControls

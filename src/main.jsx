@@ -17,7 +17,9 @@ const Root = devParams?.has('lab')
       ? lazy(() => import('./SystemLab.jsx'))
       : devParams?.has('group')
         ? lazy(() => import('./LocalGroupLab.jsx'))
-        : App
+        : devParams?.has('pillars')
+          ? lazy(() => import('./PillarsLab.jsx'))
+          : App
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

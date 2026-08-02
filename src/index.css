@@ -83,6 +83,7 @@ body:has(.app[style*='width']) {
 
 .hud .views {
   display: flex;
+  flex-wrap: wrap; /* five rungs since PC — the ladder may take two rows */
   gap: 6px;
   margin-bottom: 12px;
   pointer-events: auto;

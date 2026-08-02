@@ -16,6 +16,11 @@ verifiable steps, with evidence recorded per task.
   and the three fates on the System rung; μ = 4π²/K² from the rail
   constant; 21/21 interaction checks × both backends; frozen diffs
   0.0000 throughout; FPS ledger unmoved.
+- **Phase PC — Pillars of Creation: ✅ complete** (2026-08-01) — fifth
+  rung (Nebula) in the scale ladder; raymarched M16 via boot-time
+  z-slice atlas bake (live-noise 2 fps → baked 29+ fps, the G3-10
+  hatch); parity 0.017/255 at baseline; frozen 0.0000; all five rungs
+  green both backends.
 
 # Phase G0: plumbing (the WebGPU bridge) ✅
 
@@ -1477,3 +1482,244 @@ redshift-space distortion (NED/Wikipedia).
       *`75e9da6` on main; site redeploy committed in the Aurelius repo
       as `825d5d8` (dist copied to /galaxy/, stale bundles pruned) —
       both awaiting the user's push. The heavens are in mortal hands.*
+
+# Phase PC: Pillars of Creation (post-roadmap)
+
+18 tasks (PC-01..18). The feature: a fifth rung — Planet → System →
+**Nebula** → Galaxy → Local Group — carrying a raymarched Pillars of
+Creation: three noise-sculpted dust columns, photoevaporation rim glow,
+EGG star-knots at the fingertips. Cashes the README's parked
+"stellar-nursery mode" idea, and completes the scale ladder's yardstick
+story (AU → light-years → kiloparsecs).
+
+Ground truth at init: the G3-28 SCALES machinery is generic (id-keyed
+table + per-rung scene/camera/sky; zoom-through and ?scale= ride the
+array) — **but `initialScale` hard-codes `return 2` for the galaxy home
+rung**: inserting 'nebula' at index 2 silently makes the Pillars the
+default homepage unless the default becomes an id lookup (PC-11).
+Capture shots pin rungs by id — unaffected. Rendering budget lessons in
+force: G2-34 (never pay for dead fragments — bound the volume geometry),
+black hole (cap HDR at the sources, never touch shared bloom), G3-10
+(static content bakes to textures — the escape hatch if marching can't
+hold budget). `TSL.Loop` availability on r184/both backends is assumed
+but NOT yet proven — that proof gates everything (PC-04 before any rung
+work). Library nodes on hand: ridgedFbm (column surfaces), worley
+(EGGs), fbm/curtain/remap/ramp. Facts verified with sources 2026-08-01:
+M16 at ~5,700–7,000 ly in Serpens, pillars 4–5 ly tall, photoevaporation
+by NGC 6611's UV, EGGs (Hubble 1995 / JWST 2022), and the
+destroyed-or-not saga (2007 Spitzer supernova claim → disputed → 2015
+MUSE: intact, eroding slowly, ~3 Myr left).
+
+## A — the volume (density field + lab proof, before any rung exists)
+
+- [x] PC-01 Design before code: the density-field contract — three
+      columns as noise-warped cone SDFs (smooth-union), tallest on the
+      left, tips leaning toward the cluster light (up-left); ridgedFbm
+      surface detail; worley EGG knots at the tips; every animated term
+      from ctx clock (slow drift only — the pillars stand). Light
+      direction, HDR budget, and the march's step/opts surface decided
+      and written as the PC-01 note.
+
+  > **PC-01 design (the contract A/B implement):**
+  > - **Domain**: slab-local = world (the mesh sits at the origin,
+  >   unscaled — the rung frames with the camera, never by transforming
+  >   the volume; keeps the march in world space, no inverse-matrix
+  >   nodes). Bounds x ±1.6, y ±1.5, z ±0.5 — a slab, not a cube: the
+  >   pillars are 2.5D like the photograph, with real depth for
+  >   parallax but a short march.
+  > - **Columns**: per-pillar leaning axis `x_i + lean·(y − y0)`,
+  >   z-squashed radial distance, radius tapering with height + a tip
+  >   knob (the EGG-bearing heads); three pillars — tallest left
+  >   (x −0.85, h 1.45), thin middle, forked-feel right — plus a base
+  >   cloud mass along the bottom. Union by smooth-min.
+  > - **Presence**: SDF shell eroded by ridgedFbm (the crenellated
+  >   edges); interior dust varies by fbm; drift = clock·0.02 on the
+  >   INTERIOR term only — the silhouette never moves, the dust
+  >   breathes.
+  > - **Lighting, one extra tap**: cluster direction L ≈ normalize
+  >   (−0.45, 0.85, 0.25); shade from a single density re-sample at
+  >   p + L·ε using a LITE density (SDF + 1 ridged octave — half cost);
+  >   photoevaporation rim = the positive part of that gradient,
+  >   sharpened. NO second march.
+  > - **Palette (honest, not brand)**: umber dust body, cool teal
+  >   ambient fill on the shadow side, warm ionized rim ≤ HDR 1.4,
+  >   red-amber EGG knots (worleyF1 cells masked to the top ~20% of
+  >   each pillar) ≤ 1.6 — the black-hole HDR discipline.
+  > - **March**: front faces only (controls min distance keeps the
+  >   camera outside), analytic ray-box exit, step = span/N, front-to-
+  >   back accumulation `color += T·shaded·Δ; T ×= exp(−ρσΔ)`, final
+  >   opacity 1−T on NormalBlending — dust OCCLUDES the skybox (not
+  >   additive; the pillars are dark clouds). Early-out via Break if it
+  >   proves portable, else skipped (PC-04 decides).
+  > - **Opts surface**: `{ steps, octaves, frozen, seed }` — steps a
+  >   plain JS number (fixed loop bound per material; the sweep
+  >   rebuilds materials, not uniforms).
+- [x] PC-02 `src/pillarsField.js`: pure node-smokeable module — density
+      + emissive/rim terms per the PC-01 contract, opts (seed, octaves,
+      steps for the march wrapper).
+      *`pillarField` (SDF shell + fingertip mask), `samplePillars`
+      (→ {rho, knot}: one pillarField + ridged(oct) + fbm(2) + worley
+      per call), `densityLite` (half-cost light tap). `seed` dropped —
+      these are THE pillars, a fixed formation, not procedural variety.*
+- [x] PC-03 Node-smoke: the graph builds clean on a node material,
+      frozen and live, before a browser ever sees it.
+      *15/15: TSL surface probe (Loop/Fn/Break/If/cameraPosition/
+      positionWorld/time all present on r184), field graphs build,
+      bake material × 2 octave settings, march material × 3 step
+      counts against a placeholder texture.*
+- [x] PC-04 Lab proof (`?pillars=1` dev route, the G1-09 pattern):
+      raymarched slab via `TSL.Loop`, bounded box geometry — compiles
+      and renders on BOTH backends, zero errors. **This gates the
+      phase**: if Loop misbehaves on either backend, the fallback
+      (sculpted opaque pillars + additive haze shells) activates and is
+      recorded, not improvised.
+      ***GATE PASSED** — Loop compiles and renders on both backends,
+      zero errors, and the frozen volume is deterministic cross-backend
+      to the harness's precision (center means identical: 123.35/123.35
+      live-noise era, 57.52/57.52 baked era). First light was
+      over-exposed (pillars of light, not dust — everything above
+      bloom's 0.04 threshold ignited); corrected toward the dark-cloud
+      character in the lab: albedo halved, rim sharpened (grad³) and
+      height-masked off the base cloud, light tap ε 0.14→0.09.
+      Mesh-fallback never fired.*
+- [x] PC-05 Cost sweep in the lab: steps × octaves grid, FPS at dpr 2
+      with bloom — record the table, pick the budget point (gate: ≥25
+      fps), and note which escape hatch (fewer steps / G3-10 bake)
+      would fire if the scene work in B pushes it under.
+      ***The hatch fired during the sweep, not after**: live-noise march
+      measured 3.0/2.8/2.3/2.0/1.5 fps (steps 10..20 × oct 2..3) — an
+      order of magnitude under the gate; step/octave cuts cannot close
+      12×. **G3-10 bake executed**: the field is static, so it bakes
+      once at boot to a 1280×720 z-slice atlas (40 slices of 160×144,
+      R=density G=knots B=pre-tapped light gradient) via the skybox's
+      QuadMesh→RT pattern — identical TSL noise, march becomes two
+      bilinear taps per step. Post-bake sweep: **steps 14 → 35.2, 20 →
+      28.4, 28 → 26.4 fps WebGPU; chosen point steps=20 runs 35.4 on
+      WebGL2** — a 14× speedup, everything over the gate. Recorded
+      trades: the interior dust drift died with the bake (silhouette
+      was static by design; PC-09 re-scopes), and the atlas resample
+      softens detail slightly (the G3-11 signature; center mean 64.6 →
+      57.5). Determinism now comes free — no clock survives to
+      runtime.*
+
+## B — the scene (Pillars.jsx)
+
+- [x] PC-06 `src/Pillars.jsx`: the bounded volume mesh + material, the
+      cluster as a few bright sprite stars above the frame's shoulder,
+      renderOrder/depth story vs the skybox (behind everything, sky
+      still visible around the columns).
+      *Atlas bakes at mount (one QuadMesh render), march material
+      mounts when ready — a frame of empty sky, never a broken volume.
+      The cluster is seven tiny HDR spheres (blue-white 1.5–1.8 + two
+      warm) placed along LIGHT_DIR above the tips — the stars doing the
+      photoevaporating are the stars you see; bloom turns them into
+      stars. Volume transparent + depthWrite off over the skybox; sky
+      visible around the columns. First cluster pass was sub-pixel
+      (invisible at r 0.014–0.028); radii ×1.6 fixed it.*
+- [x] PC-07 Photoevaporation rim: density-gradient-toward-light term →
+      ionized bright edge, tips hottest; HDR capped at the source so
+      bloom glows without filling the frame (the black-hole rule).
+      *Rim reworked from a wash to an EDGE during the PC-10 pass:
+      `smoothstep(0.35, 0.75, grad)^1.5 × 1.35`, capped 1.25,
+      height-masked off the base cloud. Saturation metric (the G1-28
+      star precedent): **0.000% saturated pixels** on both backends.*
+- [x] PC-08 EGGs: warm emissive worley knots at the fingertips —
+      "stars hatching", subtle, over threshold so bloom finds them.
+      *First pass read as berries — worley window tightened
+      (0.26/0.07 → 0.17/0.045): fewer, smaller freckles of hatching
+      stars confined to the heads, red-amber ≤ 1.6 HDR.*
+- [x] PC-09 Slow drift, frozen-clean: gas breathes on the clock, frozen
+      frames are deterministic (over-time diff 0.000 bar).
+      *Re-scoped after the bake killed the interior fbm drift (recorded
+      PC-05 trade): **the nursery pulses instead** — each EGG breathes
+      on flicker(rate 0.35, depth 0.35) with phase drawn from its own
+      knot value (spatial variety, one sin per step). Proven both ways:
+      frozen over-time diff **exactly 0.0000**, live over-time diff
+      0.0565 (the pulse is alive, confined to the nurseries).*
+- [x] PC-10 Eyeball vs the Hubble/JWST references: the silhouette must
+      read as THE pillars at a glance — three columns, tallest left,
+      fingertips reaching up-left. Tune once, keep screenshots.
+      *One pass, four moves: body to warm umber (0.21/0.145/0.09, shade
+      softened), rim edge-thresholded (PC-07), EGGs thinned (PC-08),
+      base cloud slimmed (smin offset 0.4 → 0.3). After: dark dust
+      lanes across warm columns, cream rims on the lit faces, glowing
+      nurseries in the heads, gold + blue-white cluster stars blooming
+      above — reads as THE pillars against the star field at a glance.
+      Screenshots kept per backend. Scene-assembled FPS: 33.6/29.1/24.0
+      at steps 14/20/28 — the chosen 20 holds the ≥25 gate with the
+      cluster + bloom aboard.*
+
+## C — the fifth rung
+
+- [x] PC-11 SCALES gains 'nebula' between system and galaxy — camera/
+      controls/sky numbers for a ~5 ly subject — **and the home-rung
+      default becomes an id lookup** (the hard-coded `return 2` trap in
+      the ground truth). Fade + zoom-through inherit for free; verify
+      the five-rung climb end to end.
+      *Entry: camera [0, 0.2, 4.6], controls 2.6–9 (min keeps the
+      camera outside the march's bounding slab — the front-face entry
+      assumption), sky 60. Trap defused: default = findIndex by
+      'galaxy' id, and the harness proves it — a bare URL still lands
+      on Spiral Galaxy. Nebula is a no-cycle rung (one formation): the
+      info chain returns NEBULA_INFO directly, nav hides itself. Rung
+      boots on both backends, zero errors.*
+- [x] PC-12 NEBULA_INFO: name/label/description + the four verified
+      facts (the light left before the pyramids; a 4–5 ly pillar dwarfs
+      the whole solar system; the starlight revealing them is boiling
+      them away; the destroyed-or-not saga as a lesson in checking).
+      *Exported from Pillars.jsx (the STAR_INFO pattern); the label
+      carries the distance; the description carries photoevaporation
+      ("creation and destruction, one structure"); the saga fact ends
+      "Science checks its own dramatic claims."*
+- [x] PC-13 URL + capture regression: ?scale= works for all five rungs,
+      legacy ?view=planets still lands on Rocky Planet, existing
+      capture shots unaffected (id-pinned).
+      *Harness 10/10: all five ladder stops sync ?scale= correctly,
+      legacy link lands on Rocky Planet, zero errors through the walk.
+      Capture shots pin by rung id — the insertion moved indices, not
+      ids; CAPTURE's initialScale lookup was already id-based.*
+- [x] PC-14 Ladder UI: five buttons in the .views row — fits, reads,
+      active state correct; eyeball.
+      *.views gains flex-wrap: five rungs take two rows (Local Group
+      wraps) — legible, active state correct, screenshot kept. In the
+      app frame the composition improved on the lab: the cluster stars
+      ride the top edge above the fingertips, pillars fill the sky
+      right of the HUD.*
+
+## D — verification + close-out
+
+- [x] PC-15 Harness: five rungs × both backends boot zero-error; nebula
+      rung frozen-over-time exactly 0.000; frozen cross-backend parity
+      recorded (raymarch AA divergence gets the fresnel-family
+      tolerance, not the 0.000 bar — set the number honestly).
+      *All 10 boots green, correct HUD everywhere. Nebula frozen-over-
+      time **exactly 0.0000** on both backends. The honest number turned
+      out to need no special tolerance: cross-backend parity **0.017/255
+      mean, 0.017% px>8** — the baked-atlas march lands at the app's
+      ordinary galaxy-view baseline (0.010–0.016), because both backends
+      march the same HalfFloat texture rather than re-deriving noise.
+      The bake didn't just buy speed; it bought determinism.*
+- [x] PC-16 FPS ledger: nebula rung both backends against the PC-05
+      gate; the other four rungs unmoved.
+      *Ledger (dpr 2, live): WebGPU planet 36.9 · system 35.3 · nebula
+      **33.0** · galaxy 43.7 · group 50.1; WebGL2 37.1 · 37.9 ·
+      **36.7** · 39.7 · 47.5. Nebula clears the ≥25 gate by a wide
+      margin; every other rung at or above its historical numbers
+      (headless run-to-run variance runs warm today; ordering intact,
+      no regressions).*
+- [x] PC-17 Promotion review (G2-21 pattern): is the bounded-march
+      machinery a tsl-lib candidate (volumeMarch node)? Decide, record
+      the verdict either way; README (rung + structure list); memory.
+      ***Verdict: PARKED, both candidates.** `volumeMarch` is a
+      higher-order node (takes a sample callback) — the bench's parity/
+      cost gates assume leaf nodes with fixed graphs; a callback's cost
+      class is the caller's, not the node's. `sampleAtlas` (pseudo-3D
+      from a 2D slice atlas — genuinely reusable for WebGL2-safe volume
+      textures) is the stronger half, but both are single-consumer
+      today — the spiralArm rule applies. Revisit when a second volume
+      lands (a supernova-remnant rung would qualify). README: five-rung
+      journey, Nebula bullet, structure list; the parked "stellar-
+      nursery mode" idea marked shipped-as-Nebula.*
+- [ ] PC-18 Commit on main; site redeploy (production bundle changes —
+      dist → ../galaxy + Aurelius commit, both left for the user's
+      push).

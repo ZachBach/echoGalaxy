@@ -2,9 +2,10 @@
 
 A free, open educational tool for exploring galaxies and the universe.
 
-**The scale journey**: four rungs — Planet → Star System → Galaxy → Local
-Group — climbable from the HUD ladder, `?scale=` links, or by zooming past
-the edge of any rung (scroll out at the stop to go up a scale). Every rung
+**The scale journey**: five rungs — Planet → Star System → Nebula →
+Galaxy → Local Group — climbable from the HUD ladder, `?scale=` links, or
+by zooming past the edge of any rung (scroll out at the stop to go up a
+scale). Every rung
 carries its own facts ladder; legacy `?view=planets` links still work.
 Within the rungs:
 
@@ -32,6 +33,12 @@ Within the rungs:
   facts introduce the sky's real hands of god — the MSH 15-52 pulsar
   nebula, cometary globule CG 4, and cosmology's Fingers-of-God effect.
   One click restores the heavens to their rails.
+- **Nebula** — the Pillars of Creation (Eagle Nebula, M16), raymarched:
+  the density field (noise-sculpted columns, photoevaporation rim, EGG
+  star-knots pulsing at the fingertips) bakes once at boot into a z-slice
+  atlas texture, so the volume march runs at two texture taps per step —
+  the young cluster doing the eroding shines above the tips, along the
+  exact light direction the field is shaded by.
 - **Local Group** — the real neighbourhood: the barred Milky Way with the
   Magellanic Clouds, Andromeda with M32/M110, Triangulum — 24,000 stars
   total, the same budget as one galaxy. A deep-space STARFIELD skybox
@@ -82,6 +89,9 @@ Open the printed localhost URL. `npm run build` produces a production bundle.
 - `src/orbitPhysics.js` — God's Hands physics: the Kepler tempo constant
   `K`, μ = 4π²/K², a substepped symplectic integrator, and the analytic
   fate oracle behind the cannonball dial (pure module, node-smoked).
+- `src/Pillars.jsx` + `src/pillarsMaterial.js` + `src/pillarsField.js` —
+  the nebula rung: SDF+noise density field (pure module), boot-time
+  z-slice atlas bake, bounded raymarch, cluster stars.
 - `src/Lab.jsx` / `src/PlanetLab.jsx` — dev-only scenes (`?lab=1` /
   `?planet=1`) for node portability and planet verification.
 - `src/tsl-lib/` — **vendored copy** of the Aurelius TSL library. Do not edit;
@@ -115,7 +125,8 @@ each orbiting world). Still open:
 
 - Real catalogue imagery (Messier / NGC) mapped via `latlonUv`, with
   distances and redshift.
-- Star lifecycle / stellar-nursery mode.
+- Star lifecycle mode. (The stellar-nursery half of this idea shipped as
+  the Nebula rung — the Pillars of Creation.)
 - Guided tours and a search box for named objects.
 
 (Galaxy-type morphing shipped: on WebGPU, switching Hubble classes now
