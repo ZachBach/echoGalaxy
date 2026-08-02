@@ -24,7 +24,14 @@ Within the rungs:
 
 - **Star System** — the star and four worlds on literal Kepler-third-law
   orbits (the inner molten world laps the outer ice world), each
-  terminator tracking its own sun direction.
+  terminator tracking its own sun direction. And **God's Hands**: grab
+  any planet and fling it — the moment you let go it obeys real
+  Newtonian gravity (the same constant the rails run on). Too slow falls
+  into the star, too fast escapes forever, in between it finds a new
+  orbit; a live dial names your throw's fate before you release, and the
+  facts introduce the sky's real hands of god — the MSH 15-52 pulsar
+  nebula, cometary globule CG 4, and cosmology's Fingers-of-God effect.
+  One click restores the heavens to their rails.
 - **Local Group** — the real neighbourhood: the barred Milky Way with the
   Magellanic Clouds, Andromeda with M32/M110, Triangulum — 24,000 stars
   total, the same budget as one galaxy. A deep-space STARFIELD skybox
@@ -72,6 +79,9 @@ Open the printed localhost URL. `npm run build` produces a production bundle.
   ring, Keplerian-shear accretion disc with Doppler beaming, lensed-halo
   cheat.
 - `src/sun.js` — the one shared sun-direction uniform.
+- `src/orbitPhysics.js` — God's Hands physics: the Kepler tempo constant
+  `K`, μ = 4π²/K², a substepped symplectic integrator, and the analytic
+  fate oracle behind the cannonball dial (pure module, node-smoked).
 - `src/Lab.jsx` / `src/PlanetLab.jsx` — dev-only scenes (`?lab=1` /
   `?planet=1`) for node portability and planet verification.
 - `src/tsl-lib/` — **vendored copy** of the Aurelius TSL library. Do not edit;

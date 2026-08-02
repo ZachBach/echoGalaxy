@@ -190,6 +190,17 @@ body:has(.app[style*='width']) {
   color: #7d8bb0;
 }
 
+.hud .dial {
+  font-family: ui-monospace, "SFMono-Regular", monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #c9a06a;
+  border: 1px solid #2a3350;
+  border-radius: 7px;
+  padding: 7px 10px;
+  margin-bottom: 10px;
+}
+
 .hud .hint {
   font-family: ui-monospace, "SFMono-Regular", monospace;
   font-size: 10px;

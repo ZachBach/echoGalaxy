@@ -6,7 +6,14 @@ import Galaxy from './Galaxy'
 import Planet from './Planet'
 import Star from './Star'
 import BlackHole from './BlackHole'
-import System, { SYSTEM_INFO, ORBITS, orbitPosition } from './System'
+import System, {
+  SYSTEM_INFO,
+  GODS_HANDS_INFO,
+  ORBITS,
+  orbitPosition,
+  LIVE_BODIES,
+  GOD_DIAL,
+} from './System'
 import LocalGroup, { GROUP_INFO, MEMBERS } from './LocalGroup'
 import Effects from './Effects'
 import { createSkybox, bakeSkybox } from './skybox'
@@ -92,7 +99,12 @@ function FocusRig({ scale, focus }) {
       target = focus.pos
       dist = focus.dist
     } else if (focus?.kind === 'orbit') {
-      const p = orbitPosition(focus.orbit, FROZEN ? 0 : clock.elapsedTime, scratch)
+      // GH-04: the live-body registry is the source of truth — correct
+      // for rails and for bodies God's Hands sent ballistic.
+      const live = LIVE_BODIES.get(focus.orbit.id)
+      const p = live
+        ? scratch.copy(live.pos)
+        : orbitPosition(focus.orbit, FROZEN ? 0 : clock.elapsedTime, scratch)
       target = [p.x, p.y, p.z]
       dist = focus.dist
     }
@@ -112,13 +124,45 @@ function FocusRig({ scale, focus }) {
 
   useFrame(() => {
     if (focus?.kind !== 'orbit' || !controls || FROZEN) return
-    const delta = orbitPosition(focus.orbit, clock.elapsedTime, scratch).sub(
-      controls.target,
-    )
+    const live = LIVE_BODIES.get(focus.orbit.id)
+    if (live?.mode === 'held') return // the hand steers; the camera waits
+    const p = live
+      ? scratch.copy(live.pos)
+      : orbitPosition(focus.orbit, clock.elapsedTime, scratch)
+    const delta = p.sub(controls.target)
     controls.target.add(delta)
     camera.position.add(delta)
   })
   return null
+}
+
+// GH-10: the cannonball dial — reads the mutable GOD_DIAL feed on its
+// own rAF and writes the DOM directly; the HUD never re-renders per
+// frame. Mounted only while the God's Hands panel is up.
+const FATE_LABEL = {
+  infall: 'it will fall into the star',
+  orbit: 'it will find an orbit',
+  escape: 'it will leave forever',
+}
+
+function CannonballDial() {
+  const ref = useRef()
+  useEffect(() => {
+    let raf
+    const tick = () => {
+      const el = ref.current
+      if (el) {
+        el.textContent = GOD_DIAL.active
+          ? `speed ${GOD_DIAL.v.toFixed(2)} · orbit ${GOD_DIAL.vc.toFixed(2)} · ` +
+            `escape ${GOD_DIAL.ve.toFixed(2)} — ${FATE_LABEL[GOD_DIAL.fate] ?? ''}`
+          : 'grab · drag · release — the dial reads your throw'
+      }
+      raf = requestAnimationFrame(tick)
+    }
+    tick()
+    return () => cancelAnimationFrame(raf)
+  }, [])
+  return <div className="dial" ref={ref} />
 }
 
 // G3-30: zoom-through — scrolling out while parked at the controls'
@@ -165,6 +209,10 @@ export default function App() {
   // only final after that, so all backend reads go through this state.
   const [gl, setGl] = useState(null)
   const [fading, setFading] = useState(false)
+  // God's Hands (GH-04/08): held suspends zoom-through; wild shows the
+  // restore-order action; the signal counter resets every body to rails.
+  const [god, setGod] = useState({ held: false, wild: false })
+  const [restoreCount, setRestoreCount] = useState(0)
 
   // One deep-space backdrop for every rung, app-lifetime; radius follows
   // the rung.
@@ -185,6 +233,7 @@ export default function App() {
     if (next === scale) return
     setFading(true)
     setScale(next)
+    setGod({ held: false, wild: false }) // System unmounts; state resets
     const url = new URL(window.location)
     url.searchParams.set('scale', SCALES[next].id)
     url.searchParams.delete('view')
@@ -224,6 +273,14 @@ export default function App() {
     setIndex = setGroupIndex
   }
   info = list[index]
+
+  // GH-12 call: while the god is at work (a body held or off its rail),
+  // the info panel becomes the God's Hands payload — the facts arrive at
+  // the exact moment the user is doing the thing they explain. No cycle
+  // entry (that would perturb the focus indices); order restored, the
+  // panel hands back.
+  const godPanel = rung.id === 'system' && (god.held || god.wild)
+  if (godPanel) info = GODS_HANDS_INFO
 
   // Camera focus target for the focused entry (null = overview framing).
   let focus = null
@@ -267,7 +324,9 @@ export default function App() {
         {!CAPTURE && <FocusRig scale={scale} focus={focus} />}
         {/* zoom-through suspends while focused: focus zoom ranges sit
             below the rung's stops and would false-trigger a descent */}
-        {!CAPTURE && !focus && <ZoomThrough scale={scale} onShift={shiftScale} />}
+        {!CAPTURE && !focus && !god.held && (
+          <ZoomThrough scale={scale} onShift={shiftScale} />
+        )}
         <primitive object={skybox} />
         {rung.id === 'planet' &&
           (info.blackhole ? (
@@ -283,7 +342,14 @@ export default function App() {
               frozen={FROZEN}
             />
           ))}
-        {rung.id === 'system' && <System frozen={FROZEN} />}
+        {rung.id === 'system' && (
+          <System
+            frozen={FROZEN}
+            hands={!CAPTURE}
+            onGodState={setGod}
+            restoreSignal={restoreCount}
+          />
+        )}
         {rung.id === 'galaxy' && <Galaxy type={GALAXY_TYPES[galaxyIndex]} />}
         {rung.id === 'group' && <LocalGroup frozen={FROZEN} />}
         <OrbitControls
@@ -339,7 +405,8 @@ export default function App() {
             <li key={i}>{f}</li>
           ))}
         </ul>
-        {list && (
+        {godPanel && <CannonballDial />}
+        {!godPanel && list && (
           <div className="nav">
             <button onClick={() => go(-1)}>‹ Prev</button>
             <span>
@@ -348,8 +415,17 @@ export default function App() {
             <button onClick={() => go(1)}>Next ›</button>
           </div>
         )}
+        {rung.id === 'system' && god.wild && (
+          <div className="nav">
+            <button onClick={() => setRestoreCount((c) => c + 1)}>
+              ☄ Restore order
+            </button>
+          </div>
+        )}
         <div className="hint">
-          drag to orbit · scroll to zoom · zoom past the edge to change scale
+          {rung.id === 'system' && !FROZEN
+            ? 'grab a planet and fling it · drag to orbit · scroll to zoom'
+            : 'drag to orbit · scroll to zoom · zoom past the edge to change scale'}
         </div>
       </div>
       )}

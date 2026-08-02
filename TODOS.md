@@ -9,8 +9,13 @@ verifiable steps, with evidence recorded per task.
   bandedFlow promoted upstream (`51f6f2c`).
 - **Phase G2 — galaxies go TSL: ✅ complete** (bulk `15f9cdc`, close-out
   `027963d`, 2026-07-30) — blackbody promoted upstream.
-- **Phase G3 — the universe: in progress** (initialized 2026-07-30,
-  tasks at the end of this file).
+- **Phase G3 — the universe: ✅ complete** (2026-07-30) — the roadmap is
+  done: G0·G1·G2·G3 all green. Post-roadmap: member focus (`4b19c07`),
+  galaxy morph (`35482d3`), black hole (`e71e1e0`).
+- **Phase GH — God's Hands: ✅ complete** (2026-08-01) — grab, fling,
+  and the three fates on the System rung; μ = 4π²/K² from the rail
+  constant; 21/21 interaction checks × both backends; frozen diffs
+  0.0000 throughout; FPS ledger unmoved.
 
 # Phase G0: plumbing (the WebGPU bridge) ✅
 
@@ -1247,3 +1252,225 @@ tool's whole reason to exist).
 - [x] G3-40 Commit Phase G3 on main. The universe ships.
 
       *The universe ships.*
+# Phase GH: God's Hands (post-roadmap)
+
+16 tasks (GH-01..16). The feature: on the System rung, grab a planet
+mid-orbit and fling it — release hands the body from its Kepler rail to
+live Newtonian gravity. Too slow falls sunward, too fast escapes, just
+right carves a new ellipse: Newton's cannonball, playable. The name pays
+off with real astronomy (facts in section C).
+
+Ground truth at init: `orbitPosition` (System.jsx, K = 7.5) is the single
+source of orbital truth — FocusRig (App.jsx member focus) computes from
+the same function, so ballistic bodies break follow unless addressed
+(GH-04). Each planet's terminator tracks a per-body sun uniform updated
+in one `place()` path — Newtonian positions ride the same code, lighting
+free. μ falls out of the existing tempo constant: period = K·r^1.5 ⇒
+v_circ = 2π/(K·√r) ⇒ **μ = 4π²/K²** — existing circular orbits reproduce
+exactly at handover. Frozen-clock determinism is sacrosanct (capture rig
+patches performance.now at module scope): god-hands must be inert under
+`?freeze` and capture mode. OrbitControls is makeDefault with
+zoom-through + member-focus interplay — grab must suspend all three.
+Facts verified against sources 2026-08-01: MSH 15-52 / PSR B1509-58
+(NASA/Chandra/NuSTAR), CG 4 in Puppis (NOIRLab/ESO), Fingers-of-God
+redshift-space distortion (NED/Wikipedia).
+
+## A — physics core (pure module, node-smokeable)
+
+- [x] GH-01 Design before code: per-body state machine `kepler` (analytic
+      rail, default) → `held` (pointer owns position, velocity sampled)
+      → `newton` (integrated free fall) → back to `kepler` only via
+      restore/respawn. Handover contract (position + velocity continuity
+      at release), bounds (infall radius = star radius 1.15, escape
+      radius ~ rung controls max), reset semantics. Written as the
+      GH-01 note in this file.
+
+  > **GH-01 design (the contract sections B/C implement):**
+  > - **States** per body: `kepler` (rail, default) → `held` (pointer
+  >   owns position; velocity sampled from recent pointer history) →
+  >   `newton` (free fall). Re-grab of a `newton` body allowed (catch
+  >   your comet); back to `kepler` only via restore-order or respawn.
+  > - **Physics is honestly 2D**: state `{x, z, vx, vz}` in the y = 0
+  >   orbital plane — the rung is planar; the scene maps to (x, 0, z).
+  > - **K lives in orbitPhysics.js** and System.jsx imports it — the
+  >   rails and free-fall cannot disagree: μ = 4π²/K² makes a body
+  >   released with rail velocity continue the identical circle
+  >   (verified to machine epsilon, T1).
+  > - **Integrator**: symplectic Euler at fixed substep h = 1/240 with
+  >   frame dt clamped to 1/30 (backgrounded tabs can't slingshot), r²
+  >   floored at 1e-4 (a body dragged through the exact center must not
+  >   produce NaN).
+  > - **Bounds are visual-first, radius-based, deliberately**: infall at
+  >   r < 1.15 (the star's surface), escape at r > 26 (past controls max
+  >   24). A bound 0.99·v_esc ellipse legitimately sails past 26 — it is
+  >   *reported* as escaped because it left every camera; the smoke
+  >   checks boundedness by energy instead (T4d). Noted, not a bug.
+  > - **Respawn**: swallowed/escaped bodies return to their rail after a
+  >   short beat — position = wherever orbitPosition puts them NOW (the
+  >   rail kept moving; the heavens don't wait).
+  > - **GH-04 recommendation**: System should publish a per-body live
+  >   position registry that FocusRig reads, replacing its own
+  >   orbitPosition recompute — one source of truth that stays correct
+  >   for rails AND ballistic bodies.
+  > - **Frozen/capture**: grab handlers simply not attached when FROZEN
+  >   or CAPTURE — inert by absence, nothing to gate at runtime.
+- [x] GH-02 `src/orbitPhysics.js`: pure module — MU = 4π²/K², K imported
+      from one shared home (decide where K lives so System.jsx and the
+      physics agree); `circularVelocity(r)`, `escapeVelocity(r)`
+      (= √2·v_circ), semi-implicit Euler `step(body, dt)` with dt clamp
+      (tab-background frames must not slingshot the integrator).
+      *Shipped per the GH-01 note, plus `railVelocity(pos)` (the
+      handover vector for a fling-less release), `orbitalEnergy(body)`
+      (the smoke's conserved quantity AND section C's cannonball dial —
+      ε < 0 is bound), and `outcome(body)` (infall/escape/null).
+      System.jsx's private K deleted in favor of the import; build
+      green (614 modules).*
+- [x] GH-03 Node-smoke the integrator: a circular-orbit body stays
+      circular (radius drift < 1% over 60 simulated seconds); release at
+      v_esc·1.01 escapes, at v_esc·0.99 stays bound; sub-circular release
+      falls inward. Analytic truths, not vibes.
+      *All green, well under every bar: rail agreement to **5.55e-17**
+      (machine epsilon — the μ derivation is exact, not approximate);
+      circular radius drift **0.027%** over 60 s; one full period
+      (49.1 s) closes to **0.015%** of circumference; energy drift on an
+      e≈0.56 ellipse **0.032%** over 120 s. Trichotomy: 1.01·v_esc
+      unbound (ε > 0) and passes r = 100; 0.99·v_esc bound with max r
+      87.9 vs analytic apoapsis 172.4 (energy check per the GH-01 bounds
+      note); 0.6·v_circ dives to r = 1.144 < 1.15 — swallowed, matching
+      its analytic periapsis 0.77 on the way down.*
+
+## B — the hands (interaction)
+
+- [x] GH-04 Grab: pointer down on an orbiting planet (R3F raycast)
+      captures the pointer, sets `held`, and suspends OrbitControls,
+      FocusRig follow, and ZoomThrough for the duration. Decide the
+      FocusRig story for ballistic bodies (follow live position vs
+      focus releases on grab) — note the call.
+      *FocusRig call: the GH-01 registry, upgraded to the decision —
+      `LIVE_BODIES` (System.jsx module export, id → {pos, mode}) is now
+      the single positional truth: FocusRig reads it for both the focus
+      effect and the follow frame, so focus tracks ballistic bodies
+      correctly; while `held` the follow stands down (the hand steers,
+      the camera waits). Handlers live on the OrbitingPlanet group
+      (events bubble from the body + shell meshes; the star is
+      deliberately not grabbable — it stays in God's own hands).
+      Cursor affordance: grab/grabbing on the canvas.*
+- [x] GH-05 Drag: unproject the pointer onto the orbital plane (y = 0);
+      body tracks the hand; velocity estimated from recent pointer
+      history (short window, world units/s) so a fling carries intent.
+      *Ray∩plane from the R3F event ray; drag radius clamped to 23.5
+      (inside the rung's rim). History window 150 ms; release velocity =
+      endpoint delta over the window, clamped to 1.8×v_esc(r) — pointer
+      gestures run tens of units/s against orbital speeds of ~0.45, so
+      unclamped flings would all be violent hyperbolic ejections; the
+      clamp keeps the full fall/ellipse/escape range reachable by feel.*
+- [x] GH-06 Release → `newton` with the sampled velocity; untouched
+      bodies stay on rails; sun uniform + spin keep tracking through the
+      same place path (terminator proves it live).
+      *One `applyPos(x, z)` serves every mode (rail, hand, free fall):
+      group position + sun uniform + registry entry updated together —
+      the terminator tracks a flung planet for free. A still-hand
+      release gives v ≈ 0 **by design**: the body drops straight into
+      the star — Newton's zero-speed cannonball, the fastest gravity
+      demo in the app. Harness: release → `newton` confirmed; ballistic
+      body moved 0.538 world units in 0.7 s; bystanders stayed `kepler`
+      throughout.*
+- [x] GH-07 Outcomes: infall (r < star radius) → swallowed, respawn on
+      its rail after a beat; escape (r > bound) → farewell, respawn
+      likewise; bound ellipse persists indefinitely. Each outcome is a
+      teachable moment — surface which one happened (GH-12).
+      *`gone` state: body hidden 1.2 s, then respawns wherever its rail
+      runs NOW (the heavens didn't wait). Swallowing needs no effect —
+      at r < 1.15 the body is inside the star mesh, occlusion IS the
+      event. Harness: dropped rocky went `newton → gone` within 8 s
+      (analytic plunge time ≈ 4.3 s) `→ kepler` on schedule. Outcome
+      events plumbed through `onGodEvent` for GH-12's storytelling.*
+- [x] GH-08 Restore order: one HUD action returns every body to its
+      Kepler rail (the god repents; the heavens resume).
+      *"☄ Restore order" button (reuses .nav styling), rendered only on
+      the system rung and only while a body is off its rail — the
+      `wild` boolean from System's event aggregation (discrete events,
+      zero per-frame re-renders). Harness: button appeared on fling,
+      click returned gas to `kepler`, button retired itself.*
+- [x] GH-09 Determinism: god-hands inert under `?freeze` and capture
+      mode; frozen-over-time diff stays exactly 0.000 with the feature
+      compiled in.
+      *Inert by absence: handlers only attach when `hands && !frozen`,
+      and App passes `hands={!CAPTURE}` — nothing to gate at runtime, a
+      stray click during capture's folder prompt can't grab a planet.
+      Both backends: frozen diff vs the pre-GH baseline **exactly
+      0.0000** (byte-identical — the feature adds zero rendering) and
+      frozen-over-time **0.0000**; zero errors. 14/14 interaction
+      checks green in the same run.*
+
+## C — the payload (the facts earn the name)
+
+- [x] GH-10 Held-planet readout: live release-speed dial vs v_circ and
+      v_esc at the current radius — the Newton's-cannonball instrument.
+      *Better than a speed readout — a fate oracle: `predictFate` in
+      orbitPhysics.js names the throw's destiny analytically (conic
+      sections: ε ≥ 0 or apoapsis past the rim → escape; periapsis
+      inside the star → infall; else orbit) so the dial and the eye
+      always agree — including the 0.99·v_esc visual-escape case (T5e).
+      Dial plumbing: mutable `GOD_DIAL` written by the held body's frame
+      loop, read by a HUD component on its own rAF — zero React
+      re-renders per frame. The dial previews the SAME `releaseVelocity`
+      estimator onPointerUp applies; dial and physics cannot disagree.
+      **Found + fixed a GH-05 bug in the process**: history sampled only
+      on pointer moves, so fling-pause-release replayed the stale fling
+      velocity — sampling moved into the frame loop, a still hand now
+      decays to zero within 150 ms (harness T3: dial reads "fall into
+      the star" during the pause, and the paused release truly falls).
+      Node smoke: 16/16 green with the five T5 fate checks.*
+- [x] GH-11 GODS_HANDS_INFO: Newton's cannonball (the thought experiment
+      the feature IS); the Hand of God nebula (MSH 15-52 — 19-km pulsar
+      spinning 7×/s, hand 150 ly across, X-ray only); God's Hand (CG 4,
+      Puppis — 1.5 ly head, 8 ly tail, enough dust for several Suns);
+      the Fingers of God effect (every finger points at the observer —
+      an artifact of measuring distance by redshift).
+      *Exported from System.jsx; description tells the user what their
+      hand is doing ("a fall that keeps missing"), the cannonball fact
+      ends "You are holding the cannonball." All three sky objects
+      source-verified 2026-08-01 (NASA/Chandra/NuSTAR · NOIRLab/ESO ·
+      NED/Wikipedia).*
+- [x] GH-12 HUD integration: how the payload surfaces (info panel swap
+      while holding vs a new cycle entry on the System rung) — decide,
+      implement, note the call.
+      ***Panel takeover chosen over a cycle entry**: the facts arrive at
+      the exact moment the user is doing the thing they explain, and a
+      cycle entry would have perturbed the focus indices (systemIndex →
+      ORBITS mapping). While held or wild: info panel = GODS_HANDS_INFO,
+      nav hides, dial + restore button show; order restored → panel
+      hands back (harness T2g). Discoverability: the system rung's hint
+      line becomes "grab a planet and fling it · …" — gated on !FROZEN,
+      which is both truthful (hands are inert frozen) and what keeps the
+      frozen regression byte-clean: **0.0000 vs baseline on both
+      backends** after the whole section. 21/21 interaction checks,
+      zero errors; build green.*
+
+## D — verification + close-out
+
+- [x] GH-13 Harness: scripted pointer grab/drag/fling in headless Chrome,
+      both backends — body leaves the rail, evolves under gravity, zero
+      page/console errors; regression: with no grab, the system rung's
+      frozen diffs vs the pre-GH captures stay 0.000.
+      *Full interaction suite (grab/drop-infall/respawn/fling/dial/
+      panel/restore/pause-decay) **21/21 on BOTH backends** — the hands
+      are backend-agnostic app logic and behave identically (ballistic
+      Δ 0.538 vs 0.533 world units — same physics, different GPU).
+      Frozen regression vs the pre-GH baseline exactly 0.0000 on both.
+      Rung sweep: all four rungs × both backends boot with correct HUD
+      and zero errors.*
+- [x] GH-14 FPS: physics is CPU-trivial (one body, one force) — confirm
+      the ledger doesn't move.
+      *System rung dpr 2 live: **33.1 / 31.7** (WebGPU/WebGL2) vs the
+      G3-37 ledger's 31.9 / 27.3 — at-or-above baseline, i.e. the
+      feature costs nothing measurable (idle cost is four registry
+      Vector3 writes per frame).*
+- [x] GH-15 README: God's Hands section (the interaction + the three
+      real objects).
+      *Star System bullet grew the God's Hands story (fling → the three
+      fates → the dial → the real sky-hands); structure list gains
+      orbitPhysics.js.*
+- [ ] GH-16 Commit on main (user pushes; site redeploy needed — this one
+      changes the production bundle).
