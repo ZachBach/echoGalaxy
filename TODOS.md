@@ -1720,6 +1720,11 @@ MUSE: intact, eroding slowly, ~3 Myr left).
       lands (a supernova-remnant rung would qualify). README: five-rung
       journey, Nebula bullet, structure list; the parked "stellar-
       nursery mode" idea marked shipped-as-Nebula.*
-- [ ] PC-18 Commit on main; site redeploy (production bundle changes —
+- [x] PC-18 Commit on main; site redeploy (production bundle changes —
       dist → ../galaxy + Aurelius commit, both left for the user's
       push).
+      *`ee5f42c` on main (692 insertions); site redeploy `5405ebb` in
+      the Aurelius repo (fresh bundles in /galaxy/, stale pruned). Both
+      awaiting the user's push. The ladder reaches from a planet's
+      surface to the Local Group — with a stellar nursery on the way
+      up.*
