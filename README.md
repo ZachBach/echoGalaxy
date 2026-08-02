@@ -17,11 +17,16 @@ Within the rungs:
   zero buffers, and switching types is a uniform swap. Each galaxy floats
   in its own fbm nebula veil, palette-keyed to real emission physics
   (the gas-poor elliptical's veil is nearly absent on purpose).
-- **Planets** — six bodies built from tsl-lib shader nodes: rocky (with
+- **Planets** — eight bodies built from tsl-lib shader nodes: rocky (with
   city lights on the night side), lava, ice, gas giant (the `bandedFlow`
-  node born here and promoted upstream), a star with a live corona, and a
+  node born here and promoted upstream), a star with a live corona, a
   black hole — event horizon, photon ring, and a Doppler-beamed accretion
-  disc (the approaching side really is brighter).
+  disc (the approaching side really is brighter) — and a Saturn, twice:
+  **The Ringed World** (Saturn-true ring radii, the Cassini Division, and
+  the planet's shadow biting the far side of the ring plane) and **The
+  Rings, Alone** (the planet removed — a sheet of orbiting snowballs,
+  proportionally thinner than paper, young enough that dinosaurs may
+  have seen a ringless Saturn).
 
 - **Star System** — the star and four worlds on literal Kepler-third-law
   orbits (the inner molten world laps the outer ice world), each
@@ -92,6 +97,10 @@ Open the printed localhost URL. `npm run build` produces a production bundle.
 - `src/Pillars.jsx` + `src/pillarsMaterial.js` + `src/pillarsField.js` —
   the nebula rung: SDF+noise density field (pure module), boot-time
   z-slice atlas bake, bounded raymarch, cluster stars.
+- `src/RingedWorld.jsx` + `src/ringMaterial.js` — the Saturn pair:
+  Saturn-true radial ring profile (C/B/Cassini/A + Encke), analytic
+  planet shadow (two dot products), the sun pre-rotated into each local
+  frame at build time. The System rung's gas giant borrows the ring.
 - `src/Lab.jsx` / `src/PlanetLab.jsx` — dev-only scenes (`?lab=1` /
   `?planet=1`) for node portability and planet verification.
 - `src/tsl-lib/` — **vendored copy** of the Aurelius TSL library. Do not edit;

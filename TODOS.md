@@ -21,6 +21,10 @@ verifiable steps, with evidence recorded per task.
   z-slice atlas bake (live-noise 2 fps → baked 29+ fps, the G3-10
   hatch); parity 0.017/255 at baseline; frozen 0.0000; all five rungs
   green both backends.
+- **Phase SR — Saturn's rings: ✅ complete** (2026-08-01) — the planet
+  rung's Saturn pair (Ringed World + Rings Alone, 8/8 cycle), analytic
+  planet shadow proven three ways, System-rung bonus ring rides God's
+  Hands flings; parity 0.027–0.028/255; frozen 0.0000; FPS noise-level.
 
 # Phase G0: plumbing (the WebGPU bridge) ✅
 
@@ -1728,3 +1732,199 @@ MUSE: intact, eroding slowly, ~3 Myr left).
       awaiting the user's push. The ladder reaches from a planet's
       surface to the Local Group — with a stellar nursery on the way
       up.*
+
+# Phase SR: Saturn's rings (post-roadmap)
+
+16 tasks (SR-01..16). The feature: the planet rung gains TWO bodies —
+**The Ringed World** (a pale-gold banded giant wearing tilted rings,
+with the planet's shadow falling across the ring plane) and **The
+Rings, Alone** (the same ring system without its planet, framed close)
+— "separate them and explain eloquently": each gets its own facts.
+Bonus: the System rung's gas giant grows a modest ring so the ladder
+stays consistent.
+
+Ground truth at init: PLANET_TYPES entries are flag-branched in App
+(star/blackhole precedent — ringed/rings flags follow the same
+pattern); appending at the END preserves capture-shot indices (the
+black-hole precedent). File naming honors the case-collision lesson:
+`ringMaterial.js` + `RingedWorld.jsx`, no case-twin names. Surface =
+the vendored `bandedFlow` in a calm Saturn palette (new recipe beside
+gas in planetRecipes). Lighting: everything on this rung is static, so
+the 26.7° tilt is a group rotation and the sun enters PRE-ROTATED into
+the tilted frame as a constant vec3 (the Planet contract assumes an
+unrotated mesh; a constant tilted-sun sidesteps it with zero runtime
+cost). Ring shadow is analytic: a ring point is shaded when it sits on
+the anti-sun side AND within the planet's shadow cylinder — two dot
+products, no marching. Ring density is a 1D radial function (banded
+ramps + the Cassini notch), NormalBlending (ice occludes, not glows),
+DoubleSide. HDR discipline (black-hole rule) applies to the lit face.
+Facts verified with sources 2026-08-01: 282,000 km wide × ~10–20 m
+thick (paper scale model = 1 km across), ~95% water ice from dust to
+house-sized, age 10–100 My (dinosaurs may have seen no rings), ring
+rain (an Olympic pool per 30 min; gone in ≲100–300 My — we live in
+the window), Cassini Division = Mimas 2:1 resonance (the swing-push),
+Roche limit (inside: rings; outside: moons).
+
+## A — the ring (material + surface, pure modules first)
+
+- [x] SR-01 Design before code: ring geometry (inner/outer radii vs
+      planet radius ≈ 1.24–2.27 R, Saturn-true), the radial density
+      profile (C ring faint · B ring dense · Cassini gap · A ring with
+      Encke hint), tilt/frame/sun contract, shadow math, HDR budget,
+      opts surface. Written as the SR-01 note.
+
+  > **SR-01 design (the contract A/B implement):**
+  > - **Units**: the ring material works in planet-radius units — the
+  >   annulus geometry spans [1.24·s, 2.27·s] world units for visual
+  >   scale s, and the shader divides back to R units, so the profile
+  >   and the shadow math never learn the entry's framing. Radii
+  >   (Saturn-true): C 1.24–1.53 (×0.32), B 1.53–1.95 (×1.0, the
+  >   bright one), Cassini gap 1.95–2.03 (×0.06 residual), A
+  >   2.03–2.27 (×0.62) with an Encke hint at 2.20–2.22. Fine grain:
+  >   2-octave fbm along the radius only (the grooves are radial).
+  > - **Coordinates**: the ringGeometry planar-uv trick (black-hole
+  >   disc precedent) — p = (uv−0.5)·2·OUTER is the ring-plane
+  >   position in R units; the plane is z = 0 in mesh-local space.
+  > - **Sun contract**: everything on the rung is static, so the sun
+  >   enters the material as a PLAIN JS VECTOR already rotated into
+  >   ring-mesh-local space (group tilt 26.7° AND the −π/2 annulus
+  >   flip, both inverted once in the component). Lighting constants
+  >   fold at build time — zero runtime cost.
+  > - **Shadow** (the money shot): a ring point P (z=0) is shaded when
+  >   s = P·sun < 0 (anti-sun side) and its distance to the sun axis
+  >   √(|P|²−s²) < 1 (inside the planet's shadow cylinder, radius = 1
+  >   in R units). Two dot products; penumbra via smoothstep on the
+  >   axis distance; shade floor 0.12 (rings never go black — the
+  >   planet's own glow fills in).
+  > - **Optics**: ice occludes — NormalBlending, DoubleSide,
+  >   depthWrite off, renderOrder after the planet (near side
+  >   composites over the disc; far side hides behind the depth-written
+  >   sphere — the black-hole occlusion story). Tint runs icy grey-blue
+  >   → warm gold with density; brightness ≤ 1.0, no HDR needed — the
+  >   rings reflect, they do not bloom.
+  > - **Opts**: `buildRingMaterial({ sun, scale, shadow })` — shadow
+  >   false for The Rings, Alone (nothing casts it). No clock anywhere:
+  >   static by construction, frozen determinism free.
+- [x] SR-02 `src/ringMaterial.js`: pure node-smokeable module —
+      `buildRingMaterial({ sun, planetRadius, opts })`: 1D banded
+      density from vendored ramp/noise nodes, Cassini notch, sunlit
+      face + analytic planet-shadow term, NormalBlending + DoubleSide.
+      *Shipped per the SR-01 note: `ringDensity(x)` (C/B/Cassini/A/
+      Encke bands + 2-octave radial grooves), `buildRingMaterial({
+      sun, scale, shadow })` — the face brightness folds to a JS
+      constant at build (plane normal is +z, sun is static), the
+      shadow term is the two-dot-product cylinder with penumbra and a
+      0.12 floor. No clock exists in the module.*
+- [x] SR-03 Saturn surface recipe: `PLANET_RECIPES.ringed` — bandedFlow
+      in the calm pale-gold palette (fewer, softer bands than the
+      Jupiter-ish gas entry) + a muted atmosphere preset.
+      *bands 4 / warpAmp 0.10 / warpFreq 1.7 (vs the gas entry's
+      6/0.22/2.4) through a cream-gold ramp — Saturn's haze mutes what
+      Jupiter flaunts, and the cfg says so. ATMOSPHERES.ringed pale
+      gold, strength 0.4.*
+- [x] SR-04 Node-smoke: ring material + recipe graphs build clean
+      (frozen and live) before a browser sees them.
+      *7/7: Saturn-true bounds, density at a B-ring radius, material
+      shadowed + shadowless, recipe frozen + live, atmosphere preset.
+      Build green (618 modules).*
+
+## B — the two bodies (separate them)
+
+- [x] SR-05 `src/RingedWorld.jsx`: tilted group (26.7°) holding
+      `<Planet recipe=ringed>` + the ring annulus; the pre-rotated
+      constant sun feeds both; dispose discipline.
+      *Both frame inversions (group tilt + the −π/2 annulus flip) done
+      once in JS via quaternions: the planet gets group-local sun as a
+      uniform (terminator stays world-anchored under the tilt), the
+      ring material gets ring-mesh-local sun as a plain vector. Rings
+      renderOrder 2 (after the atmosphere shell); far side hides
+      behind the depth-written globe — the black-hole occlusion story.*
+- [x] SR-06 The Rings, Alone: the same component in `ringsOnly` mode —
+      no planet mesh, no shadow term (nothing casts it), camera-close
+      framing via the entry's own radius scaling; the Cassini gap must
+      read.
+      *scale 1.55 (vs the world's 1.15) and a steeper 0.7 rad tip so
+      the annulus opens to the viewer; the starfield shows straight
+      through the hole where the planet is not — "take the planet
+      away" made literal. Cassini gap reads around the full arc.*
+- [x] SR-07 Catalogue + App wiring: two entries appended to
+      PLANET_TYPES (`ringed: true`, `rings: true` flags), App branches
+      render the right component, cycle counter reaches 8/8.
+      *Harness: both entries reached at 7/8 and 8/8 on BOTH backends,
+      correct HUD, zero errors through the cycle, cross-backend means
+      identical (75.59 / 106.86 on both).*
+- [x] SR-08 The shadow proof: screenshot showing the planet's shadow
+      biting the far side of the ring plane — the detail that makes
+      rings read as 3D; verify the shaded region tracks sunDir.
+      *Proven three ways: (1) JS replica of the formula (G2-03
+      precedent) — umbra-core point shades to exactly the designed
+      floor, penumbra partial, sunward and perpendicular fully lit;
+      (2) top-down diagnostic camera — the wedge bites the annulus on
+      the anti-sun azimuth; (3) default view after the tune — the ring
+      arc right of the globe reads visibly darker than its mirror.
+      First pass hid the wedge under bloom wash — the black-hole
+      lesson recurred and the fix was the same: dim the source.*
+- [x] SR-09 Eyeball pass vs Saturn references: pale gold, thin bright
+      B ring, dark Cassini gap, translucent C ring; tune once, keep
+      screenshots.
+      *One pass, two moves: brightness 0.42+0.58|z| → 0.30+0.50|z|
+      (bloom wash was erasing both the icy-gold tint and the shadow)
+      and the umbra deepened (floor 0.12 → 0.07, penumbra tightened
+      1.0/0.88). After: pale banded globe, bright B ring, legible
+      Cassini gap, and the shadow visible in the default framing.
+      Saturation 0.001–0.009%. Screenshots kept per backend + the
+      top-down record shot.*
+
+## C — spread + discipline
+
+- [x] SR-10 System rung: the gas giant gains a modest ring (reuse
+      ringMaterial at orbit scale, tilt preserved through the orbit) —
+      the ladder stays consistent; God's Hands grab still works on it.
+      *`ring: { tilt: 0.35 }` cfg on the gas orbit; shadowless and
+      constant-lit at ~20 px (a shadow would be sub-pixel; a
+      representative constant sun is honest at this scale — noted vs
+      the SR-01 static-sun contract, which the ORBITING frame would
+      otherwise break). The ring mesh lives inside the grabbed group,
+      so it raycasts for grabs and rides every fling. God's Hands
+      regression: **21/21** with the ringed giant (one timing flake on
+      the drop-plunge window widened 8→12 s — the respawn check had
+      already proven the full arc completed).*
+- [x] SR-11 Determinism: the rung is static by design — frozen-over-
+      time 0.000 and capture mode untouched; verify, don't assume.
+      *Verified: frozen-over-time **exactly 0.0000** on the ringed
+      entry AND the system rung with its new ring; zero errors. No
+      clock exists in ringMaterial.js — determinism by construction,
+      confirmed by measurement anyway.*
+- [x] SR-12 Harness: full 8-entry planet cycle × both backends — zero
+      errors, correct HUD names, saturation ≤ the star bar on the
+      ringed entries, frozen cross-backend parity recorded.
+      *Both entries reached at 7/8 and 8/8 on both backends through
+      full cycles, zero errors, saturation 0.001–0.009%. Cross-backend
+      parity: world **0.028/255** (0.118% px>8), alone **0.027/255**
+      (0.110%) — sphere-silhouette AA territory (ledger entry 5), well
+      within the fresnel-family tolerance.*
+
+## D — verification + close-out
+
+- [x] SR-13 FPS: planet rung with the ringed entries vs the ledger
+      (annulus + 1D density — should be noise-level); System rung
+      re-checked with the bonus ring.
+      *Ringed world 39.5/36.3, rings alone 37.9/38.3, system with ring
+      38.1/34.2 (WebGPU/WebGL2, dpr 2) — at or above the rung
+      baselines; the annulus + 1D ramp is noise-level, as designed.*
+- [x] SR-14 README: the ringed world + the rings-alone story (the
+      paper-thin fact belongs in print).
+      *Planets bullet: six bodies → eight, with the Saturn pair and
+      the paper-thin + dinosaur facts in print; structure list gains
+      RingedWorld.jsx + ringMaterial.js.*
+- [x] SR-15 Promotion review: is the 1D banded-density ring profile a
+      tsl-lib candidate (`ringProfile`)? Verdict recorded either way;
+      memory updated.
+      ***PARKED.** Unlike blackbody (universal physics, data-anchored),
+      the ring profile is one object's portrait — Saturn's band radii
+      are catalogue data, not an algorithm. A general `ringProfile`
+      would be an options-soup around four smoothsteps. Single
+      consumer, the spiralArm rule, revisit never unless a Uranus/
+      Neptune ring family appears. Memory updated.*
+- [ ] SR-16 Commit on main; site redeploy (dist → ../galaxy + Aurelius
+      commit, both left for the user's push).

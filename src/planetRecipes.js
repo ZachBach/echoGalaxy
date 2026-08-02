@@ -97,12 +97,34 @@ export function gas(TSL, { spunDir, clock }) {
   return { surface: TSL.mix(banded, TSL.color(0x6e4a2f), poles.mul(0.5)) }
 }
 
+// SR-03 — the ringed world: bandedFlow again, but Saturn's manner —
+// fewer, softer, paler bands (its haze layer mutes the contrast Jupiter
+// flaunts). The rings are a separate material (ringMaterial.js); this
+// is only the globe.
+export function ringed(TSL, { spunDir, clock }) {
+  const t = bandedFlow(TSL, spunDir, {
+    bands: 4,
+    warpAmp: 0.1,
+    warpFreq: 1.7,
+    drift: clock.mul(0.02),
+  })
+  const banded = ramp(TSL, t, [
+    [0.0, 0xa8895c],
+    [0.35, 0xd8bd8d],
+    [0.65, 0xefe3c0],
+    [1.0, 0xc4a26b],
+  ])
+  const poles = TSL.smoothstep(0.7, 0.95, spunDir.y.abs())
+  return { surface: TSL.mix(banded, TSL.color(0x8d764f), poles.mul(0.4)) }
+}
+
 // G1-16 — per-type atmosphere presets (atmosphereShell opts + shell scale).
 export const ATMOSPHERES = {
   rocky: { inner: 0x2b6cf6, outer: 0x57d4ff, strength: 0.55 },
   lava: { inner: 0x7a1e06, outer: 0xff8a3c, strength: 0.4, power: 4 },
   ice: { inner: 0x9fd8ef, outer: 0xe8fbff, strength: 0.45 },
   gas: { inner: 0x8a5a2b, outer: 0xe8cf9e, strength: 0.5, power: 3 },
+  ringed: { inner: 0xa8895c, outer: 0xf2e6c8, strength: 0.4, power: 3 },
 }
 
-export const PLANET_RECIPES = { rocky, lava, ice, gas }
+export const PLANET_RECIPES = { rocky, lava, ice, gas, ringed }

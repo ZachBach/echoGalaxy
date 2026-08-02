@@ -94,4 +94,48 @@ export const PLANET_TYPES = [
     star: true,
   },
   BLACK_HOLE_INFO,
+  {
+    id: 'ringed',
+    name: 'The Ringed World',
+    label: 'Gas giant with rings · a Saturn',
+    description:
+      'A pale giant wearing a disc of ice. The rings are not solid — ' +
+      'they are billions of snowballs, each on its own orbit, herded by ' +
+      'gravity into the flattest structure nature makes. Every giant ' +
+      'planet in our Solar System has rings; Saturn just wears them best.',
+    facts: [
+      'The rings live inside the Roche limit — the line where a planet’s ' +
+        'tides tear any forming moon apart. Inside the line gravity can ' +
+        'only make rings; outside it, gravity makes moons.',
+      'Watch the planet’s shadow bite the far side of the ring plane — ' +
+        'proof the rings are a real disc in space, not a painted halo.',
+      'Saturn itself is less dense than water. With a bathtub big ' +
+        'enough, it would float.',
+    ],
+    ringed: true,
+  },
+  {
+    id: 'rings',
+    name: 'The Rings, Alone',
+    label: 'Ring system · ~95% water ice · ten metres thin',
+    description:
+      'Take the planet away, and this is what remains: a sheet of ' +
+      'orbiting snowballs 280,000 kilometres wide and only about ten ' +
+      'metres thick. A scale model made of paper would be a kilometre ' +
+      'across — the rings are, proportionally, the thinnest thing you ' +
+      'have ever seen.',
+    facts: [
+      'Every particle — from dust grain to house-sized boulder — is a ' +
+        'tiny moon on its own orbit; countless gentle collisions keep ' +
+        'the sheet impossibly flat.',
+      'The dark gap is the Cassini Division: the moon Mimas tugs the ' +
+        'particles there at the same point every second orbit — like ' +
+        'pushing a child on a swing — until they swing right out.',
+      'The rings are young and dying. Dinosaurs may have looked up at a ' +
+        'ringless Saturn, and “ring rain” will erase them in ~100 ' +
+        'million years. We are alive in the brief window when Saturn ' +
+        'has rings at all.',
+    ],
+    rings: true,
+  },
 ]

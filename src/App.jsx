@@ -6,6 +6,7 @@ import Galaxy from './Galaxy'
 import Planet from './Planet'
 import Star from './Star'
 import BlackHole from './BlackHole'
+import RingedWorld from './RingedWorld'
 import System, {
   SYSTEM_INFO,
   GODS_HANDS_INFO,
@@ -339,6 +340,8 @@ export default function App() {
         {rung.id === 'planet' &&
           (info.blackhole ? (
             <BlackHole frozen={FROZEN} />
+          ) : info.ringed || info.rings ? (
+            <RingedWorld frozen={FROZEN} ringsOnly={!!info.rings} />
           ) : info.star ? (
             <Star frozen={FROZEN} />
           ) : (

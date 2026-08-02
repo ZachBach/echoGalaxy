@@ -13,6 +13,7 @@ import {
   escapeVelocity,
   predictFate,
 } from './orbitPhysics'
+import { buildRingMaterial, RING_INNER, RING_OUTER } from './ringMaterial'
 
 // God's Hands (GH-04): the live-body registry — one source of positional
 // truth for rails AND ballistic bodies. System writes it every frame;
@@ -75,6 +76,7 @@ export const ORBITS = [
   },
   {
     id: 'gas', recipe: PLANET_RECIPES.gas, atmo: ATMOSPHERES.gas, r: 5.3, size: 0.62, phase: 0.82,
+    ring: { tilt: 0.35 }, // SR-10: every giant wears rings; this one modestly
     info: {
       name: 'The Gas Giant', label: 'Third orbit · the system’s bouncer',
       description:
@@ -125,6 +127,17 @@ function OrbitingPlanet({ orbit, frozen, hands, onEvent, restoreSignal }) {
     () => ({ pos: new THREE.Vector3(), mode: 'kepler' }),
     [],
   )
+  // SR-10: the modest ring — shadowless and constant-lit at this scale
+  // (a shadow would be sub-pixel; the sun direction changes as the
+  // planet orbits, but a representative constant is honest at ~20 px)
+  const ringMat = useMemo(
+    () =>
+      orbit.ring
+        ? buildRingMaterial({ sun: [0, 0.5, 0.86], scale: orbit.size, shadow: false })
+        : null,
+    [orbit],
+  )
+  useEffect(() => () => ringMat?.dispose(), [ringMat])
   const modeRef = useRef('kepler')
   const phys = useRef({ x: orbit.r, z: 0, vx: 0, vz: 0 })
   const hist = useRef([])
@@ -299,6 +312,15 @@ function OrbitingPlanet({ orbit, frozen, hands, onEvent, restoreSignal }) {
         spinRate={0.15}
         frozen={frozen}
       />
+      {ringMat && (
+        <group rotation={[orbit.ring.tilt, 0, 0]}>
+          <mesh rotation-x={-Math.PI / 2} material={ringMat} renderOrder={2}>
+            <ringGeometry
+              args={[RING_INNER * orbit.size, RING_OUTER * orbit.size, 128]}
+            />
+          </mesh>
+        </group>
+      )}
     </group>
   )
 }
