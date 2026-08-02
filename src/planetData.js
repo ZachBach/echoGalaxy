@@ -1,5 +1,6 @@
 import { PLANET_RECIPES, ATMOSPHERES } from './planetRecipes'
 import { STAR_INFO } from './Star'
+import { BLACK_HOLE_INFO } from './BlackHole'
 
 /**
  * The planet-view catalogue (G1-31): each entry pairs a surface recipe +
@@ -92,4 +93,5 @@ export const PLANET_TYPES = [
     label: STAR_INFO.label,
     star: true,
   },
+  BLACK_HOLE_INFO,
 ]

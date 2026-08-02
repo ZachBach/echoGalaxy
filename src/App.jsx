@@ -5,6 +5,7 @@ import { Vector3 } from 'three'
 import Galaxy from './Galaxy'
 import Planet from './Planet'
 import Star from './Star'
+import BlackHole from './BlackHole'
 import System, { SYSTEM_INFO, ORBITS, orbitPosition } from './System'
 import LocalGroup, { GROUP_INFO, MEMBERS } from './LocalGroup'
 import Effects from './Effects'
@@ -269,7 +270,9 @@ export default function App() {
         {!CAPTURE && !focus && <ZoomThrough scale={scale} onShift={shiftScale} />}
         <primitive object={skybox} />
         {rung.id === 'planet' &&
-          (info.star ? (
+          (info.blackhole ? (
+            <BlackHole frozen={FROZEN} />
+          ) : info.star ? (
             <Star frozen={FROZEN} />
           ) : (
             <Planet

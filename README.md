@@ -16,9 +16,11 @@ Within the rungs:
   zero buffers, and switching types is a uniform swap. Each galaxy floats
   in its own fbm nebula veil, palette-keyed to real emission physics
   (the gas-poor elliptical's veil is nearly absent on purpose).
-- **Planets** — five worlds built from tsl-lib shader nodes: rocky (with
+- **Planets** — six bodies built from tsl-lib shader nodes: rocky (with
   city lights on the night side), lava, ice, gas giant (the `bandedFlow`
-  node born here and promoted upstream), and a star with a live corona.
+  node born here and promoted upstream), a star with a live corona, and a
+  black hole — event horizon, photon ring, and a Doppler-beamed accretion
+  disc (the approaching side really is brighter).
 
 - **Star System** — the star and four worlds on literal Kepler-third-law
   orbits (the inner molten world laps the outer ice world), each
@@ -66,6 +68,9 @@ Open the printed localhost URL. `npm run build` produces a production bundle.
   atmosphere presets, built from vendored tsl-lib nodes.
 - `src/planetData.js` — the planet catalogue (copy + cfg per type).
 - `src/Star.jsx` + `src/starMaterial.js` — fireRamp plasma + streaks corona.
+- `src/BlackHole.jsx` + `src/blackHoleMaterial.js` — event horizon, photon
+  ring, Keplerian-shear accretion disc with Doppler beaming, lensed-halo
+  cheat.
 - `src/sun.js` — the one shared sun-direction uniform.
 - `src/Lab.jsx` / `src/PlanetLab.jsx` — dev-only scenes (`?lab=1` /
   `?planet=1`) for node portability and planet verification.
