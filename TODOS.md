@@ -2118,5 +2118,8 @@ N₂/CH₄, the only other rain-rivers-lakes cycle known.
       name a composition, not contribute an algorithm (the
       densityFalloff rule). Single consumer. Memory updated with the
       phase close.*
-- [ ] MN-14 Commit on main; site redeploy (dist → ../galaxy + Aurelius
+- [x] MN-14 Commit on main; site redeploy (dist → ../galaxy + Aurelius
       commit, both left for the user's push).
+      *`340f2f0` on main (341 insertions); site redeploy `4b2240c` in
+      the Aurelius repo. Both awaiting the user's push. Three moons
+      rise over the little universe.*
