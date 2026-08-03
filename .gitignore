@@ -19,3 +19,7 @@ frames-*/
 # Claude Code runtime state — the checked-in parts of .claude/ are
 # settings.json and agents/, not session locks
 .claude/scheduled_tasks.lock
+
+# the captain's private command deck — crew notes and summon phrases
+# stay local; the committed role cards live in .claude/agents/
+claudeteam/
