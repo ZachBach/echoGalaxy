@@ -2732,5 +2732,9 @@ too-fast discovery, mass that does not shine.
       hashChannels (the densityFalloff rule: a name, not an
       algorithm); single consumer. Memory updated with the phase
       close.*
-- [ ] CB-16 Commit on main; site redeploy (dist → ../galaxy +
+- [x] CB-16 Commit on main; site redeploy (dist → ../galaxy +
       Aurelius commit, both left for the user's push).
+      *`5aede5e` on main (566 insertions); site redeploy `45c9d2c` in
+      the Aurelius repo. Both awaiting the user's push. The ladder
+      runs from a planet's surface to the place dark matter was
+      found.*
