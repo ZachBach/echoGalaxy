@@ -10,3 +10,8 @@ video/
 *.keystore
 *.jks
 android/keystore.properties
+
+# capture output — media never enters history
+frames/
+frames-*/
+*.mp4
