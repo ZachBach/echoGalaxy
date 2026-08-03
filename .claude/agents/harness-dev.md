@@ -40,6 +40,16 @@ Hard-won gotchas — do not relearn these:
 - Verification scripts historically lived in the session scratchpad
   and died with it. Prefer committing reusable harnesses under
   `scripts/` so evidence is reproducible (the Phase TH intent).
+- **Sample in-band, not out-of-band.** Under capture (frameloop
+  'never') the page's own timers throttle and CDP polls land only in
+  pre-start/post-restore states — an outside poller can watch a whole
+  run and see nothing. The instrument of record is a hook inside the
+  frame loop itself: wrap window.fetch and snapshot state on each
+  frame POST (frame-aligned by construction, zero app changes).
+- When an instrument contradicts the rendered frames, suspect the
+  instrument first — but when TWO instruments agree against your
+  reading of the frames, suspect your eyes (perspective foreshortening
+  put an on-rail body "between rails" convincingly, 2026-08-03).
 
 Report measurements with their bars (e.g. "parity 0.007/255, bar
 0.02"), not adjectives.

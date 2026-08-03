@@ -38,3 +38,13 @@ Ground rules:
   `ffmpegPath`).
 - Verify every render: frame count must equal `seconds × fps` per
   shot, then eyeball first/mid/last frames before calling it done.
+- **Verify MOTION, not just stills.** The 2026-08-03 clock bug (R3F's
+  advance(ts) derives delta from ms but assigns raw ts into
+  clock.elapsedTime — rails strobed 1000× fast) survived every
+  framing review because every individual frame looked perfect. For
+  anything orbital or cued, step through consecutive frames and
+  confirm the displacement per frame is sane. CaptureRig now owns the
+  clock; if you ever touch that code, rerun the frame-aligned probe.
+- The dt clamp (1/30) makes newton-mode physics run slow-motion at
+  contact-sheet fps — a 6 fps sheet is for framing, not for judging
+  flight speed. Judge motion at the delivery fps.
