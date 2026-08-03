@@ -132,6 +132,15 @@ remain. Assets: `playstore/assets/` (feature graphic + 5 screenshots),
 copy: `playstore/LISTING.md` (paste-ready, char-counted), build:
 `playstore/RUNBOOK.md`.
 
+**Target API deadline (checked 2026-08-03):** Google Play requires
+target API 36 for new apps by 2026-08-31. The Capacitor path already
+complies — `android/variables.gradle` sets compile + target SDK 36, so
+the downloads-brief warning about Capacitor defaults doesn't apply to
+this repo. TWA path: Bubblewrap generates its Android project at build
+time — run it via a current `npx @bubblewrap/cli` and confirm the
+generated project targets 36 before upload (add it to the RUNBOOK
+five-command check).
+
 **⚠ Decision first — TWO packaging paths now exist:**
 
 - **TWA (Bubblewrap, `playstore/`)** — wraps the DEPLOYED site in
