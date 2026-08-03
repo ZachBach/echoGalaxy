@@ -30,8 +30,12 @@ verifiable steps, with evidence recorded per task.
   tidal lock exact by construction (spinRate = +2π/T, derived at
   machine epsilon); moons ride God's Hands flings; frozen 0.0000;
   21/21 regression.
-- **Phase MB — mobile-ready: initialized** (2026-08-02, tasks at the
-  end of this file). Phase PS (Play Store packaging) follows it.
+- **Phase MB — mobile-ready: ✅ complete** (2026-08-02) — full touch
+  surface (pinch-through rung climbing, fingertip flings), compact HUD
+  (94.7% sky reachable), portrait framing, PWA shell with offline boot
+  proven; phone profile 59-60 fps vsync-capped; desktop byte-clean.
+- **Phase PS — Play Store packaging: initialized** (2026-08-02, tasks
+  at the end of this file).
 
 # Phase G0: plumbing (the WebGPU bridge) ✅
 
@@ -2343,7 +2347,80 @@ or confirm their inclusion with the user first (MB-16).
       + airplane-mode test, iPhone WebGL2 sanity pass, the $25
       account, package id decision, and the Play App Signing →
       assetlinks.json SHA-256 handoff.*
-- [ ] MB-16 Commit on main (⚠ selective staging — App.jsx carries the
+- [x] MB-16 Commit on main (⚠ selective staging — App.jsx carries the
       user's uncommitted capture-sink work; confirm or exclude);
       site redeploy (dist → ../galaxy + Aurelius commit, both left
       for the user's push).
+      *`bdb0d81` on main — staged selectively: the capture campaign's
+      seven files (CaptureRig, shots, assemble, capture-social,
+      WALKTHROUGH, package.json, .gitignore) remain in the user's
+      working tree untouched; App.jsx (genuinely mixed) went in with
+      the capture-sink work explicitly credited in the message. Site
+      redeploy `50736ce` — /galaxy/ now serves manifest + icons + sw.
+      Both awaiting the user's push.*
+
+# Phase PS: Play Store packaging (post-roadmap, Play Store track 2 of 2)
+
+10 tasks (PS-01..10). The goal: wrap the deployed PWA in a Trusted Web
+Activity via Bubblewrap, prepare every store asset and the domain
+verification file, and hand the human a checklist where only the
+account, the signature, and the Submit button remain.
+
+Ground truth at init: the origin is **https://aureliusdynamic.com** (from
+the site repo's CNAME), app at /galaxy/ — the TWA start_url and scope
+point there. The PWA shell shipped in MB and is PROVEN (manifest with
+relative scope, galaxy icons, SW, offline boot); TWAs run in
+Chrome-on-Android, so the app gets WebGPU on capable devices and its
+verified WebGL2 fallback elsewhere. Bubblewrap (Google's CLI) generates
+the Android project + AAB; it bootstraps its own JDK/SDK on first run
+(multi-GB download — may be better suited to the human's machine;
+PS-02 attempts it and records honestly). Domain verification =
+`/.well-known/assetlinks.json` at the site root (Aurelius repo) carrying
+the SHA-256 of the signing cert — which only exists after Zach opts
+into Play App Signing (ZACHTODOS handshake from MB-15). Store listing
+needs: 512 icon (have), feature graphic 1024×500 (capture), phone
+screenshots (have five, per-rung, from MB-12), privacy policy URL (a
+static page — truthfully "no data collected, no analytics, offline-
+capable"), short + full description copy. Package id suggestion:
+com.aureliusdynamic.echogalaxy (Zach confirms).
+
+## A — the wrapper
+
+- [ ] PS-01 Design note: TWA config decisions — package id, launcher
+      name, display mode, orientation, status/nav bar colors
+      (#02030a), start_url https://aureliusdynamic.com/galaxy/,
+      fallback behavior (Custom Tabs), versioning scheme.
+- [ ] PS-02 Bubblewrap: init the TWA project from the live manifest
+      config (twa-manifest.json committed for reproducibility);
+      attempt the AAB build — if the JDK/SDK bootstrap is unreasonable
+      on this machine, record the exact command sequence for the
+      human instead. Honest either way.
+- [ ] PS-03 `/.well-known/assetlinks.json` in the Aurelius repo:
+      correct package id + a clearly-marked placeholder SHA-256, with
+      the swap step already written in ZACHTODOS.
+
+## B — the store assets
+
+- [ ] PS-04 Feature graphic 1024×500: captured from the app (the
+      Pillars or the ringed world — the widescreen showpiece), text-
+      free per Play guidelines.
+- [ ] PS-05 Phone screenshot set: the five per-rung phone captures
+      from MB-12, refreshed at store-quality settings; 2-8 required.
+- [ ] PS-06 Privacy policy page (static, truthful: no data collected,
+      no analytics, no accounts) hosted on the Aurelius site +
+      listing copy: app title (30 chars), short description (80),
+      full description (4000) — written from the facts ladder.
+
+## C — verification + close-out
+
+- [ ] PS-07 Deployed-site verification (needs the user's push first):
+      https://aureliusdynamic.com/galaxy/ serves manifest + sw +
+      icons + assetlinks 200; installability holds on the real
+      origin. Recorded once the push lands.
+- [ ] PS-08 ZACHTODOS: the final launch checklist — account, package
+      id confirm, Play App Signing opt-in, SHA-256 → assetlinks,
+      AAB upload, store listing paste-ins, content rating
+      questionnaire, submit.
+- [ ] PS-09 README (the Play Store story) + memory update.
+- [ ] PS-10 Commit on main + Aurelius commit (assetlinks + privacy
+      page), both left for the user's push.
