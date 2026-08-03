@@ -2,10 +2,10 @@
 
 A free, open educational tool for exploring galaxies and the universe.
 
-**The scale journey**: five rungs — Planet → Star System → Nebula →
-Galaxy → Local Group — climbable from the HUD ladder, `?scale=` links, or
-by zooming past the edge of any rung (scroll out at the stop to go up a
-scale). Every rung
+**The scale journey**: six rungs — Planet → Star System → Nebula →
+Galaxy → Local Group → Coma Cluster — climbable from the HUD ladder,
+`?scale=` links, or by zooming past the edge of any rung (scroll out at
+the stop to go up a scale). Every rung
 carries its own facts ladder; legacy `?view=planets` links still work.
 Within the rungs:
 
@@ -55,6 +55,15 @@ Within the rungs:
   Magellanic Clouds, Andromeda with M32/M110, Triangulum — 24,000 stars
   total, the same budget as one galaxy. A deep-space STARFIELD skybox
   (baked to an equirect at boot) sits behind every rung.
+- **Coma Cluster** — the top of the ladder, seen through Berenice's Hair:
+  Melotte 111's bright stars in the literal foreground, a thousand
+  galaxies (one instanced draw, everything hash-derived) ~300 Mly
+  behind — red-and-dead in the core, blue survivors at the rim, because
+  clusters quench their galaxies. And the crown feature: **"view in
+  redshift space"** stretches the cluster into a Finger of God pointing
+  at *you* — the artifact drawn by the same too-fast galaxy speeds with
+  which Fritz Zwicky discovered dark matter here in 1933. Orbit, and
+  the finger follows.
 
 Every entry ships with a short explainer and a few facts — the educational
 payload is the point.
@@ -149,6 +158,10 @@ WebView runs the (fully verified) WebGL2 fallback.
 - `src/Moon.jsx` — orbiting, tidally-locked `<Planet>` wrapper (the
   lock is construction: spinRate = +2π/period, derived not tuned);
   cratered-regolith + Titan-haze recipes live in planetRecipes.
+- `src/Cluster.jsx` + `src/clusterShader.js` — the Coma rung: 1000
+  hash-derived galaxy smudges + Melotte 111's foreground stars, with
+  the redshift-space morph living inside positionNode (the Finger of
+  God tracks the observer by construction).
 - `src/RingedWorld.jsx` + `src/ringMaterial.js` — the Saturn pair:
   Saturn-true radial ring profile (C/B/Cassini/A + Encke), analytic
   planet shadow (two dot products), the sun pre-rotated into each local

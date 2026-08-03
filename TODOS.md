@@ -39,6 +39,11 @@ verifiable steps, with evidence recorded per task.
   five-command RUNBOOK, assetlinks placeholder, store assets + copy,
   privacy page, nine-step ZACHTODOS launch sequence; TWA-vs-Capacitor
   decision surfaced. Only accounts, signatures, and Submit are human.
+- **Phase CB — Coma Berenices: ✅ complete** (2026-08-03) — the sixth
+  rung: Melotte 111 foreground + 1000-galaxy Coma field (one draw,
+  zero buffers, parity 0.006/255 — the app record) + the
+  redshift-space Finger-of-God toggle with its teaching panel. Dark
+  matter's discovery, rendered where it happened.
 
 # Phase G0: plumbing (the WebGPU bridge) ✅
 
@@ -2482,7 +2487,15 @@ com.aureliusdynamic.echogalaxy (Zach confirms).
       twa-manifest host + all URLs corrected to www, LISTING and
       ZACHTODOS updated. Live file checks (manifest/sw/icons/
       assetlinks/privacy) 404 as expected pre-push; the five exact
-      URLs are step 0 of the ZACHTODOS launch sequence.*
+      URLs are step 0 of the ZACHTODOS launch sequence.
+      **2026-08-03 post-push: all five URLs 200 on
+      www.aureliusdynamic.com** — manifest, sw, icon, assetlinks, and
+      privacy live on the real origin. (The push saga: the Aurelius
+      side had silently not pushed — completed it as `935fc2f`,
+      carrying the user's house-style privacy rewrite and a JSON
+      repair: their assetlinks annotation had dropped a comma, which
+      Chrome's DAL fetcher would have refused.) The PWA is installable
+      from the real domain; step 0 of the launch sequence is done.*
 - [x] PS-08 ZACHTODOS: the final launch checklist — account, package
       id confirm, Play App Signing opt-in, SHA-256 → assetlinks,
       AAB upload, store listing paste-ins, content rating
@@ -2507,3 +2520,217 @@ com.aureliusdynamic.echogalaxy (Zach confirms).
       Capacitor campaign — android/, capacitor.config.json,
       package.json deps — stays in the user's tree; README is mixed
       and goes in with the Capacitor section credited).*
+
+# Phase CB: Coma Berenices (post-roadmap — the sixth rung)
+
+16 tasks (CB-01..16). The feature: the scale ladder's sixth rung —
+**the Coma Cluster**, seen through Berenice's Hair. Two stories wear
+one name: the foreground is Melotte 111, the ~30-star spray a queen's
+vow put in the sky (the only modern constellation honoring a real
+person); ~300 million light-years behind it hangs the cluster of a
+thousand galaxies where Fritz Zwicky, in 1933, found the galaxies
+moving far too fast — and named the missing mass *dunkle Materie*.
+Dark matter was discovered in Berenice's hair. The rung's crown
+feature: a **"view in redshift space" toggle** that stretches the
+cluster into a literal Finger of God pointing at the viewer — the
+observational artifact from the God's Hands facts, rendered live.
+
+Ground truth at init: the G3-28 SCALES machinery takes a sixth rung
+mechanically (id-keyed; the home-rung default is already an id lookup
+per PC-11; the ladder wraps per PC-14 — six buttons on two rows needs
+an eyeball). The galaxy-field budget rule (G3-23: spread, don't
+multiply) governs: ~1000 galaxies as ONE instanced sprite draw,
+positions and properties derived in-shader from instanceIndex hashes —
+the G2-11 zero-buffer discovery applies verbatim. Cluster physics to
+render honestly: a King-profile-ish density (dense core, falling
+halo), the **red sequence** (cluster galaxies are red and dead —
+stripped of gas; blue spirals survive only at the outskirts — the
+COLOR GRADIENT is the astrophysics), random orientations/
+ellipticities per smudge. The redshift toggle is a uniform-driven
+morph (the galaxy-morph precedent): real positions ↔ line-of-sight-
+stretched positions, elongation along the VIEW axis toward the
+camera, amplitude keyed to a per-galaxy velocity draw. Everything
+hash-derived and clock-free except the toggle glide — frozen
+determinism by construction, toggle states verified frozen. Facts
+source-verified 2026-08-02 (Ridpath/Constellation Guide/EarthSky;
+SDU/Forbes on Zwicky): the vow of 243 BC, Conon's diplomacy, Leo's
+lost tail-tuft, Melotte 111, ~300 Mly / 1000+ galaxies, the virial
+too-fast discovery, mass that does not shine.
+
+## A — the cluster field (in-shader, zero buffers)
+
+- [x] CB-01 Design before code: the smudge (soft elliptical gradient
+      quad — orientation, ellipticity, size, tint per instance), the
+      King-ish radial distribution, the red-sequence color law
+      (radius-dependent red fraction), the redshift-morph math
+      (view-axis stretch, per-galaxy velocity hash, uniform glide),
+      counts/budget. Written as the CB-01 note.
+
+  > **CB-01 design (the contract A/B/C implement):**
+  > - **One draw**: THREE.Sprite + PointsNodeMaterial, count 1000,
+  >   twelve hashChannels per instance (the G2-11 pattern verbatim) —
+  >   channels: [0..5] position (per-axis sums-of-two, triangular ≈
+  >   gaussian), [6] core/halo branch, [7] size, [8] orientation,
+  >   [9] ellipticity + blue draw (reused at different scales),
+  >   [10] brightness, [11] peculiar velocity.
+  > - **Distribution, King-ish by mixture**: 72% core members at
+  >   σ = 1.0, 28% halo at σ = 2.6 — dense heart, extended envelope —
+  >   with a 1.25× x-stretch (Coma is genuinely elongated).
+  > - **The smudge**: quad uv → per-instance rotated, ellipticity-
+  >   squashed frame (q ∈ 0.4..1); opacity = exp(−d²·k) soft gaussian;
+  >   size log-ish (few giants, many dwarfs). Additive blending —
+  >   galaxies glow on black.
+  > - **The red sequence IS the color law**: P(blue) = 0.06 +
+  >   0.55·smoothstep(0.45, 1, rN) — red-and-dead ellipticals own the
+  >   core, surviving blue spirals live at the outskirts; the gradient
+  >   teaches quenching without a single word.
+  > - **Redshift space**: positionNode = P + normalize(P − cameraPos)
+  >   · v · A(rN) · zSpace, where v is the per-galaxy velocity draw,
+  >   A(rN) = 1 + 2·exp(−3rN²) (dispersion peaks in the core — the
+  >   deepest potential), and zSpace is ONE uniform glided in JS. The
+  >   finger literally points at the camera and tracks the orbit live
+  >   because the stretch axis is per-fragment view geometry, not a
+  >   baked direction. Frozen = uniform held ⇒ deterministic in any
+  >   state, mid-glide included.
+  > - **Budget**: 1000 quads ≈ nothing (the group rung runs 24k star
+  >   sprites at 44+ fps); the lab measures anyway.*
+- [x] CB-02 `src/clusterShader.js`: the instanced smudge material —
+      positions/properties from instanceIndex hashes (hashChannels),
+      ~1000 instances, one draw; the redshift-space uniform built in
+      from day one.
+      *Shipped per the CB-01 note: twelve hash channels drive
+      position (core/halo mixture, 1.25× x-stretch), rotated-and-
+      squashed gaussian smudges, log-ish sizes, the red-sequence
+      color law, and the peculiar-velocity draw. positionNode carries
+      the live view-axis displacement — the morph was never bolted
+      on, it IS the position. **No clock exists in the module** —
+      the smoke asserts it textually.*
+- [x] CB-03 Node-smoke: graphs build clean, both morph states, frozen
+      and live.
+      *5/5: materials at zSpace 0 / 1 / mid-glide 0.4, the field
+      factory (count 1000, frustumCulled off, uniform at 0), and the
+      no-TSL.time assertion — determinism by construction, verified
+      by inspection.*
+- [x] CB-04 Lab route (`?cluster=1`): the field renders on BOTH
+      backends, zero errors, King profile + red sequence eyeballable;
+      cost measured (should be trivial — 1000 quads).
+      *ClusterLab (?cluster=1, ?zspace= for the morph, ?freeze) —
+      both backends × both states, zero errors, and the cleanest
+      parity in the app's history: **0.006/255** in BOTH states (pure
+      hash math + additive quads — nothing to diverge). The morph
+      visibly transforms the field (Δ 3.23/255, mean 11.0 → 14.1 as
+      galaxies pile toward the observer). Eyeball: golden quenched
+      core, blue survivors at the rim, ellipticals at every angle —
+      the color law reads without a caption. **46.7 fps** at dpr 2 —
+      group-rung territory as predicted. Design insight recorded for
+      C: head-on, redshift space reads as the cluster swelling TOWARD
+      you, and orbiting drags the finger with you — because the
+      finger always points at the observer. That's not a rendering
+      limitation; it is the fact itself, and CB-11's copy will say
+      so.*
+
+## B — the rung (two stories, one name)
+
+- [x] CB-05 SCALES gains 'cluster' after 'group': camera/controls/sky
+      numbers for a ~10 Mly-scale subject (distances compressed and
+      DECLARED, the G3-21 honesty); zoom-through group↔cluster;
+      six-button ladder eyeballed.
+      *Entry: camera [0, 3.5, 14], controls 6–34, sky 200. The
+      description declares the compression per the G3-21 rule.
+      Harness: all six ladder stops walk with correct HUD + ?scale=
+      sync, and **zoom-through sails Local Group → Coma Cluster** (3
+      wheel ticks at the parked stop). Ladder wraps to two rows,
+      COMA CLUSTER active-state correct.*
+- [x] CB-06 Melotte 111 in the foreground: the ~30-star spray (bright
+      blue-white A-stars, big and near) between the viewer and the
+      distant cluster — the two-objects-one-name story in literal
+      depth; parallax on orbit sells it.
+      *`createHairField` in clusterShader.js — thirty stars in a
+      z 5..9 foreground slab (camera at 14), hash-derived, blue-white
+      with a fifth warm, bloom supplying the shine. In the frame they
+      read unmistakably NEARER (bigger, brighter, bloomier) than the
+      golden swarm behind — the name's two objects, separated by
+      depth alone.*
+- [x] CB-07 CLUSTER_INFO: name/label/description + the facts —
+      Berenice's vow and Conon's sky-diplomacy, the only-real-person
+      constellation, red-and-dead cluster galaxies, Zwicky 1933 and
+      the mass that does not shine.
+      *Four facts closing on "Dark matter was discovered right here,
+      in Berenice's hair." The red-sequence fact points at the pixels
+      ("the color gradient you are looking at IS that story").*
+- [x] CB-08 App wiring: scene mount, no-cycle rung (the PC-11 nebula
+      pattern) OR a two-entry cycle (the Hair / the Cluster) — decide,
+      note.
+      ***No-cycle chosen** (the nebula pattern): the rung's
+      interaction budget belongs to the redshift toggle (section C) —
+      a Hair/Cluster cycle would compete with it, and the two-stories
+      teaching already lives in the visible depth + the copy. Both
+      backends boot the rung zero-error.*
+- [x] CB-09 Eyeball pass vs Coma Cluster imagery: the core's density,
+      the red sequence, the foreground spray; tune once, screenshots.
+      ***Zero tunes spent** (the G2-08 precedent): golden crowded
+      core, blue rim survivors, foreground spray floating in front —
+      first light accepted. Screenshots kept. Build green (623
+      modules).*
+
+## C — the dark matter payload (the crown feature)
+
+- [x] CB-10 The redshift-space toggle: a HUD action ("view in redshift
+      space") glides the cluster into its Finger-of-God elongation —
+      pointing AT the camera, tracking the orbit live; glide on the
+      uniform (morph precedent), ~1.2 s.
+      *"⇢ view in redshift space" / "← return to real space" on the
+      cluster rung's nav row; one boolean in App, the scene glides
+      its uniform (exponential, ~1.2 s, snaps within 0.002); rung
+      change resets to real space. The round-trip is honest to the
+      pixel: field stretches Δ 10.30/255, then **glides home to
+      0.002/255 of its exact starting frame** — the uniform's
+      snap-to-goal makes returns pixel-faithful.*
+- [x] CB-11 The toggle's teaching: while in redshift space the facts
+      panel explains what the eye sees (every finger points at the
+      observer; the stretch is speed masquerading as distance; the
+      speeds are Zwicky's too-fast — the dark matter evidence
+      ITSELF). Panel-swap pattern per GH-12.
+      *REDSHIFT_INFO takes the panel over while the toggle is on:
+      "speed masquerading as distance," the finger that follows every
+      observer (Andromeda's astronomers see their own), the smearing
+      speeds being Zwicky's 1933 too-fast motions — the finger drawn
+      by dark matter's gravity — and the core-swarm-fastest fact
+      ending on "Look." Panel swaps both directions, asserted.*
+- [x] CB-12 Determinism: frozen 0.000 in BOTH toggle states; the
+      glide animates live and freezes clean mid-state; capture
+      untouched.
+      *Frozen-over-time **exactly 0.0000 in real space AND redshift
+      space** (frozen snaps the uniform — no glide, no
+      indeterminism); the toggle works under freeze; WebGL2
+      spot-check green; zero errors across every suite. 9/9. Build
+      green.*
+
+## D — verification + close-out
+
+- [x] CB-13 Harness: six-rung ladder walk + ?scale= URLs + both
+      backends × cluster rung (zero errors, parity recorded); toggle
+      round-trip asserted.
+      *The full battery across B/C/D: six-rung sweep **12/12** on both
+      backends; ladder walk with URL sync 10/10 (incl. zoom-through
+      group → cluster); toggle round-trip 9/9; rung-level cluster
+      parity **0.006/255, 0.011% px>8** — the app's record, held from
+      lab to rung — with frozen-over-time 0.0000 on both backends.*
+- [x] CB-14 FPS: cluster rung both backends vs the ledger (1000
+      quads + skybox — expect group-rung territory).
+      *27.8 / 29.5 fps (WebGPU/WebGL2, dpr 2, live) — the rung mounts
+      the radius-200 skybox + hair + bloom; comfortably interactive,
+      measured under the usual shared-machine conditions caveat (lab
+      figure was 46.7 on a quieter run).*
+- [x] CB-15 README (the sixth rung + the dark matter story) +
+      promotion review (the smudge/King-profile fields — verdict
+      either way) + memory.
+      *README: six-rung journey, the Coma bullet ending on "Orbit,
+      and the finger follows", structure entries for Cluster.jsx/
+      clusterShader.js. **Promotion verdict: PARKED** — the smudge and
+      the King-ish mixture are ~15 lines of composition over
+      hashChannels (the densityFalloff rule: a name, not an
+      algorithm); single consumer. Memory updated with the phase
+      close.*
+- [ ] CB-16 Commit on main; site redeploy (dist → ../galaxy +
+      Aurelius commit, both left for the user's push).

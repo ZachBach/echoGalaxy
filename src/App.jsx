@@ -17,6 +17,7 @@ import System, {
   GOD_DIAL,
 } from './System'
 import Pillars, { NEBULA_INFO } from './Pillars'
+import Cluster, { CLUSTER_INFO, REDSHIFT_INFO } from './Cluster'
 import LocalGroup, { GROUP_INFO, MEMBERS } from './LocalGroup'
 import Effects from './Effects'
 import { createSkybox, bakeSkybox } from './skybox'
@@ -68,6 +69,7 @@ const SCALES = [
   { id: 'nebula', label: 'Nebula', camera: [0, 0.2, 4.6], min: 2.6, max: 9, sky: 60 },
   { id: 'galaxy', label: 'Galaxy', camera: [0, 6, 12], min: 4, max: 28, sky: 60 },
   { id: 'group', label: 'Local Group', camera: [0, 16, 40], min: 12, max: 90, sky: 140 },
+  { id: 'cluster', label: 'Coma Cluster', camera: [0, 3.5, 14], min: 6, max: 34, sky: 200 },
 ]
 
 function initialScale() {
@@ -333,6 +335,9 @@ export default function App() {
   // MB-05: on touch devices the facts collapse — the HUD covered 60% of
   // a portrait screen and its button rows intercepted sky touches.
   const [factsOpen, setFactsOpen] = useState(!COARSE)
+  // CB-10: the cluster rung's redshift-space toggle — one boolean; the
+  // scene glides its uniform toward the target (snaps when frozen).
+  const [zSpace, setZSpace] = useState(false)
   const [captureStarted, setCaptureStarted] = useState(false)
   const [captureResult, setCaptureResult] = useState(null)
 
@@ -370,6 +375,7 @@ export default function App() {
     setFading(true)
     setScale(next)
     setGod({ held: false, wild: false }) // System unmounts; state resets
+    setZSpace(false) // the cluster returns to real space on rung change
     const url = new URL(window.location)
     url.searchParams.set('scale', SCALES[next].id)
     url.searchParams.delete('view')
@@ -403,8 +409,10 @@ export default function App() {
     list = systemList
     index = systemIndex
     setIndex = setSystemIndex
-  } else if (rung.id === 'nebula') {
-    list = null // one formation, no cycle — the facts ARE the payload
+  } else if (rung.id === 'nebula' || rung.id === 'cluster') {
+    // one formation, no cycle — the facts ARE the payload (and the
+    // cluster's interaction is the redshift toggle, not a cycle)
+    list = null
     index = 0
     setIndex = null
   } else {
@@ -412,7 +420,7 @@ export default function App() {
     index = groupIndex
     setIndex = setGroupIndex
   }
-  info = list ? list[index] : NEBULA_INFO
+  info = list ? list[index] : rung.id === 'cluster' ? CLUSTER_INFO : NEBULA_INFO
 
   // GH-12 call: while the god is at work (a body held or off its rail),
   // the info panel becomes the God's Hands payload — the facts arrive at
@@ -421,6 +429,10 @@ export default function App() {
   // panel hands back.
   const godPanel = rung.id === 'system' && (god.held || god.wild)
   if (godPanel) info = GODS_HANDS_INFO
+
+  // CB-11: while the cluster sits in redshift space, the panel teaches
+  // what the eye is seeing (the GH-12 takeover pattern).
+  if (rung.id === 'cluster' && zSpace) info = REDSHIFT_INFO
 
   // Camera focus target for the focused entry (null = overview framing).
   let focus = null
@@ -512,6 +524,9 @@ export default function App() {
         )}
         {rung.id === 'galaxy' && <Galaxy type={GALAXY_TYPES[galaxyIndex]} />}
         {rung.id === 'group' && <LocalGroup frozen={FROZEN} />}
+        {rung.id === 'cluster' && (
+          <Cluster frozen={FROZEN} zSpaceTarget={zSpace ? 1 : 0} />
+        )}
         <OrbitControls
           makeDefault
           enablePan={false}
@@ -602,6 +617,13 @@ export default function App() {
           <div className="nav">
             <button onClick={() => setRestoreCount((c) => c + 1)}>
               ☄ Restore order
+            </button>
+          </div>
+        )}
+        {rung.id === 'cluster' && (
+          <div className="nav">
+            <button onClick={() => setZSpace((z) => !z)}>
+              {zSpace ? '← return to real space' : '⇢ view in redshift space'}
             </button>
           </div>
         )}
