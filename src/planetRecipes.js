@@ -118,6 +118,91 @@ export function ringed(TSL, { spunDir, clock }) {
   return { surface: TSL.mix(banded, TSL.color(0x8d764f), poles.mul(0.4)) }
 }
 
+// A dry terrestrial world: wind-sculpted mineral terrain rather than the
+// ocean/continent balance of rocky(). The small polar caps stay fixed while
+// the terrain rotates beneath the terminator.
+export function desert(TSL, { spunDir, clock }) {
+  const p = warp(
+    TSL,
+    spunDir.mul(2.7).add(TSL.vec3(0, clock.mul(0.012), 0)),
+    { amp: 0.26, octaves: 2 },
+  )
+  const terrain = fbm(TSL, p, { octaves: 3 }).mul(0.5).add(0.5)
+  const base = ramp(TSL, terrain, [
+    [0.0, 0x2b1610],
+    [0.34, 0x6e3420],
+    [0.58, 0xb65e31],
+    [0.78, 0xd99a60],
+    [1.0, 0xead1a1],
+  ])
+  const caps = TSL.smoothstep(0.78, 0.93, spunDir.y.abs())
+  return { surface: TSL.mix(base, TSL.color(0xddeaf0), caps.mul(0.7)) }
+}
+
+// A water-rich world. Islands deliberately stay sparse so it reads as an
+// ocean planet rather than a recolored Earth, while the drifting field gives
+// the sea a living surface at close range.
+export function ocean(TSL, { spunDir, clock }) {
+  const currents = trigLattice(TSL, spunDir, {
+    terms: 3,
+    freq: 4.1,
+    drift: clock.mul(0.025),
+  })
+  const detail = fbm(TSL, spunDir.mul(7), { octaves: 2 }).mul(0.12)
+  const land = TSL.smoothstep(0.61, 0.78, currents.add(detail))
+  const depth = fbm(TSL, spunDir.mul(2.1), { octaves: 3 }).mul(0.5).add(0.5)
+  const water = ramp(TSL, depth, [
+    [0.0, 0x041b4d],
+    [0.45, 0x075da8],
+    [0.75, 0x1ba9c7],
+    [1.0, 0x9fe8e6],
+  ])
+  const islands = TSL.mix(TSL.color(0x103a32), TSL.color(0x69a45c), currents.mul(0.5).add(0.5))
+  return { surface: TSL.mix(water, islands, land) }
+}
+
+// A Venus-like cloud deck. The planet is represented by the atmosphere we
+// can see rather than a fictional exposed surface below it.
+export function cloud(TSL, { spunDir, clock }) {
+  const p = warp(
+    TSL,
+    spunDir.mul(2.2).add(TSL.vec3(clock.mul(0.018), 0, 0)),
+    { amp: 0.34, octaves: 2 },
+  )
+  const cells = fbm(TSL, p, { octaves: 4 }).mul(0.5).add(0.5)
+  const bands = TSL.sin(spunDir.y.mul(7).add(clock.mul(0.08))).mul(0.08)
+  const cloud = cells.add(bands)
+  return {
+    surface: ramp(TSL, cloud, [
+      [0.0, 0x7c4b1e],
+      [0.35, 0xb97930],
+      [0.62, 0xe2b85d],
+      [0.84, 0xffe2a1],
+      [1.0, 0xfff1c9],
+    ]),
+  }
+}
+
+// Uranus and Neptune are ice giants, compositionally distinct from the
+// hydrogen-dominated gas giants above. The colder blue palette comes from
+// methane-rich upper clouds, not from frozen surface ice.
+export function iceGiant(TSL, { spunDir, clock }) {
+  const flow = bandedFlow(TSL, spunDir, {
+    bands: 8,
+    warpAmp: 0.15,
+    warpFreq: 2.0,
+    drift: clock.mul(0.018),
+  })
+  const base = ramp(TSL, flow, [
+    [0.0, 0x082f6b],
+    [0.32, 0x1266a3],
+    [0.62, 0x3da8ce],
+    [1.0, 0xa3e8e8],
+  ])
+  const poles = TSL.smoothstep(0.72, 0.94, spunDir.y.abs())
+  return { surface: TSL.mix(base, TSL.color(0x7dd3df), poles.mul(0.38)) }
+}
+
 // MN-03 — the Moon: cratered regolith. Worley cells give the craters
 // (dark bowls at the seeds, bright rims just outside), low-frequency
 // fbm patches darken into maria — the "seas" that are ancient lava.
@@ -161,6 +246,22 @@ export const ATMOSPHERES = {
   gas: { inner: 0x8a5a2b, outer: 0xe8cf9e, strength: 0.5, power: 3 },
   ringed: { inner: 0xa8895c, outer: 0xf2e6c8, strength: 0.4, power: 3 },
   titan: { inner: 0xc9853d, outer: 0xf0c07a, strength: 0.7, power: 2.5 },
+  desert: { inner: 0x7b351f, outer: 0xe5a464, strength: 0.25, power: 4 },
+  ocean: { inner: 0x0b65a8, outer: 0x79e5e1, strength: 0.6, power: 3 },
+  cloud: { inner: 0xa56b2a, outer: 0xffdc8d, strength: 0.78, power: 2.3 },
+  iceGiant: { inner: 0x1266a3, outer: 0x9ae8ef, strength: 0.55, power: 3 },
 }
 
-export const PLANET_RECIPES = { rocky, lava, ice, gas, ringed, moon, titan }
+export const PLANET_RECIPES = {
+  rocky,
+  lava,
+  ice,
+  gas,
+  ringed,
+  desert,
+  ocean,
+  cloud,
+  iceGiant,
+  moon,
+  titan,
+}

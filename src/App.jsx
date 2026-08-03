@@ -9,9 +9,8 @@ import BlackHole from './BlackHole'
 import RingedWorld from './RingedWorld'
 import Moon from './Moon'
 import System, {
-  SYSTEM_INFO,
   GODS_HANDS_INFO,
-  ORBITS,
+  SYSTEMS,
   orbitPosition,
   LIVE_BODIES,
   GOD_DIAL,
@@ -66,7 +65,7 @@ if (CAPTURE) {
 // its slot in the facts ladder.
 const SCALES = [
   { id: 'planet', label: 'Planet', camera: [0, 0.8, 5.6], min: 2.6, max: 12, sky: 60 },
-  { id: 'system', label: 'System', camera: [0, 4.5, 11], min: 3, max: 24, sky: 60 },
+  { id: 'system', label: 'System', camera: [0, 5.2, 14], min: 3, max: 28, sky: 60 },
   { id: 'nebula', label: 'Nebula', camera: [0, 0.2, 4.6], min: 2.6, max: 9, sky: 60 },
   { id: 'galaxy', label: 'Galaxy', camera: [0, 6, 12], min: 4, max: 28, sky: 60 },
   { id: 'group', label: 'Local Group', camera: [0, 16, 40], min: 12, max: 90, sky: 140 },
@@ -84,6 +83,14 @@ function initialScale() {
   // the app's historical home — by id, never by index (PC-11: inserting
   // a rung must not silently move the front door)
   return SCALES.findIndex((s) => s.id === 'galaxy')
+}
+
+function initialSystemIndex() {
+  // Capture shots pin their system by id (shot 12-godshands runs on
+  // TRAPPIST-1); outside capture the ?system= link param decides.
+  const id = CAPTURE?.system ?? params.get('system')
+  const i = SYSTEMS.findIndex((system) => system.id === id)
+  return i === -1 ? 0 : i
 }
 
 // Repositions the camera when the rung changes (Canvas camera is
@@ -323,10 +330,15 @@ export default function App() {
   const [planetIndex, setPlanetIndex] = useState(
     CAPTURE?.scale === 'planet' ? (CAPTURE.index ?? 0) : 0,
   )
-  const [systemIndex, setSystemIndex] = useState(0)
+  const [systemIndex, setSystemIndex] = useState(initialSystemIndex)
+  const [systemMemberIndex, setSystemMemberIndex] = useState(
+    CAPTURE?.scale === 'system' ? (CAPTURE.index ?? 0) : 0,
+  )
   const [groupIndex, setGroupIndex] = useState(0)
   // SN-07: the nebula rung cycles star birth and star death
-  const [nebulaIndex, setNebulaIndex] = useState(0)
+  const [nebulaIndex, setNebulaIndex] = useState(
+    CAPTURE?.scale === 'nebula' ? (CAPTURE.index ?? 0) : 0,
+  )
   // The renderer, captured once init() has resolved — backend identity is
   // only final after that, so all backend reads go through this state.
   const [gl, setGl] = useState(null)
@@ -369,6 +381,7 @@ export default function App() {
     [skybox],
   )
   const rung = SCALES[scale]
+  const system = SYSTEMS[systemIndex]
   useEffect(() => {
     skybox.scale.setScalar(rung.sky / 7)
   }, [rung, skybox])
@@ -386,13 +399,24 @@ export default function App() {
     setTimeout(() => setFading(false), 260)
   }
 
+  const shiftSystem = (delta) => {
+    const next = (systemIndex + delta + SYSTEMS.length) % SYSTEMS.length
+    if (next === systemIndex) return
+    setSystemIndex(next)
+    setSystemMemberIndex(0)
+    setGod({ held: false, wild: false })
+    setRestoreCount((count) => count + 1)
+    const url = new URL(window.location)
+    url.searchParams.set('system', SYSTEMS[next].id)
+    window.history.replaceState(null, '', url)
+  }
+
   // The facts ladder (G3-33) + member focus: every rung feeds the same
   // HUD skeleton, and every rung now has a cycle — the system and group
   // rungs lead with their overview, then focus each body in turn.
-  const starEntry = PLANET_TYPES.find((t) => t.star)
   const systemList = useMemo(
-    () => [SYSTEM_INFO, starEntry, ...ORBITS.map((o) => o.info)],
-    [starEntry],
+    () => [system.info, system.star.info, ...system.orbits.map((orbit) => orbit.info)],
+    [system],
   )
   const groupList = useMemo(() => [GROUP_INFO, ...MEMBERS.map((m) => m.info)], [])
   // SN-07: stellar life, bookended — the Pillars (birth), the Crab (death)
@@ -412,8 +436,8 @@ export default function App() {
     setIndex = setGalaxyIndex
   } else if (rung.id === 'system') {
     list = systemList
-    index = systemIndex
-    setIndex = setSystemIndex
+    index = systemMemberIndex
+    setIndex = setSystemMemberIndex
   } else if (rung.id === 'nebula') {
     list = nebulaList
     index = nebulaIndex
@@ -449,12 +473,19 @@ export default function App() {
     const m = MEMBERS[groupIndex - 1]
     const r = m.cfg.radius ?? 2
     focus = { kind: 'static', pos: m.pos, dist: r * 2.6, min: r * 0.9 }
-  } else if (rung.id === 'system' && systemIndex > 0) {
-    if (systemIndex === 1) {
+  } else if (rung.id === 'system' && systemMemberIndex > 0) {
+    if (systemMemberIndex === 1) {
       focus = { kind: 'static', pos: [0, 0, 0], dist: 4.4, min: 1.8 }
     } else {
-      const o = ORBITS[systemIndex - 2]
-      focus = { kind: 'orbit', orbit: o, dist: o.size * 7.5, min: o.size * 2.5 }
+      const orbit = system.orbits[systemMemberIndex - 2]
+      if (orbit) {
+        focus = {
+          kind: 'orbit',
+          orbit,
+          dist: orbit.size * 7.5,
+          min: orbit.size * 2.5,
+        }
+      }
     }
   }
 
@@ -504,6 +535,7 @@ export default function App() {
             <group key={info.id}>
               <Planet
                 recipe={info.recipe}
+                cfg={info.cfg}
                 spinRate={info.spinRate}
                 atmosphere={info.atmosphere}
                 frozen={FROZEN}
@@ -522,10 +554,13 @@ export default function App() {
           ))}
         {rung.id === 'system' && (
           <System
+            key={system.id}
+            system={system}
             frozen={FROZEN}
             hands={!CAPTURE}
             onGodState={setGod}
             restoreSignal={restoreCount}
+            choreo={CAPTURE?.choreo ?? null}
           />
         )}
         {rung.id === 'nebula' &&
@@ -537,7 +572,11 @@ export default function App() {
         {rung.id === 'galaxy' && <Galaxy type={GALAXY_TYPES[galaxyIndex]} />}
         {rung.id === 'group' && <LocalGroup frozen={FROZEN} />}
         {rung.id === 'cluster' && (
-          <Cluster frozen={FROZEN} zSpaceTarget={zSpace ? 1 : 0} />
+          <Cluster
+            frozen={FROZEN}
+            zSpaceTarget={zSpace ? 1 : 0}
+            zSpaceAt={CAPTURE?.zSpaceAt ?? null}
+          />
         )}
         <OrbitControls
           makeDefault
@@ -616,6 +655,15 @@ export default function App() {
           </button>
         )}
         {godPanel && <CannonballDial />}
+        {rung.id === 'system' && !godPanel && (
+          <div className="nav system-switcher">
+            <button onClick={() => shiftSystem(-1)} aria-label="Previous star system">‹ System</button>
+            <span>
+              {systemIndex + 1} / {SYSTEMS.length} · {system.info.name}
+            </span>
+            <button onClick={() => shiftSystem(1)} aria-label="Next star system">System ›</button>
+          </div>
+        )}
         {!godPanel && list && (
           <div className="nav">
             <button onClick={() => go(-1)}>‹ Prev</button>

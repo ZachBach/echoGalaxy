@@ -162,16 +162,27 @@ export default function CaptureRig({
     const step = 1 / fps
 
     // Take the clock. Restored in cleanup.
+    //
+    // Probed 2026-08-03: R3F's advance(ts) treats ts as a rAF-style
+    // MILLISECOND timestamp for the frame delta (delta = Δts / 1000) but
+    // ASSIGNS the raw ts into clock.elapsedTime. Passing ms therefore gives
+    // correct deltas and a 1000×-fast elapsedTime — every elapsedTime
+    // consumer (orbit rails, capture choreography, cluster cues) strobes.
+    // The rig owns elapsedTime instead: a property that serves the shot's
+    // second-based timeline and swallows R3F's raw-ms writes.
     const originalGetDelta = clock.getDelta.bind(clock)
     const originalElapsed = clock.elapsedTime
-    clock.elapsedTime = 0
-    clock.getDelta = () => {
-      clock.elapsedTime += step
-      return step
-    }
+    let captureElapsed = 0
+    Object.defineProperty(clock, 'elapsedTime', {
+      configurable: true,
+      get: () => captureElapsed,
+      set: () => {},
+    })
+    clock.getDelta = () => step
     const restoreClock = () => {
       if (restored) return
       restored = true
+      delete clock.elapsedTime
       clock.getDelta = originalGetDelta
       clock.elapsedTime = originalElapsed
     }
@@ -217,20 +228,19 @@ export default function CaptureRig({
         // A few warm-up frames before the first captured one. The galaxy
         // position bake and the veil render-target bake both run inside React
         // effects on type change, and the first frame after a material swap
-        // can land before they have settled.
+        // can land before they have settled. Timestamps stay monotonic into
+        // the shot loop so the ms-derived delta is a constant step across
+        // the boundary; the warm-up's 4/fps lead on the second-based
+        // timeline is shared by every clock consumer and the shader clock.
         for (let i = 0; i < 4; i += 1) {
           clockBox.t = i * step * 1000
+          captureElapsed = i * step
           camera.position.copy(curve.at(0))
           camera.lookAt(target)
           advance(clockBox.t)
           // eslint-disable-next-line no-await-in-loop
           await new Promise((r) => requestAnimationFrame(r))
         }
-
-        // Reset the clock so the warm-up does not leak into the shot. Galaxy
-        // rotation accumulates, so those four frames would otherwise show up
-        // as a small offset in the disc angle.
-        clock.elapsedTime = 0
 
         for (let f = 0; f < totalFrames && !cancelled; f += 1) {
           const raw = totalFrames === 1 ? 0 : f / (totalFrames - 1)
@@ -241,6 +251,7 @@ export default function CaptureRig({
           camera.updateMatrixWorld()
 
           clockBox.t = (4 + f) * step * 1000
+          captureElapsed = (4 + f) * step
           advance(clockBox.t)
 
           // Grab in the same task as the render. On the WebGL2 backend the

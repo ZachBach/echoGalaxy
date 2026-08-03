@@ -4,7 +4,6 @@ import * as THREE from 'three'
 import * as TSL from 'three/tsl'
 import Planet from './Planet'
 import Star from './Star'
-import { PLANET_RECIPES, ATMOSPHERES } from './planetRecipes'
 import {
   K,
   step,
@@ -15,6 +14,11 @@ import {
 } from './orbitPhysics'
 import { buildRingMaterial, RING_INNER, RING_OUTER } from './ringMaterial'
 import Moon, { moonPeriod } from './Moon'
+import { DEFAULT_SYSTEM, SYSTEMS } from './systemData'
+
+export { DEFAULT_SYSTEM, SYSTEMS }
+export const ORBITS = DEFAULT_SYSTEM.orbits
+export const SYSTEM_INFO = DEFAULT_SYSTEM.info
 
 // God's Hands (GH-04): the live-body registry — one source of positional
 // truth for rails AND ballistic bodies. System writes it every frame;
@@ -27,14 +31,6 @@ export const LIVE_BODIES = new Map() // id → { pos: Vector3, mode }
 // No React state, no per-frame re-renders.
 export const GOD_DIAL = { active: false, v: 0, vc: 0, ve: 0, fate: '' }
 
-// The star-system rung (G3-13/14): the G1 star at center, the four worlds
-// on orbits ordered by the frost-line story (molten innermost, ice
-// outermost), with LITERAL Kepler-third-law periods (period ∝ r^1.5) —
-// the inner world visibly laps the outer ones. Each planet carries its
-// own sun uniform aimed at the origin, so terminators track the orbit.
-// The tempo constant K lives in orbitPhysics.js (GH-02) so the rails and
-// God's Hands free-fall share one gravitational truth.
-
 // Kepler positions as a pure function so the camera FollowRig (member
 // focus, App.jsx) computes the same position from the same clock — one
 // source of orbital truth.
@@ -42,89 +38,6 @@ export function orbitPosition(orbit, t, out = new THREE.Vector3()) {
   const theta = orbit.phase * Math.PI * 2 + (t * Math.PI * 2) / (K * Math.pow(orbit.r, 1.5))
   return out.set(Math.cos(theta) * orbit.r, 0, Math.sin(theta) * orbit.r)
 }
-
-// Relative periods (r^1.5): lava 1.0× · rocky 1.9× · gas 3.5× · ice 5.4×
-export const ORBITS = [
-  {
-    id: 'lava', recipe: PLANET_RECIPES.lava, atmo: ATMOSPHERES.lava, r: 2.3, size: 0.3, phase: 0.13,
-    info: {
-      name: 'The Molten World', label: 'Innermost orbit · fastest year',
-      description:
-        'Closest to the star, where it was too hot for anything volatile to ' +
-        'survive — a world of bare melt and cooling crust, lapping every ' +
-        'other planet in the system.',
-      facts: [
-        'Kepler’s law makes it the sprinter: its year is the system’s shortest.',
-        'The glow needs no sunlight — watch its night side stay bright.',
-        'Mercury, our own innermost planet, races around the Sun in 88 days.',
-      ],
-    },
-  },
-  {
-    id: 'rocky', recipe: PLANET_RECIPES.rocky, atmo: ATMOSPHERES.rocky, r: 3.5, size: 0.38, phase: 0.52,
-    moons: [{ id: 'moon', orbitR: 0.85, size: 0.1, phase: 0.3, recipe: 'moon' }],
-    info: {
-      name: 'The Rocky World', label: 'Second orbit · the temperate zone',
-      description:
-        'Far enough out that water stays liquid, close enough that it does ' +
-        'not freeze — this is the habitable-zone seat, and it looks the part: ' +
-        'oceans, continents, city lights on the night side.',
-      facts: [
-        'Its year runs ~1.9× the molten world’s — distance^1.5, live.',
-        'The terminator line you see IS sunrise and sunset happening.',
-        'In our system this seat is Earth’s: 1 AU, one year.',
-        'The grey moon is tidally locked — one spin per orbit, the same ' +
-          'face toward home forever. Ours was born when a Mars-sized ' +
-          'world struck the young Earth, and it drifts 3.8 cm farther ' +
-          'away every year.',
-      ],
-    },
-  },
-  {
-    id: 'gas', recipe: PLANET_RECIPES.gas, atmo: ATMOSPHERES.gas, r: 5.3, size: 0.62, phase: 0.82,
-    ring: { tilt: 0.35 }, // SR-10: every giant wears rings; this one modestly
-    // MN-05: Io INSIDE-adjacent (outside the ring's 1.41 edge), Titan
-    // out at 2.1 — bigger than Io, as in life
-    moons: [
-      { id: 'io', orbitR: 1.55, size: 0.09, phase: 0.6, recipe: 'lava' },
-      { id: 'titan', orbitR: 2.1, size: 0.13, phase: 0.1, recipe: 'titan', atmosphere: 'titan' },
-    ],
-    info: {
-      name: 'The Gas Giant', label: 'Third orbit · the system’s bouncer',
-      description:
-        'The biggest world in the system, built from the hydrogen the star ' +
-        'did not claim. Giants like this shepherd comets and asteroids — ' +
-        'Jupiter has been soaking up impacts for the inner planets for eons.',
-      facts: [
-        'Its year is ~3.5× the molten world’s.',
-        'The bands are jet streams; the wobbles between them are shear.',
-        'Jupiter outweighs every other planet in our system combined — twice over.',
-        'The ember moon is an Io — kneaded molten by the giant’s tides. ' +
-          'When Galileo saw four moons circling Jupiter in 1610, it was ' +
-          'the first proof that not everything orbits the Earth.',
-        'The orange moon is a Titan: the only kind of moon with a thick ' +
-          'atmosphere — 1.5× Earth’s pressure, with methane rain, ' +
-          'rivers, and seas. The only other place where liquid falls ' +
-          'from clouds.',
-      ],
-    },
-  },
-  {
-    id: 'ice', recipe: PLANET_RECIPES.ice, atmo: ATMOSPHERES.ice, r: 7.1, size: 0.34, phase: 0.31,
-    info: {
-      name: 'The Ice World', label: 'Outermost orbit · beyond the frost line',
-      description:
-        'Past the frost line, water is a building material, not a liquid. ' +
-        'The slow outer lane of the system — everything here takes the ' +
-        'long way around.',
-      facts: [
-        'Its year runs ~5.4× the molten world’s — the slow outer lane.',
-        'The crack veins are an ice shell flexing over what lies beneath.',
-        'Neptune, our outermost planet, takes 165 Earth years per orbit.',
-      ],
-    },
-  },
-]
 
 // GH-04..07: kepler (rail) → held (the hand owns it) → newton (free
 // fall) → gone (swallowed/escaped, respawns on the moving rail). The
@@ -134,7 +47,7 @@ const RESPAWN_BEAT = 1.2 // s between a body's death and its rail return
 const DRAG_R_MAX = 23.5 // can't drag past the rung's rim
 const FLING_MAX = 1.8 // × v_esc at release radius — flings saturate sane
 
-function OrbitingPlanet({ orbit, frozen, hands, onEvent, restoreSignal }) {
+function OrbitingPlanet({ orbit, frozen, hands, onEvent, restoreSignal, choreo }) {
   const ref = useRef()
   const controls = useThree((s) => s.controls)
   const gl = useThree((s) => s.gl)
@@ -161,6 +74,7 @@ function OrbitingPlanet({ orbit, frozen, hands, onEvent, restoreSignal }) {
   const phys = useRef({ x: orbit.r, z: 0, vx: 0, vz: 0 })
   const hist = useRef([])
   const goneUntil = useRef(0)
+  const choreoOrigin = useRef(null)
 
   const setMode = (m) => {
     modeRef.current = m
@@ -223,6 +137,44 @@ function OrbitingPlanet({ orbit, frozen, hands, onEvent, restoreSignal }) {
   useFrame(({ clock: c }, delta) => {
     if (frozen) return
     const t = c.elapsedTime
+    // Capture choreography (shot 12-godshands): pointer hands are disabled
+    // under capture, so the shot data replays the same kepler → held →
+    // newton contract on the deterministic clock. Grab where the rail runs
+    // at grabAt, carry along a bowed line to the drop point, release with
+    // the scripted velocity — the physics from there is the real thing.
+    if (choreo) {
+      const m = modeRef.current
+      if (m === 'kepler' && t >= choreo.grabAt && t < choreo.releaseAt) {
+        choreoOrigin.current = { x: entry.pos.x, z: entry.pos.z }
+        phys.current.x = entry.pos.x
+        phys.current.z = entry.pos.z
+        phys.current.vx = 0
+        phys.current.vz = 0
+        hist.current = [
+          { t: performance.now() / 1000, x: entry.pos.x, z: entry.pos.z },
+        ]
+        setMode('held')
+      } else if (m === 'held' && choreoOrigin.current) {
+        if (t < choreo.releaseAt) {
+          const u = (t - choreo.grabAt) / (choreo.releaseAt - choreo.grabAt)
+          const s = u * u * u * (u * (u * 6 - 15) + 10)
+          const o = choreoOrigin.current
+          const dx = choreo.drop[0] - o.x
+          const dz = choreo.drop[1] - o.z
+          const len = Math.hypot(dx, dz) || 1
+          const bow = Math.sin(s * Math.PI) * (choreo.bow ?? 0)
+          phys.current.x = o.x + dx * s + (-dz / len) * bow
+          phys.current.z = o.z + dz * s + (dx / len) * bow
+        } else {
+          phys.current.x = choreo.drop[0]
+          phys.current.z = choreo.drop[1]
+          phys.current.vx = choreo.fling[0]
+          phys.current.vz = choreo.fling[1]
+          choreoOrigin.current = null
+          setMode('newton')
+        }
+      }
+    }
     const mode = modeRef.current
     if (mode === 'kepler') {
       place(t)
@@ -347,8 +299,8 @@ function OrbitingPlanet({ orbit, frozen, hands, onEvent, restoreSignal }) {
           size={mn.size}
           period={moonPeriod(mn.orbitR)}
           phase={mn.phase}
-          recipe={PLANET_RECIPES[mn.recipe]}
-          atmosphere={mn.atmosphere ? ATMOSPHERES[mn.atmosphere] : false}
+          recipe={mn.recipe}
+          atmosphere={mn.atmosphere || false}
           sun={sunU}
           frozen={frozen}
         />
@@ -364,11 +316,13 @@ function LIVE_BODIES_HELD() {
 }
 
 export default function System({
+  system = DEFAULT_SYSTEM,
   frozen = false,
   hands = false,
   onGodState,
   onGodEvent,
   restoreSignal = 0,
+  choreo = null,
 }) {
   // one faint shared ring material — plain basic material; the node
   // pipeline converts classic materials fine
@@ -429,8 +383,8 @@ export default function System({
 
   return (
     <group>
-      <Star radius={1.15} frozen={frozen} />
-      {ORBITS.map((o) => (
+      <Star {...system.star.render} frozen={frozen} />
+      {system.orbits.map((o) => (
         <group key={o.id}>
           <mesh rotation-x={-Math.PI / 2} material={ringMaterial} renderOrder={-1}>
             <ringGeometry args={[o.r - 0.012, o.r + 0.012, 160]} />
@@ -441,6 +395,7 @@ export default function System({
             hands={hands}
             onEvent={report}
             restoreSignal={restoreSignal}
+            choreo={choreo && choreo.body === o.id ? choreo : null}
           />
         </group>
       ))}
@@ -474,27 +429,5 @@ export const GODS_HANDS_INFO = {
       'and every finger points at Earth. Not real structure: an ' +
       'artifact of measuring distance by redshift while galaxies swarm ' +
       'inside their clusters.',
-  ],
-}
-
-// G3-17 — the system rung's educational payload (consumed by the scale
-// ladder in section E).
-export const SYSTEM_INFO = {
-  id: 'system',
-  name: 'Star System',
-  label: 'One star · four worlds',
-  description:
-    'A star and everything its gravity holds: worlds born from the same ' +
-    'flat disk of dust, which is why they all orbit in one plane, in one ' +
-    'direction. Distance from the star decided what each one became.',
-  facts: [
-    'Astronomers measure systems in AU — one AU is the Earth–Sun ' +
-      'distance, about 150 million kilometres.',
-    'Kepler’s third law, live: the orbital period grows as distance^1.5 — ' +
-      'watch the inner molten world lap the slow outer ice world.',
-    'The star is not just the center — it IS the system: our own Sun ' +
-      'holds 99.86% of the Solar System’s entire mass.',
-    'The habitable zone is the ring where water can stay liquid — not so ' +
-      'close it steams away, not so far it freezes.',
   ],
 }

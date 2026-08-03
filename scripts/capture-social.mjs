@@ -244,10 +244,13 @@ async function startVite() {
 }
 
 async function browserPath() {
+  // Chrome before Edge: headless Edge + swiftshader stalled indefinitely on
+  // the system rung's star material (0 frames in 900 s) where Chrome renders
+  // the same shot in minutes. Override with --browser or ECHOGALAXY_BROWSER.
   const candidates = [
     BROWSER_OVERRIDE,
-    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
     'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
   ].filter(Boolean)
 
   for (const candidate of candidates) {
@@ -347,6 +350,19 @@ async function browserPage(debugPort) {
   throw new Error(`Timed out waiting for Chrome DevTools${detail}.`)
 }
 
+// The browser's crashpad handler outlives the main process briefly and
+// holds files open inside the profile; on Windows that makes the unlink
+// race an EBUSY. Retry, and if the directory still will not go, leave it —
+// it lives in the OS temp dir and must never fail a finished capture.
+async function removeProfile(profile) {
+  try {
+    await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.warn(`[capture] temp profile left behind (${message}): ${profile}`)
+  }
+}
+
 async function startBrowser() {
   const executable = await browserPath()
   const profile = await mkdtemp(path.join(tmpdir(), 'echogalaxy-capture-'))
@@ -380,7 +396,7 @@ async function startBrowser() {
     return { child, page, profile }
   } catch (error) {
     await stopProcess(child)
-    await rm(profile, { recursive: true, force: true })
+    await removeProfile(profile)
     throw error
   }
 }
@@ -393,7 +409,7 @@ async function closeBrowser(browser) {
     try {
       await stopProcess(browser.child)
     } finally {
-      await rm(browser.profile, { recursive: true, force: true })
+      await removeProfile(browser.profile)
     }
   }
 }

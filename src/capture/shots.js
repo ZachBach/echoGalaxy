@@ -175,6 +175,80 @@ export const SHOTS = [
     via: { pos: [0, 17.0, 52.0] },
     to: { pos: [0, 24.0, 74.0], target: [0, 0, 0] },
   },
+
+  // ——— Post-roadmap wonders (promo capture manifest, 2026-08-03). New
+  // shots append after 10-group so already-rendered frame sets stay valid.
+
+  {
+    // The event horizon. A slow arc across the face: the photon ring stays
+    // pinned while the lensed background streams past, and the swing from
+    // camera-right to camera-left shows the Doppler-bright approaching side
+    // of the disc trading places. Verify both on the contact sheet.
+    id: '11-blackhole',
+    scale: 'planet',
+    index: 5, // PLANET_TYPES: ... gas(3), star(4), black hole(5), ringed(6) ...
+    seconds: 5.0,
+    ease: 'inout',
+    fovLock: 'v',
+    from: { pos: [2.8, 0.7, 3.4], target: [0, 0, 0] },
+    via: { pos: [1.2, 0.9, 4.0] },
+    to: { pos: [-1.6, 0.6, 3.8], target: [0, 0, 0] },
+  },
+  {
+    // God's Hands, scripted. Capture disables the pointer hands (and hides
+    // the fate dial), so the shot carries a choreography block that
+    // OrbitingPlanet plays back on the deterministic clock: grab the molten
+    // world (TRAPPIST-1 b), carry it outward for a second, release it
+    // slightly too fast for a circular orbit — Newton's cannonball, off the
+    // rail and into a wide ellipse.
+    id: '12-godshands',
+    scale: 'system',
+    // On the system rung `index` means member FOCUS, not which system —
+    // `system` picks the system by id (initialSystemIndex honors it).
+    system: 'trappist-1', // its innermost world is the molten one
+    seconds: 6.0,
+    ease: 'inout',
+    fovLock: 'h',
+    choreo: {
+      body: 'trappist-b',
+      grabAt: 0.5,
+      releaseAt: 1.5,
+      drop: [3.0, 1.8], // r 3.50 — between the d and e rails
+      bow: 0.35, // sideways arc of the carry, world units
+      fling: [-0.2996, 0.4993], // 1.30 × v_circ at r 3.50, prograde tangent
+    },
+    from: { pos: [0, 3.0, 8.0], target: [0, 0, 0] },
+    via: { pos: [0.5, 4.2, 9.6] },
+    to: { pos: [0, 6.0, 12.5], target: [0, 0, 0] },
+  },
+  {
+    // The Crab: star death answering the Pillars' star birth. Same gentle
+    // lateral drift as 05b so the filament web reads as volume, with enough
+    // dwell for ~9 beats of the 2 Hz pulsar heart.
+    id: '13-crab',
+    scale: 'nebula',
+    index: 1, // nebulaList: Pillars(0), Crab(1)
+    seconds: 4.6,
+    ease: 'inout',
+    fovLock: 'h',
+    from: { pos: [0.4, 0.15, 4.4], target: [0, 0.1, 0] },
+    via: { pos: [1.0, 0.55, 4.8], target: [0, 0.1, 0] },
+    to: { pos: [-0.6, 0.85, 5.2], target: [0, 0.1, 0] },
+  },
+  {
+    // Coma. Hold real space long enough to read the cluster, then zSpaceAt
+    // fires the redshift-space morph mid-shot and the Finger of God
+    // stretches toward the camera while it climbs.
+    id: '14-coma',
+    scale: 'cluster',
+    seconds: 6.0,
+    ease: 'inout',
+    fovLock: 'h',
+    zSpaceAt: 2.2, // seconds — Cluster drives its own glide from this cue
+    from: { pos: [0.8, 3.0, 14.5], target: [0, 0, 0] },
+    via: { pos: [0, 4.2, 13.0] },
+    to: { pos: [-1.2, 5.2, 12.2], target: [0, 0, 0] },
+  },
 ]
 
 // Cross-dissolve length used between every pair of clips, in seconds.

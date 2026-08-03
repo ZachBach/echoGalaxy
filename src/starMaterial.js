@@ -17,7 +17,12 @@ import { streaks } from './tsl-lib/pattern/streaks.js'
 // plasma turns blue-white, so brightness tuning happens in the remap/gain
 // here, never by removing the clamp. Bloom balance (G1-28) is also tuned
 // here — never in Effects.jsx.
-export function buildStarBodyMaterial({ spinRate = 0.02, frozen = false, gain = 2.4 } = {}) {
+export function buildStarBodyMaterial({
+  spinRate = 0.02,
+  frozen = false,
+  gain = 2.4,
+  color = 0xffffff,
+} = {}) {
   const clock = frozen ? TSL.float(0) : TSL.time
   const dir = TSL.positionLocal.normalize()
   const spun = spinY(TSL, dir, clock.mul(spinRate))
@@ -28,7 +33,7 @@ export function buildStarBodyMaterial({ spinRate = 0.02, frozen = false, gain = 
   // silhouette from blowing out under bloom
   const limb = fresnel(TSL, { power: 1.6 }).oneMinus().mul(0.55).add(0.45)
   const material = new MeshBasicNodeMaterial()
-  material.colorNode = plasma.mul(limb)
+  material.colorNode = plasma.mul(TSL.color(color)).mul(limb)
   return material
 }
 

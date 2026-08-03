@@ -10,7 +10,11 @@ import { createClusterField, createHairField } from './clusterShader'
 // zSpaceTarget drives the redshift-space morph (CB-10): the uniform
 // glides toward the target (~1.2 s exponential) and SNAPS when frozen —
 // deterministic in any state, mid-glide included.
-export default function Cluster({ frozen = false, zSpaceTarget = 0 }) {
+//
+// zSpaceAt (capture only, shot 14-coma): a clock cue in seconds. When set
+// it overrides zSpaceTarget — real space until the cue, then the glide
+// fires on the deterministic capture clock.
+export default function Cluster({ frozen = false, zSpaceTarget = 0, zSpaceAt = null }) {
   const field = useMemo(() => createClusterField(), [])
   const hair = useMemo(() => createHairField(), [])
 
@@ -22,14 +26,16 @@ export default function Cluster({ frozen = false, zSpaceTarget = 0 }) {
     [field, hair],
   )
 
-  useFrame((_, delta) => {
+  useFrame(({ clock }, delta) => {
     const u = field.zSpace
+    const target =
+      zSpaceAt != null ? (clock.elapsedTime >= zSpaceAt ? 1 : 0) : zSpaceTarget
     if (frozen) {
-      u.value = zSpaceTarget
+      u.value = target
       return
     }
-    u.value += (zSpaceTarget - u.value) * Math.min(1, delta * 3.2)
-    if (Math.abs(u.value - zSpaceTarget) < 0.002) u.value = zSpaceTarget
+    u.value += (target - u.value) * Math.min(1, delta * 3.2)
+    if (Math.abs(u.value - target) < 0.002) u.value = target
   })
 
   return (

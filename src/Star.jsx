@@ -4,11 +4,27 @@ import { buildStarBodyMaterial, buildCoronaMaterial } from './starMaterial'
 // <Star> — fireRamp plasma sphere + streaks corona shell (G1-26/27).
 // Deliberately not a <Planet>: no terminator, emissive-only — the star
 // is the light source, not a lit body.
-export default function Star({ radius = 1.7, coronaScale = 1.24, frozen = false }) {
-  const body = useMemo(() => buildStarBodyMaterial({ frozen }), [frozen])
+export default function Star({
+  radius = 1.7,
+  coronaScale = 1.24,
+  bodyColor = 0xffffff,
+  coronaColor = 0xffa64d,
+  coronaStrength = 0.8,
+  frozen = false,
+}) {
+  const body = useMemo(
+    () => buildStarBodyMaterial({ frozen, color: bodyColor }),
+    [frozen, bodyColor],
+  )
   const corona = useMemo(
-    () => buildCoronaMaterial({ frozen, bodyRadius: radius, shellRadius: radius * coronaScale }),
-    [frozen, radius, coronaScale],
+    () => buildCoronaMaterial({
+      frozen,
+      bodyRadius: radius,
+      shellRadius: radius * coronaScale,
+      color: coronaColor,
+      strength: coronaStrength,
+    }),
+    [frozen, radius, coronaScale, coronaColor, coronaStrength],
   )
   useEffect(() => () => { body.dispose(); corona.dispose() }, [body, corona])
 

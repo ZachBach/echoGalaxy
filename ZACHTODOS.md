@@ -6,8 +6,23 @@ eyes, or your accounts. Ordered by dependency.
 
 ## Launch video — production
 
-- [ ] **Install ffmpeg** (it is not on your PATH; assembly needs it):
+- [ ] **⚠ RE-RENDER 05-system + 02-rocky and re-assemble the 4:5 master
+      before posting it.** Found 2026-08-03 while probing the promo shots:
+      R3F's `advance(ts)` writes the raw millisecond timestamp into
+      `clock.elapsedTime`, so under the old rig every `elapsedTime`
+      consumer ran 1000× fast — the System rung's planets STROBE around
+      their rails frame-to-frame, and the rocky world's moon does the
+      same. Stills look fine (that's why the framing review missed it);
+      only motion shows it. CaptureRig now owns the clock and the fix is
+      verified frame-by-frame. Shader-driven shots (galaxies, star,
+      Pillars) were never affected. Fresh, correct 4:5 frames for the
+      launch shots can be re-rendered with:
+      `npm run capture:social -- --aspect 4x5 --fps 60 --shots 02-rocky,05-system --out video\frames-4x5-relaunch`
+      (fps 60 to match your original frames folder), then swap them in
+      and re-run assemble.
+- [x] **Install ffmpeg** (it is not on your PATH; assembly needs it):
       `winget install ffmpeg`, then confirm with `ffmpeg -version`.
+      *(ffmpeg 8.1.2 via winget — 2026-08-03.)*
 - [ ] *(Recommended, ~10 min)* **Full contact sheet at fps=6** before the
       real run: all ten shots at `&fps=6`, glance at every clip. I
       verified framing on 01/02/04/05/10 — shots 03-gas, 06-spiral,
@@ -29,10 +44,14 @@ eyes, or your accounts. Ordered by dependency.
       localhost:5173/?capture=09-irregular&aspect=4x5&fps=60&backend=webgl
       localhost:5173/?capture=10-group&aspect=4x5&fps=60&backend=webgl
       ```
-- [ ] **Assemble the master**:
+- [x] **Assemble the master**:
       `node scripts/assemble.mjs --frames ./frames --out echogalaxy-4x5.mp4 --titles`
       Watch it end to end. Check the title-card timings read well against
       the actual cut (they're set in `scripts/assemble.mjs` → `TITLES`).
+      *(video/echoGalaxy-4x5.mp4 — probed clean: h264, 1080×1350 exact
+      4:5, 30 fps, 40.4 s, ~6 Mbps, 29 MB; frames sampled at 2/20/38 s
+      show the rocky open, the Pillars mid-cut, and the Local Group
+      close card. The end-to-end watch is still your eyes' job.)*
 - [ ] **Capture + assemble the 9:16 Reels cut** — same ten URLs with
       `aspect=9x16` into a `frames-9x16/` folder, then:
       `node scripts/assemble.mjs --frames ./frames-9x16 --out echogalaxy-9x16.mp4 --titles`

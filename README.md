@@ -17,34 +17,33 @@ Within the rungs:
   zero buffers, and switching types is a uniform swap. Each galaxy floats
   in its own fbm nebula veil, palette-keyed to real emission physics
   (the gas-poor elliptical's veil is nearly absent on purpose).
-- **Planets** — eight bodies built from tsl-lib shader nodes: rocky (with
-  city lights on the night side), lava, ice, gas giant (the `bandedFlow`
-  node born here and promoted upstream), a star with a live corona, a
-  black hole — event horizon, photon ring, and a Doppler-beamed accretion
-  disc (the approaching side really is brighter) — and a Saturn, twice:
-  **The Ringed World** (Saturn-true ring radii, the Cassini Division, and
-  the planet's shadow biting the far side of the ring plane) and **The
-  Rings, Alone** (the planet removed — a sheet of orbiting snowballs,
-  proportionally thinner than paper, young enough that dinosaurs may
-  have seen a ringless Saturn).
+- **Planets** — twelve close-up worlds built from tsl-lib shader nodes:
+  rocky (with city lights on the night side), lava, ice, gas and ice
+  giants, desert, ocean, and cloud-covered worlds; a star with a live
+  corona; a black hole — event horizon, photon ring, and a
+  Doppler-beamed accretion disc (the approaching side really is
+  brighter); and a Saturn twice: **The Ringed World** (Saturn-true ring
+  radii, the Cassini Division, and the planet's shadow biting the far
+  side of the ring plane) and **The Rings, Alone** (the planet removed
+  — a sheet of orbiting snowballs, proportionally thinner than paper,
+  young enough that dinosaurs may have seen a ringless Saturn).
 
-- **Star System** — the star and four worlds on literal Kepler-third-law
-  orbits (the inner molten world laps the outer ice world), each
-  terminator tracking its own sun direction — and now **moons**: the
-  rocky world's grey companion is tidally locked (one spin per orbit,
-  same face home forever — the lock is exact in the shader, not
-  narrated), and the ringed giant carries an ember Io and a
-  haze-shrouded Titan. Moons ride God's Hands flings with their world,
-  and their tempo constant differs from the planets' for the honest
-  reason: Kepler's constant belongs to the central body. And **God's
-  Hands**: grab
-  any planet and fling it — the moment you let go it obeys real
-  Newtonian gravity (the same constant the rails run on). Too slow falls
-  into the star, too fast escapes forever, in between it finds a new
-  orbit; a live dial names your throw's fate before you release, and the
-  facts introduce the sky's real hands of god — the MSH 15-52 pulsar
-  nebula, cometary globule CG 4, and cosmology's Fingers-of-God effect.
-  One click restores the heavens to their rails.
+- **Star Systems** — switch between the eight-planet **Solar System**
+  and the seven-world **TRAPPIST-1** system. Both preserve planetary
+  order and Kepler-third-law timing while deliberately compressing or
+  expanding orbital distances so every world can be studied in one
+  scene. Every terminator tracks its own sun direction. Earth carries a
+  tidally locked Moon, while the giant-world demonstration carries ember
+  and haze-shrouded companions. Moons ride God's Hands flings with their
+  world, and their tempo constant differs from the planets' for the
+  honest reason: Kepler's constant belongs to the central body. And
+  **God's Hands**: grab any planet and fling it — the moment you let go
+  it obeys real Newtonian gravity (the same constant the rails run on).
+  Too slow falls into the star, too fast escapes forever, and in between
+  it finds a new orbit; a live dial names your throw's fate before you
+  release, and the facts introduce the sky's real hands of god — the MSH
+  15-52 pulsar nebula, cometary globule CG 4, and cosmology's
+  Fingers-of-God effect. One click restores the heavens to their rails.
 - **Nebula** — stellar life, bookended in one cycle. **1/2, the Pillars
   of Creation** (Eagle Nebula, M16): noise-sculpted columns with a
   photoevaporation rim and EGG star-knots pulsing at the fingertips,
@@ -132,7 +131,7 @@ WebView runs the (fully verified) WebGL2 fallback.
 
 ## Structure
 
-- `src/App.jsx` — canvas, the Galaxies|Planets view switcher, HUD, badge.
+- `src/App.jsx` — canvas, scale and star-system selection, HUD, badge.
 - `src/renderer.js` — async WebGPURenderer factory (backend pick + dev flags).
 - `src/Effects.jsx` — node-based bloom (`RenderPipeline`, owns the frame).
 - `src/Galaxy.jsx` — the persistent galaxy rig (one sprite for the app
@@ -145,9 +144,14 @@ WebView runs the (fully verified) WebGL2 fallback.
   the shader uniforms read (pure data since G2).
 - `src/Planet.jsx` + `src/planetMaterial.js` — the lit-body pipeline: body-frame
   sampling (`spunDir`), terminator composition, atmosphere shell.
-- `src/planetRecipes.js` — rocky / lava / ice / gas surface recipes +
-  atmosphere presets, built from vendored tsl-lib nodes.
-- `src/planetData.js` — the planet catalogue (copy + cfg per type).
+- `src/planetRecipes.js` — rocky / lava / ice / gas / desert / ocean /
+  cloud / ice-giant surface recipes + atmosphere presets, built from
+  vendored tsl-lib nodes.
+- `src/planetData.js` — the twelve-entry close-up planet catalogue
+  (copy + cfg per type).
+- `src/System.jsx` + `src/systemData.js` — data-driven orbital scenes for
+  the Solar System and TRAPPIST-1, including system-specific stars,
+  worlds, moons, rings, and educational copy.
 - `src/Star.jsx` + `src/starMaterial.js` — fireRamp plasma + streaks corona.
 - `src/BlackHole.jsx` + `src/blackHoleMaterial.js` — event horizon, photon
   ring, Keplerian-shear accretion disc with Doppler beaming, lensed-halo

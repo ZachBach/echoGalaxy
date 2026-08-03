@@ -142,4 +142,68 @@ export const PLANET_TYPES = [
     ],
     rings: true,
   },
+  {
+    id: 'desert',
+    name: 'Desert World',
+    label: 'Terrestrial world · dry basins and polar caps',
+    description:
+      'A rocky planet shaped by impacts, wind, and temperature extremes. With ' +
+      'little surface water, mineral terrain and dust dominate the view.',
+    facts: [
+      'Mars and Mercury are both dry rocky worlds, but for very different reasons: Mars lost much of its early atmosphere, while Mercury formed close to the Sun.',
+      'Iron-rich minerals can turn an entire planet red or orange, as on Mars.',
+      'Polar ice can survive even on a dry world when it is sheltered from direct sunlight.',
+    ],
+    recipe: PLANET_RECIPES.desert,
+    atmosphere: ATMOSPHERES.desert,
+    spinRate: 0.028,
+  },
+  {
+    id: 'ocean',
+    name: 'Ocean World',
+    label: 'Water-rich world · sparse islands',
+    description:
+      'A world where water covers most of the surface. It is a useful thought ' +
+      'experiment for the many exoplanets whose bulk density suggests deep global oceans.',
+    facts: [
+      'Earth is not an ocean world: continents break its global sea into basins and regulate climate through rock chemistry.',
+      'A deep global ocean can hide its rocky floor beneath high-pressure ice.',
+      'Several known exoplanets may have enough water to qualify as ocean-world candidates, but their surfaces remain unobserved.',
+    ],
+    recipe: PLANET_RECIPES.ocean,
+    atmosphere: ATMOSPHERES.ocean,
+    spinRate: 0.038,
+  },
+  {
+    id: 'cloud',
+    name: 'Cloud World',
+    label: 'Venus-like world · permanent cloud deck',
+    description:
+      'A rocky planet hidden by high clouds. The visible face is atmosphere, ' +
+      'not ground: the surface below can remain inaccessible to direct view.',
+    facts: [
+      'Venus is wrapped in reflective sulfuric-acid clouds high above its surface.',
+      'The same clouds that make Venus bright from space help trap heat in its dense carbon-dioxide atmosphere.',
+      'Planetary appearance alone can be misleading: a bright cloud deck says little about conditions at the ground.',
+    ],
+    recipe: PLANET_RECIPES.cloud,
+    atmosphere: ATMOSPHERES.cloud,
+    spinRate: 0.018,
+  },
+  {
+    id: 'ice-giant',
+    name: 'Ice Giant',
+    label: 'Outer giant · methane-blue atmosphere',
+    description:
+      'A blue outer planet built from more water-, ammonia-, and methane-rich ' +
+      'material than a Jupiter-like gas giant. Its color comes from methane high in the atmosphere.',
+    facts: [
+      'Uranus and Neptune are ice giants, a category distinct from Jupiter and Saturn.',
+      'Methane absorbs red light, leaving the blue and green colors that dominate their visible cloud tops.',
+      'Ice giants may hide exotic high-pressure fluids and electrically conductive water-ammonia layers deep inside.',
+    ],
+    recipe: PLANET_RECIPES.iceGiant,
+    atmosphere: ATMOSPHERES.iceGiant,
+    spinRate: 0.05,
+  },
 ]
