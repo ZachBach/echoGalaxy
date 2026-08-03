@@ -84,6 +84,39 @@ npm run dev
 
 Open the printed localhost URL. `npm run build` produces a production bundle.
 
+## Mobile & App Deployment (Capacitor)
+
+echoGalaxy is configured with Capacitor to generate native Android App Bundles (`.aab`) or APKs.
+
+### Commands
+
+```powershell
+# 1. Build Vite web assets
+npm run build
+
+# 2. Sync web assets into Android project
+npx cap sync
+
+# 3. Generate Android App Bundle (.aab)
+cd android
+.\gradlew.bat bundleRelease
+```
+
+The signed release bundle will be output to:
+`android/app/build/outputs/bundle/release/app-release.aab`
+
+### Alternative: Trusted Web Activity (`playstore/`)
+
+The `playstore/` folder holds the TWA route (Phase PS): Bubblewrap wraps
+the **deployed site** in Chrome itself — WebGPU on capable phones, a
+~1 MB app, and updates that ship by deploying the website. See
+`playstore/RUNBOOK.md` (five commands to an AAB) and
+`playstore/LISTING.md` (paste-ready store copy). The two routes are
+alternatives — one Play listing uses one of them; trade-offs are laid
+out in ZACHTODOS. The TWA is the WebGPU-keeping path; Capacitor's
+WebView runs the (fully verified) WebGL2 fallback.
+
+
 ## Structure
 
 - `src/App.jsx` — canvas, the Galaxies|Planets view switcher, HUD, badge.

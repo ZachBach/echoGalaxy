@@ -1,0 +1,39 @@
+{
+  "packageId": "com.aureliusdynamic.echogalaxy",
+  "host": "www.aureliusdynamic.com",
+  "name": "echoGalaxy — explore the universe",
+  "launcherName": "echoGalaxy",
+  "display": "standalone",
+  "themeColor": "#02030A",
+  "themeColorDark": "#02030A",
+  "navigationColor": "#02030A",
+  "navigationColorDark": "#02030A",
+  "navigationDividerColor": "#02030A",
+  "navigationDividerColorDark": "#02030A",
+  "backgroundColor": "#02030A",
+  "enableNotifications": false,
+  "startUrl": "/galaxy/",
+  "iconUrl": "https://www.aureliusdynamic.com/galaxy/icon-512.png",
+  "maskableIconUrl": "https://www.aureliusdynamic.com/galaxy/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://www.aureliusdynamic.com/galaxy/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://www.aureliusdynamic.com/galaxy/",
+  "minSdkVersion": 21,
+  "orientation": "default"
+}

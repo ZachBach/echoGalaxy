@@ -105,3 +105,52 @@ not a phone — these need your actual hands:
       from Play Console → App integrity into `assetlinks.json` (PS
       prepares the file with a placeholder), redeploy the site, then
       submit.
+
+## Play Store — the launch sequence (Phase PS ✅, your hands from here)
+
+Everything below is prepared; only accounts, signatures, and Submit
+remain. Assets: `playstore/assets/` (feature graphic + 5 screenshots),
+copy: `playstore/LISTING.md` (paste-ready, char-counted), build:
+`playstore/RUNBOOK.md`.
+
+**⚠ Decision first — TWO packaging paths now exist:**
+
+- **TWA (Bubblewrap, `playstore/`)** — wraps the DEPLOYED site in
+  Chrome itself: WebGPU on capable phones, ~1 MB app, updates ship by
+  deploying the website (no store review per update). Needs the
+  assetlinks handshake below. *This is Phase PS's recommendation — it's
+  the only path that keeps WebGPU.*
+- **Capacitor (`android/`, from your Antigravity session)** — bundles
+  the app into a WebView APK: fully self-contained from install, no
+  domain handshake, but **no WebGPU** (Android WebView doesn't ship
+  it — the app runs its WebGL2 fallback forever) and every update
+  needs a store re-upload. Commands are in the README's Capacitor
+  section.
+
+One listing = one package id = one path (you can switch later, but the
+id is forever). Pick, then:
+
+- [ ] 0. Push both repos (echoGalaxy + Aurelius) — PS-07's live checks
+      are waiting on it: `www.aureliusdynamic.com/galaxy/` must serve
+      `manifest.webmanifest`, `sw.js`, `icon-512.png`; the root must
+      serve `/.well-known/assetlinks.json` and `/privacy/`.
+- [ ] 1. Play Console account ($25, play.google.com/console).
+- [ ] 2. Create the app: name from LISTING.md, Education category,
+      free. Package id `com.aureliusdynamic.echogalaxy` (already baked
+      into both the TWA config AND matching what Capacitor should
+      use — check `capacitor.config.json` agrees if you go that road).
+- [ ] 3. Build the AAB — TWA: RUNBOOK.md five commands (first run
+      creates your upload keystore — back it up, it's gitignored).
+      Capacitor: the README section's three commands.
+- [ ] 4. Upload to Internal testing first; opt into **Play App
+      Signing** when asked.
+- [ ] 5. (TWA path only) Console → Setup → App integrity → copy the
+      **App signing key** SHA-256 → paste into
+      `.well-known/assetlinks.json` (placeholder is marked) → commit,
+      push, wait for Pages → relaunch the app: the URL bar vanishes.
+- [ ] 6. Store listing: paste from LISTING.md; upload
+      `playstore/assets/*` + `public/icon-512.png`; privacy URL
+      `https://www.aureliusdynamic.com/privacy/`.
+- [ ] 7. Content rating questionnaire (no ads/data/UGC → Everyone),
+      Data safety form ("no data collected" — gloriously short).
+- [ ] 8. Promote Internal → Production. Submit. 🚀

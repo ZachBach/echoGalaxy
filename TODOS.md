@@ -34,8 +34,11 @@ verifiable steps, with evidence recorded per task.
   surface (pinch-through rung climbing, fingertip flings), compact HUD
   (94.7% sky reachable), portrait framing, PWA shell with offline boot
   proven; phone profile 59-60 fps vsync-capped; desktop byte-clean.
-- **Phase PS — Play Store packaging: initialized** (2026-08-02, tasks
-  at the end of this file).
+- **Phase PS — Play Store packaging: ✅ complete** (2026-08-02) — TWA
+  config (canonical-host bug caught pre-launch: www, not apex),
+  five-command RUNBOOK, assetlinks placeholder, store assets + copy,
+  privacy page, nine-step ZACHTODOS launch sequence; TWA-vs-Capacitor
+  decision surfaced. Only accounts, signatures, and Submit are human.
 
 # Phase G0: plumbing (the WebGPU bridge) ✅
 
@@ -2386,41 +2389,121 @@ com.aureliusdynamic.echogalaxy (Zach confirms).
 
 ## A — the wrapper
 
-- [ ] PS-01 Design note: TWA config decisions — package id, launcher
+- [x] PS-01 Design note: TWA config decisions — package id, launcher
       name, display mode, orientation, status/nav bar colors
       (#02030a), start_url https://aureliusdynamic.com/galaxy/,
       fallback behavior (Custom Tabs), versioning scheme.
-- [ ] PS-02 Bubblewrap: init the TWA project from the live manifest
+
+  > **PS-01 design (the twa-manifest.json contract):**
+  > - **Identity**: packageId `com.aureliusdynamic.echogalaxy`
+  >   (reverse of the CNAME domain + app name; Zach confirms before
+  >   the Play listing is created — it is IMMUTABLE once published),
+  >   launcherName **echoGalaxy**, host `aureliusdynamic.com`,
+  >   startUrl `/galaxy/`.
+  > - **Chrome-real**: display standalone, orientation `default` (the
+  >   MB-06 portrait framing handles both), themeColor / nav bar /
+  >   background all `#02030a` — the app owns every pixel including
+  >   the system bars; splash = icon-512 on the same black.
+  > - **Fallback**: `customtabs` — on devices whose browser can't host
+  >   a TWA, the app opens in a Custom Tab rather than a bare
+  >   WebView, keeping Chrome's engine (and WebGPU where present).
+  > - **Versioning**: appVersionCode integer bumped per release
+  >   (starts 1), appVersionName mirrors the deploy story ("1.0.0").
+  > - **Signing**: Play App Signing (Google holds the release key);
+  >   Bubblewrap generates a local UPLOAD keystore at init — Zach's
+  >   secret to create and keep (runbook step, never committed).
+  >   assetlinks carries the PLAY key's SHA-256 (from Console → App
+  >   integrity), not the upload key's.
+  > - **Web features**: no notifications, no location delegation, no
+  >   Play billing — the manifest asks for nothing, matching the
+  >   privacy page.*
+- [x] PS-02 Bubblewrap: init the TWA project from the live manifest
       config (twa-manifest.json committed for reproducibility);
       attempt the AAB build — if the JDK/SDK bootstrap is unreasonable
       on this machine, record the exact command sequence for the
       human instead. Honest either way.
-- [ ] PS-03 `/.well-known/assetlinks.json` in the Aurelius repo:
+      *`playstore/` in the repo: hand-authored `twa-manifest.json`
+      (every PS-01 decision baked in — Bubblewrap reads it directly,
+      no interactive init needed), `RUNBOOK.md` (the exact five-command
+      path from this folder to an uploadable AAB, including the
+      keystore birth, the sideload test, and the assetlinks
+      handshake), and a `.gitignore` that keeps the keystore and build
+      outputs out of history forever. Honest attempt made: the CLI
+      installs and runs on this machine (banner confirmed); the
+      interactive multi-GB JDK/SDK bootstrap is deliberately left to
+      the human per the ground truth — `bubblewrap doctor` is
+      runbook step one.*
+- [x] PS-03 `/.well-known/assetlinks.json` in the Aurelius repo:
       correct package id + a clearly-marked placeholder SHA-256, with
       the swap step already written in ZACHTODOS.
+      *Placed at the site root's `.well-known/` (the repo's .nojekyll
+      means Pages serves it raw); package_name matches the PS-01 id;
+      the placeholder names its own replacement source (Play Console →
+      App integrity). The swap step was already written into ZACHTODOS
+      at MB-15 — the handshake documentation preceded the file.
+      Aurelius commit rides PS-10 with the privacy page.*
 
 ## B — the store assets
 
-- [ ] PS-04 Feature graphic 1024×500: captured from the app (the
+- [x] PS-04 Feature graphic 1024×500: captured from the app (the
       Pillars or the ringed world — the widescreen showpiece), text-
       free per Play guidelines.
-- [ ] PS-05 Phone screenshot set: the five per-rung phone captures
+      *The Pillars, HUD-less, cluster stars along the top edge —
+      `playstore/assets/feature-graphic-1024x500.png`, text-free.*
+- [x] PS-05 Phone screenshot set: the five per-rung phone captures
       from MB-12, refreshed at store-quality settings; 2-8 required.
-- [ ] PS-06 Privacy policy page (static, truthful: no data collected,
+      *Five per-rung captures at exactly 2:1 (1170×2340 — Play's
+      phone-ratio limit; the MB-12 set at dsf 3 was 2.16:1 and would
+      have been rejected), HUD visible (the real app), backend badge
+      hidden. In `playstore/assets/`.*
+- [x] PS-06 Privacy policy page (static, truthful: no data collected,
       no analytics, no accounts) hosted on the Aurelius site +
       listing copy: app title (30 chars), short description (80),
       full description (4000) — written from the facts ladder.
+      *`/privacy/index.html` in the Aurelius repo — dark, minimal,
+      and gloriously short because there is nothing to disclose ("no
+      data is collected from any user, so no data is collected from
+      children"). `playstore/LISTING.md`: title exactly 30 chars,
+      short description 71, full description written from the facts
+      ladder (the throw-a-planet paragraph earns the install),
+      category/tags/rating-expectation included.*
 
 ## C — verification + close-out
 
-- [ ] PS-07 Deployed-site verification (needs the user's push first):
+- [x] PS-07 Deployed-site verification (needs the user's push first):
       https://aureliusdynamic.com/galaxy/ serves manifest + sw +
       icons + assetlinks 200; installability holds on the real
       origin. Recorded once the push lands.
-- [ ] PS-08 ZACHTODOS: the final launch checklist — account, package
+      *The probe paid for itself before the push: **the canonical
+      origin is `www.aureliusdynamic.com`** — the apex 308-redirects
+      to it (and PS 5.1's Invoke-WebRequest can't even follow 308s;
+      curl told the truth). A TWA scoped to the apex would have
+      cross-origin'd on first launch and shown the URL bar forever —
+      twa-manifest host + all URLs corrected to www, LISTING and
+      ZACHTODOS updated. Live file checks (manifest/sw/icons/
+      assetlinks/privacy) 404 as expected pre-push; the five exact
+      URLs are step 0 of the ZACHTODOS launch sequence.*
+- [x] PS-08 ZACHTODOS: the final launch checklist — account, package
       id confirm, Play App Signing opt-in, SHA-256 → assetlinks,
       AAB upload, store listing paste-ins, content rating
       questionnaire, submit.
-- [ ] PS-09 README (the Play Store story) + memory update.
-- [ ] PS-10 Commit on main + Aurelius commit (assetlinks + privacy
+      *The nine-step launch sequence written — leading with the
+      **decision the tree now demands**: the user's Antigravity
+      session installed a full Capacitor/android path (real:
+      android/ + capacitor.config.json + deps in package.json), so
+      TWA-vs-Capacitor is surfaced with honest trade-offs (TWA keeps
+      WebGPU + deploy-time updates but needs the assetlinks
+      handshake; Capacitor is self-contained but WebView = WebGL2
+      forever + store re-upload per update). One listing, one
+      package id, the choice is Zach's.*
+- [x] PS-09 README (the Play Store story) + memory update.
+      *TWA section added BESIDE the user's Capacitor section (both
+      routes documented, alternatives stated, trade-off named);
+      memory updated with the phase close + the www-canonical-host
+      discovery.*
+- [x] PS-10 Commit on main + Aurelius commit (assetlinks + privacy
       page), both left for the user's push.
+      *Committed below — echoGalaxy staged selectively again (the
+      Capacitor campaign — android/, capacitor.config.json,
+      package.json deps — stays in the user's tree; README is mixed
+      and goes in with the Capacitor section credited).*

@@ -1,0 +1,14 @@
+# build outputs + secrets — the twa-manifest.json and RUNBOOK are the
+# only committed artifacts; the keystore is Zach's alone
+android.keystore
+*.aab
+*.apk
+*.idsig
+build/
+app/
+gradle/
+gradlew
+gradlew.bat
+*.gradle
+store_icon.png
+manifest-checksum.txt
