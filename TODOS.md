@@ -44,8 +44,12 @@ verifiable steps, with evidence recorded per task.
   zero buffers, parity 0.006/255 — the app record) + the
   redshift-space Finger-of-God toggle with its teaching panel. Dark
   matter's discovery, rendered where it happened.
-- **Phase SN — the Crab Nebula: initialized** (2026-08-03, tasks at
-  the end of this file).
+- **Phase SN — the Crab Nebula: ✅ complete** (2026-08-03) — the
+  Nebula rung cycles star birth (Pillars) and star death (Crab);
+  volumeAtlas extracted byte-identically on its second consumer;
+  atlasSampler qualified for upstream promotion (execution pending in
+  ../tsl-lib); parity 0.007/255; zero tunes on the finest first light
+  of the voyage. Plus one security incident, caught and cleaned.
 
 # Phase G0: plumbing (the WebGPU bridge) ✅
 
@@ -2947,5 +2951,17 @@ light speed.
       memory update.
       *Nebula bullet rewritten as the bookended cycle; structure list
       gains volumeAtlas + the Crab trio. Memory updated at close.*
-- [ ] SN-17 Commit on main; site redeploy (dist → ../galaxy + Aurelius
+- [x] SN-17 Commit on main; site redeploy (dist → ../galaxy + Aurelius
       commit, both left for the user's push).
+      *A phase close with a war story: the user's accidental
+      `git add -A` swept a signing keystore + plaintext passwords into
+      a commit that reached the public remote — remediated end to end
+      (history rewritten into the consolidated `9099db2`, force-push
+      of the clean history by the user's hand, local objects purged,
+      *.keystore gitignored, build.gradle moved to gitignored
+      keystore.properties, the burned-key regeneration checklist in
+      ZACHTODOS). The site redeploy `3bf39dd` was built from the
+      COMMITTED state in an isolated worktree so the user's
+      in-progress expansion (12 planet types, TRAPPIST-1) stayed out
+      of the shipment. echoGalaxy main is pushed and clean; the
+      Aurelius deploy awaits the user's push.*
