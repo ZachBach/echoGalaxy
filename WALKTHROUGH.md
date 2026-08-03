@@ -31,17 +31,17 @@ The bundle is fully self-contained (no CDN or runtime downloads).
 
 ## 3. Driving the app — the scale journey
 
-Four rungs, smallest to largest: **Planet → System → Galaxy → Local
-Group.**
+Five rungs, smallest to largest: **Planet → System → Nebula → Galaxy →
+Local Group.**
 
 - **Ladder buttons** (top of the HUD panel) jump straight to any rung.
 - **Zoom-through**: scroll *out* while parked at a rung's outer zoom stop
   to climb a scale; scroll *in* at the inner stop to descend. One wheel
   gesture per rung.
 - **Orbit**: drag to rotate, scroll to zoom (within each rung's range).
-- **Prev / Next** cycles the objects on rungs that have a catalogue:
-  five worlds on the Planet rung, four Hubble classes on the Galaxy rung.
-  System and Local Group are single scenes.
+- **Prev / Next** cycles the eight Planet-rung entries, four Hubble classes
+  on the Galaxy rung, and the overview/member focus entries on the System
+  and Local Group rungs.
 - Every rung and object carries its facts in the HUD — that's the point
   of the tool.
 
@@ -52,6 +52,7 @@ Group.**
 | `/` | Galaxy rung (home) |
 | `/?scale=planet` | Planet rung |
 | `/?scale=system` | Star System rung |
+| `/?scale=nebula` | Pillars of Creation rung |
 | `/?scale=galaxy` | Galaxy rung |
 | `/?scale=group` | Local Group rung |
 | `/?view=planets` | legacy link — still works, lands on Planet |
@@ -79,7 +80,30 @@ from production builds.
 | `?system=1` | Star-system rung in isolation |
 | `?group=1` | Local Group rung in isolation |
 
-## 6. The vendored library (tsl-lib)
+## 6. Creating social-ready walkthrough video
+
+The project can render two captioned social masters without screen recording.
+The capture command starts an isolated local Vite server and Edge session,
+then writes deterministic PNG frames; it needs a Chromium-based browser and
+enough disk space for the temporary frame set. Assembly additionally requires
+`ffmpeg` on `PATH`.
+
+```bash
+# LinkedIn and Facebook feed master
+npm run capture:social -- --aspect 4x5 --fps 30 --out video\frames-4x5
+node scripts/assemble.mjs --frames video\frames-4x5 --out video\echoGalaxy-4x5.mp4 --fps 30 --aspect 4x5 --titles
+
+# Instagram and Facebook Reels master
+npm run capture:social -- --aspect 9x16 --fps 30 --out video\frames-9x16
+node scripts/assemble.mjs --frames video\frames-9x16 --out video\echoGalaxy-9x16.mp4 --fps 30 --aspect 9x16 --titles
+```
+
+The cut covers the Planet, System, Nebula, Galaxy, and Local Group rungs.
+Its mobile-safe, high-contrast title cards are intentional: all three target
+platforms often autoplay muted. Delete the temporary frame folders after
+checking the encoded MP4s.
+
+## 7. The vendored library (tsl-lib)
 
 `src/tsl-lib/` is a **vendored copy** of the Aurelius TSL library — never
 edit it here. If you have the upstream repo as a sibling (`../tsl-lib`):
@@ -96,7 +120,7 @@ from. New shader nodes are born in this app, promoted upstream through
 the bench gate there, then synced back — see `TSL-ROADMAP.md` for the
 full story and `TODOS.md` for the task-level history.
 
-## 7. Troubleshooting
+## 8. Troubleshooting
 
 - **Port already in use** on `npm run dev`: a previous vite instance may
   survive its parent on Windows. Find and kill it:
@@ -109,7 +133,7 @@ full story and `TODOS.md` for the task-level history.
 - **Console warning about `THREE.Clock` deprecation**: harmless, comes
   from a dependency, tracked upstream.
 
-## 8. Where things live
+## 9. Where things live
 
 - `README.md` — feature overview + source-tree map.
 - `TSL-ROADMAP.md` — the four-phase plan (all complete) and its decisions.

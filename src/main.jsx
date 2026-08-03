@@ -21,7 +21,9 @@ const Root = devParams?.has('lab')
           ? lazy(() => import('./PillarsLab.jsx'))
           : devParams?.has('cluster')
             ? lazy(() => import('./ClusterLab.jsx'))
-            : App
+            : devParams?.has('crab')
+              ? lazy(() => import('./CrabLab.jsx'))
+              : App
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

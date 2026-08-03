@@ -24,6 +24,7 @@
 // Reference: the rung camera defaults and distance clamps from App.jsx.
 //   planet  [0, 0.8, 5.6]   min 2.6   max 12
 //   system  [0, 4.5, 11]    min 3     max 24
+//   nebula  [0, 0.2, 4.6]   min 2.6   max 9
 //   galaxy  [0, 6, 12]      min 4     max 28
 //   group   [0, 16, 40]     min 12    max 90
 
@@ -101,6 +102,19 @@ export const SHOTS = [
     from: { pos: [0, 2.2, 9.0], target: [0, 0, 0] },
     via: { pos: [0, 5.0, 11.4] },
     to: { pos: [0, 8.5, 15.0], target: [0, 0, 0] },
+  },
+  {
+    // The Eagle Nebula is the visual and conceptual bridge between a single
+    // stellar system and a galaxy. Its taller field needs a gentle sideways
+    // move instead of a pullback, so the pillars read as volume.
+    id: '05b-pillars',
+    scale: 'nebula',
+    seconds: 4.6,
+    ease: 'inout',
+    fovLock: 'h',
+    from: { pos: [0.1, 0.25, 4.7], target: [-0.25, 0.55, 0] },
+    via: { pos: [0.8, 0.7, 5.0], target: [-0.25, 0.55, 0] },
+    to: { pos: [-0.5, 1.0, 5.6], target: [-0.25, 0.55, 0] },
   },
   {
     // Four Hubble classes on one continuous descending arc. Shot 06 drops

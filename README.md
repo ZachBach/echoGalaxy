@@ -45,12 +45,16 @@ Within the rungs:
   facts introduce the sky's real hands of god — the MSH 15-52 pulsar
   nebula, cometary globule CG 4, and cosmology's Fingers-of-God effect.
   One click restores the heavens to their rails.
-- **Nebula** — the Pillars of Creation (Eagle Nebula, M16), raymarched:
-  the density field (noise-sculpted columns, photoevaporation rim, EGG
-  star-knots pulsing at the fingertips) bakes once at boot into a z-slice
-  atlas texture, so the volume march runs at two texture taps per step —
-  the young cluster doing the eroding shines above the tips, along the
-  exact light direction the field is shaded by.
+- **Nebula** — stellar life, bookended in one cycle. **1/2, the Pillars
+  of Creation** (Eagle Nebula, M16): noise-sculpted columns with a
+  photoevaporation rim and EGG star-knots pulsing at the fingertips,
+  the young cluster doing the eroding shining above. **2/2, the Crab
+  Nebula** (M1): the wreckage of the guest star of 1054 — a torn
+  filament shell around the blue synchrotron ghost, with a pulsar heart
+  beating at a slowed, declared rate (truly ~30/s). Both are raymarched
+  volumes whose fields bake once at boot into z-slice atlas textures
+  (the shared `volumeAtlas` machinery), so the march runs at two
+  texture taps per step.
 - **Local Group** — the real neighbourhood: the barred Milky Way with the
   Magellanic Clouds, Andromeda with M32/M110, Triangulum — 24,000 stars
   total, the same budget as one galaxy. A deep-space STARFIELD skybox
@@ -158,6 +162,12 @@ WebView runs the (fully verified) WebGL2 fallback.
 - `src/Moon.jsx` — orbiting, tidally-locked `<Planet>` wrapper (the
   lock is construction: spinRate = +2π/period, derived not tuned);
   cratered-regolith + Titan-haze recipes live in planetRecipes.
+- `src/volumeAtlas.js` — the shared slice-atlas volume machinery
+  (bake / pseudo-3D sampler / bounded march), extracted the day the
+  Crab became its second consumer.
+- `src/Crab.jsx` + `src/crabMaterial.js` + `src/crabField.js` — the
+  supernova remnant: ellipsoidal filament shell (worley web), the
+  synchrotron ghost, the slowed pulsar heart.
 - `src/Cluster.jsx` + `src/clusterShader.js` — the Coma rung: 1000
   hash-derived galaxy smudges + Melotte 111's foreground stars, with
   the redshift-space morph living inside positionNode (the Finger of

@@ -85,6 +85,20 @@ async function writeBlob(dirHandle, name, blob) {
   await writable.close()
 }
 
+async function postBlob(sink, name, blob) {
+  const url = new URL(sink)
+  url.searchParams.set('name', name)
+  const response = await fetch(url, {
+    method: 'POST',
+    // An untyped Blob keeps this cross-origin request simple, so the local
+    // capture sink does not need a preflight for every frame.
+    body: new Blob([blob]),
+  })
+  if (!response.ok) {
+    throw new Error(`capture sink rejected ${name}: ${response.status} ${await response.text()}`)
+  }
+}
+
 function canvasToBlob(canvas) {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -94,7 +108,16 @@ function canvasToBlob(canvas) {
   })
 }
 
-export default function CaptureRig({ shot, fps, width, height, onProgress, onDone }) {
+export default function CaptureRig({
+  shot,
+  fps,
+  width,
+  height,
+  sink,
+  onStart,
+  onProgress,
+  onDone,
+}) {
   const camera = useThree((s) => s.camera)
   const clock = useThree((s) => s.clock)
   const advance = useThree((s) => s.advance)
@@ -134,6 +157,7 @@ export default function CaptureRig({ shot, fps, width, height, onProgress, onDon
     started.current = true
 
     let cancelled = false
+    let restored = false
     const totalFrames = Math.round(shot.seconds * fps)
     const step = 1 / fps
 
@@ -145,6 +169,12 @@ export default function CaptureRig({ shot, fps, width, height, onProgress, onDon
       clock.elapsedTime += step
       return step
     }
+    const restoreClock = () => {
+      if (restored) return
+      restored = true
+      clock.getDelta = originalGetDelta
+      clock.elapsedTime = originalElapsed
+    }
 
     // The deterministic timeline. App.jsx patches performance.now at
     // MODULE scope (three's Timer captures its _startTime at renderer
@@ -153,84 +183,111 @@ export default function CaptureRig({ shot, fps, width, height, onProgress, onDon
     const clockBox = (window.__captureClock ??= { t: 0 })
 
     const run = async () => {
-      let dir
       try {
-        // showDirectoryPicker requires transient user activation — calling
-        // it straight from this mount effect throws SecurityError. Arm on a
-        // click and open the picker inside the click's own task.
-        console.log(
-          '[capture] armed — click the page to choose the frames folder and start',
-        )
-        dir = await new Promise((resolve, reject) => {
-          window.addEventListener(
-            'click',
-            () => pickDirectory().then(resolve, reject),
-            { once: true },
+        let dir
+        if (sink) {
+          // Validate early so a bad automation URL never consumes a shot.
+          new URL(sink)
+        } else {
+          // showDirectoryPicker requires transient user activation — calling
+          // it straight from this mount effect throws SecurityError. Arm on a
+          // click and open the picker inside the click's own task.
+          console.log(
+            '[capture] armed — click the page to choose the frames folder and start',
           )
-        })
+          dir = await new Promise((resolve, reject) => {
+            window.addEventListener(
+              'click',
+              () => pickDirectory().then(resolve, reject),
+              { once: true },
+            )
+          })
+        }
+        if (cancelled) return
+
+        onStart?.()
+        // Let React remove the arming prompt before a captured frame renders.
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+
+        const canvas = gl.domElement
+        // Constant 4-digit padding across every shot regardless of length, so
+        // the assembly script can use one %04d pattern for all of them.
+        const pad = 4
+
+        // A few warm-up frames before the first captured one. The galaxy
+        // position bake and the veil render-target bake both run inside React
+        // effects on type change, and the first frame after a material swap
+        // can land before they have settled.
+        for (let i = 0; i < 4; i += 1) {
+          clockBox.t = i * step * 1000
+          camera.position.copy(curve.at(0))
+          camera.lookAt(target)
+          advance(clockBox.t)
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise((r) => requestAnimationFrame(r))
+        }
+
+        // Reset the clock so the warm-up does not leak into the shot. Galaxy
+        // rotation accumulates, so those four frames would otherwise show up
+        // as a small offset in the disc angle.
+        clock.elapsedTime = 0
+
+        for (let f = 0; f < totalFrames && !cancelled; f += 1) {
+          const raw = totalFrames === 1 ? 0 : f / (totalFrames - 1)
+          const t = shot.ease === 'linear' ? raw : easeInOut(raw)
+
+          camera.position.copy(curve.at(t))
+          camera.lookAt(target)
+          camera.updateMatrixWorld()
+
+          clockBox.t = (4 + f) * step * 1000
+          advance(clockBox.t)
+
+          // Grab in the same task as the render. On the WebGL2 backend the
+          // drawing buffer is still intact here even without
+          // preserveDrawingBuffer, because compositing has not run yet.
+          // eslint-disable-next-line no-await-in-loop
+          const blob = await canvasToBlob(canvas)
+          const name = `${shot.id}.${String(f).padStart(pad, '0')}.png`
+          // eslint-disable-next-line no-await-in-loop
+          await (sink ? postBlob(sink, name, blob) : writeBlob(dir, name, blob))
+
+          onProgress?.({ frame: f + 1, total: totalFrames })
+        }
+
+        if (!cancelled) {
+          onDone?.({ ok: true, frames: totalFrames })
+          console.log(`[capture] ${shot.id}: ${totalFrames} frames at ${fps} fps`)
+        }
       } catch (err) {
-        console.error('[capture] directory pick failed:', err.message)
-        onDone?.({ ok: false, error: err.message })
-        return
+        const error = err instanceof Error ? err.message : String(err)
+        console.error('[capture] failed:', error)
+        if (!cancelled) onDone?.({ ok: false, error })
+      } finally {
+        restoreClock()
       }
 
-      const canvas = gl.domElement
-      // Constant 4-digit padding across every shot regardless of length, so
-      // the assembly script can use one %04d pattern for all of them.
-      const pad = 4
-
-      // A few warm-up frames before the first captured one. The galaxy
-      // position bake and the veil render-target bake both run inside React
-      // effects on type change, and the first frame after a material swap
-      // can land before they have settled.
-      for (let i = 0; i < 4; i += 1) {
-        clockBox.t = i * step * 1000
-        camera.position.copy(curve.at(0))
-        camera.lookAt(target)
-        advance(clockBox.t)
-        // eslint-disable-next-line no-await-in-loop
-        await new Promise((r) => requestAnimationFrame(r))
-      }
-
-      // Reset the clock so the warm-up does not leak into the shot. Galaxy
-      // rotation accumulates, so those four frames would otherwise show up
-      // as a small offset in the disc angle.
-      clock.elapsedTime = 0
-
-      for (let f = 0; f < totalFrames && !cancelled; f += 1) {
-        const raw = totalFrames === 1 ? 0 : f / (totalFrames - 1)
-        const t = shot.ease === 'linear' ? raw : easeInOut(raw)
-
-        camera.position.copy(curve.at(t))
-        camera.lookAt(target)
-        camera.updateMatrixWorld()
-
-        clockBox.t = (4 + f) * step * 1000
-        advance(clockBox.t)
-
-        // Grab in the same task as the render. On the WebGL2 backend the
-        // drawing buffer is still intact here even without
-        // preserveDrawingBuffer, because compositing has not run yet.
-        // eslint-disable-next-line no-await-in-loop
-        const blob = await canvasToBlob(canvas)
-        // eslint-disable-next-line no-await-in-loop
-        await writeBlob(dir, `${shot.id}.${String(f).padStart(pad, '0')}.png`, blob)
-
-        onProgress?.({ frame: f + 1, total: totalFrames })
-      }
-
-      onDone?.({ ok: true, frames: totalFrames })
-      console.log(`[capture] ${shot.id}: ${totalFrames} frames at ${fps} fps`)
     }
-
     run()
 
     return () => {
       cancelled = true
-      clock.getDelta = originalGetDelta
-      clock.elapsedTime = originalElapsed
+      restoreClock()
     }
-  }, [shot, fps, clock, advance, gl, camera, curve, target, onProgress, onDone])
+  }, [
+    shot,
+    fps,
+    clock,
+    advance,
+    gl,
+    camera,
+    curve,
+    target,
+    sink,
+    onStart,
+    onProgress,
+    onDone,
+  ])
 
   return null
 }

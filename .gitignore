@@ -4,3 +4,9 @@ dist-ssr
 *.local
 .DS_Store
 *.log
+video/
+
+# signing material — never in history (the 2026-08-03 lesson)
+*.keystore
+*.jks
+android/keystore.properties

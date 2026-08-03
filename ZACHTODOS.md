@@ -154,3 +154,17 @@ id is forever). Pick, then:
 - [ ] 7. Content rating questionnaire (no ads/data/UGC → Everyone),
       Data safety form ("no data collected" — gloriously short).
 - [ ] 8. Promote Internal → Production. Submit. 🚀
+
+## ⚠ Security: the burned keystore (2026-08-03)
+
+An accidental `git add -A` briefly committed `android/app/release.keystore`
+WITH its passwords in build.gradle. The history was rewritten before any
+push — nothing ever left this machine — but treat that keystore as
+burned anyway:
+
+- [ ] Delete `android/app/release.keystore` from disk and generate a
+      fresh one (command in `android/keystore.properties.example`).
+- [ ] Fill `android/keystore.properties` (gitignored) with the new
+      credentials — build.gradle now reads from it and will never
+      accept hardcoded passwords again.
+- [ ] Back the new keystore up somewhere that is not a git repo.

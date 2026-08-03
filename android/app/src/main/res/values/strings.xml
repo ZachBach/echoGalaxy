@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">echoGalaxy</string>
+    <string name="title_activity_main">echoGalaxy</string>
+    <string name="package_name">com.echogalaxy.app</string>
+    <string name="custom_url_scheme">com.echogalaxy.app</string>
+</resources>

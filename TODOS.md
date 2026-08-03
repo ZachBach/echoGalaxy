@@ -44,6 +44,8 @@ verifiable steps, with evidence recorded per task.
   zero buffers, parity 0.006/255 — the app record) + the
   redshift-space Finger-of-God toggle with its teaching panel. Dark
   matter's discovery, rendered where it happened.
+- **Phase SN — the Crab Nebula: initialized** (2026-08-03, tasks at
+  the end of this file).
 
 # Phase G0: plumbing (the WebGPU bridge) ✅
 
@@ -2738,3 +2740,212 @@ too-fast discovery, mass that does not shine.
       the Aurelius repo. Both awaiting the user's push. The ladder
       runs from a planet's surface to the place dark matter was
       found.*
+
+# Phase SN: the Crab Nebula (post-roadmap — star death joins star birth)
+
+17 tasks (SN-01..17). The feature: the Nebula rung becomes a CYCLE —
+the Pillars of Creation (star birth) and **the Crab Nebula** (star
+death) bookending stellar life on one rung. The Crab: wreckage of the
+"guest star" Chinese astronomers watched blaze in the DAYTIME sky for
+23 days in July 1054 — red filaments of shredded star around an eerie
+blue synchrotron glow, with a city-sized pulsar at the heart spinning
+~30 times a second. The closing fact: the iron in your blood and the
+calcium in your bones were forged in explosions exactly like this one.
+
+The engineering poetry: the Crab is the SECOND consumer of the pillars'
+atlas-bake raymarch — which, by the PC-17 verdict's own written terms,
+**unparks the volumeMarch/sampleAtlas promotion review**. Section A
+extracts the shared machinery honestly (an in-repo module first), and
+SN-15 re-runs the review with two real consumers; the verdict lands
+wherever the truth is.
+
+Ground truth at init: the nebula rung is currently NO-CYCLE (CB made
+the branch `nebula || cluster` → list null); SN gives it nebulaIndex +
+nav (1/2, 2/2) — capture shots are unaffected (no nebula shots exist
+in shots.js). The pillars machinery to extract: buildAtlasBakeMaterial
+/ bakePillarsAtlas / sampleAtlas / the bounded march (pillarsMaterial
+.js) — the extraction's bar is a pillars frozen-diff regression at the
+resample tolerance (the formation must not move a pixel it doesn't
+have to). Crab anatomy to render: an ellipsoidal (~1.4:1) filament
+SHELL (worley-web ridges — the shredded ejecta) in Hα red-orange,
+around a smooth blue-white synchrotron interior brightening toward the
+center; STATIC by design (the pillars precedent — the bake owns the
+field; the pulsar's animation carries the life). The pulsar: an HDR
+heart pulsing at a SLOWED, visible rate with the fact declaring the
+true 30/s (the declared-compression honesty rule). Facts source-
+verified 2026-08-03 (Britannica / SEDS / EarthSky): July 4 1054,
+daylight 23 days, ~2 years at night, Taurus, ~6,500 ly, ~10 ly across,
+PSR B0531+21 ~30 pulses/s, synchrotron = electrons spiraling near
+light speed.
+
+## A — the shared volume machinery + the Crab field
+
+- [x] SN-01 Design before code: the extraction surface (what becomes
+      the shared atlas-volume module vs stays per-field), the Crab
+      density anatomy (shell radius/thickness, filament frequency,
+      synchrotron interior law, the 1.4:1 ellipsoid), palette + HDR
+      budget, the pulsar's slowed-rate presentation. Written as the
+      SN-01 note.
+
+  > **SN-01 design (the contract A/B implement):**
+  > - **The extraction surface** — volumeAtlas.js owns the GENERIC:
+  >   atlas geometry ({sw, sh, nz, cols, rows} + bounds), the bake
+  >   quad material (uv → tile → voxel → world p, field(p) → vec4),
+  >   the one-shot RT bake, the half-texel-inset pseudo-3D sampler
+  >   (two taps, z-lerp), and the bounded-march factory (ray-box
+  >   entry/exit over bounds, fixed loop, front-to-back accumulation
+  >   with a per-consumer `shade(sample, pos, dt) → {src, a}`
+  >   callback). Each FIELD keeps: its density anatomy, its channel
+  >   assignment, its shading law. The re-pointed pillars must
+  >   reproduce their exact op order — the regression bar is
+  >   bit-level-or-resample-tolerance on frozen captures.
+  > - **Crab anatomy**: ellipsoid axes (1.35, 0.95, 0.95) — the real
+  >   1.4:1 oval; re = |p / axes|; the SHELL is a gaussian band at
+  >   re ≈ 0.97 (σ 0.16) carrying a worley F2−F1 web (the shredded-
+  >   ejecta filaments, the ice-crack machinery reborn) modulated by
+  >   ridged detail; the INTERIOR is the synchrotron ghost —
+  >   exp(−2.2·re²), smooth, brightest at the heart. Channels:
+  >   R = filaments, G = glow, B = re (radius for shading falloffs).
+  >   No external sun — an emission nebula lights itself; no clock —
+  >   static by the bake's own precedent.
+  > - **Palette/HDR**: filaments Hα red-orange (1.0, 0.35, 0.22) ≤
+  >   1.3; synchrotron blue-white (0.55, 0.75, 1.0) ≤ 1.5 at the
+  >   heart — black-hole capping discipline throughout.
+  > - **The pulsar**: an HDR point at the center pulsing at ~2 Hz —
+  >   a SLOWED lighthouse, declared: the facts state the true ~30/s
+  >   and that the beat is slowed to be seen (the compression-honesty
+  >   rule). Clock-driven, frozen-clean at t = 0.*
+- [x] SN-02 Extract `src/volumeAtlas.js`: the generic z-slice atlas
+      bake (QuadMesh→RT) + pseudo-3D sampler + bounded march factory,
+      consumed by a re-pointed pillarsMaterial — with the regression
+      bar: the Pillars' frozen render must not change beyond the
+      atlas-resample tolerance.
+      *volumeAtlas.js owns bake / sampler / march (field and shade
+      delegated by callback); pillarsMaterial re-pointed with its
+      public API unchanged. **The regression bar earned its keep**:
+      the first diff showed +2.33 mean brightening — I had
+      reconstructed the shade from memory using the PRE-TUNE values
+      (1.3/0.16) instead of the committed PC-10 tune (1.1/0.14); the
+      committed file was consulted, the constant corrected, and the
+      re-run landed at **0.0000/255, 0.000% px>8 on both backends —
+      byte-identical**. The machinery moved; not one pixel did.*
+- [x] SN-03 `src/crabField.js`: pure node-smokeable density — worley
+      filament web on the ellipsoidal shell + smooth synchrotron
+      interior, R/G/B atlas channels chosen for the march.
+      *Per the SN-01 note: gaussian shell band at re ≈ 0.97 (σ 0.16)
+      on axes (1.35, 0.95, 0.95); worley F2−F1 web (the ice-crack
+      machinery reborn at nebula scale) × ridged roughness; smooth
+      exp(−2.2·re²) synchrotron interior. Channels R/G/B = filaments/
+      glow/radius. No sun, no clock — an emission nebula lights
+      itself.*
+- [x] SN-04 `src/crabMaterial.js` through the shared machinery: bake +
+      march + the two-population coloring (red filaments / blue glow),
+      HDR capped per the black-hole rule.
+      *144×112×40 atlas; shading law: Hα (1.0, 0.35, 0.22) filaments
+      ≤ 1.3 occluding like torn cloth, blue-white synchrotron ghost
+      ≤ 1.5 at the heart, translucent. The module is 60 lines —
+      the extraction's dividend made visible.*
+- [x] SN-05 Node-smokes: both fields build through volumeAtlas (all
+      morphless states, frozen + live), no-clock assertions on the
+      field modules.
+      *10/10: pillars bake + march (frozen/live/mobile-steps) through
+      the shared machinery, crab field + bake + march at both step
+      budgets, and textual no-TSL.time assertions on crabField.js AND
+      volumeAtlas.js. Build green (624 modules).*
+
+## B — the scene + the rung cycle
+
+- [x] SN-06 `src/Crab.jsx`: the volume + the pulsar heart (HDR point,
+      slowed lighthouse pulse, frozen-clean) + dispose discipline.
+      *Bake-at-mount (the Pillars pattern), the heart a 0.045-radius
+      HDR sphere pulsing sin⁸ at ~2 Hz — sharp lighthouse beats, the
+      facts declaring the true 30/s; frozen holds mid-beat at t = 0.
+      Group tilted for composition.*
+- [x] SN-07 The nebula rung becomes a cycle: nebulaIndex state, nav
+      1/2 ↔ 2/2, App mounts Pillars or Crab by entry; zoom-through and
+      camera untouched.
+      *nebulaList = [NEBULA_INFO, CRAB_INFO] — stellar life bookended
+      on one rung. Harness: boots on the Pillars (1/2), Next → the
+      Crab (2/2), Prev → back, zero errors; the cluster keeps its
+      no-cycle toggle rung untouched.*
+- [x] SN-08 CRAB_INFO: the guest star of 1054 (daylight for 23 days),
+      the city-sized 30-spins-per-second heart, synchrotron light from
+      near-lightspeed electrons, and the element-forging close — "you
+      are wreckage like this, rearranged."
+      *Four facts; the slowed-beat declaration lives in the pulsar
+      fact ("so your eye can follow what a radio telescope hears");
+      the close: "You are wreckage, rearranged."*
+- [x] SN-09 Lab route (`?crab=1`): both backends, zero errors, parity
+      recorded; cost measured against the pillars' bake numbers.
+      *Both backends mean-identical (32.79/32.79), saturation 0.000%,
+      frozen-over-time exactly 0.0000, cross-backend parity
+      **0.007/255** (the volumeAtlas machinery holds the app-record
+      class); the heart beats live (Δ 0.33 over 0.7 s); **26.5 fps**
+      at dpr 2 — over the ≥25 volume gate, in the pillars' own
+      territory.*
+- [x] SN-10 Eyeball vs Crab imagery: the filament web must read as
+      shredded star, the interior as ghost-light; tune once,
+      screenshots kept.
+      ***Zero tunes spent** — arguably the finest first light of the
+      voyage: the oval shell's torn-cell filament web reads as M1's
+      shredded body at a glance, the blue ghost fills it from within,
+      the heart burns at center. Screenshots kept per backend + the
+      rung shot.*
+
+## C — discipline
+
+- [x] SN-11 Pillars regression: frozen diffs vs pre-SN captures within
+      the resample tolerance on both backends — the extraction moved
+      machinery, not pixels.
+      *Two levels of proof: the LAB regression (banked pre-extraction
+      baselines) landed **byte-identical, 0.0000/255 both backends**
+      after the SN-02 constant catch; and the APP-level scene region
+      (x > 460, the G3-34 trick — the HUD legitimately gained a nav
+      row) diffs **0.0000/255 against the PC-era capture**. Through an
+      extraction AND a rung-cycle conversion, the sky did not move.*
+- [x] SN-12 Determinism: frozen-over-time exactly 0.000 on BOTH
+      formations (the pulsar pulse freezes clean at t = 0); capture
+      untouched.
+      *App-level frozen-over-time **exactly 0.0000** on 1/2 (Pillars)
+      and 2/2 (Crab) — the heart holds mid-beat at t = 0; the nav
+      cycles under freeze without disturbing determinism.*
+- [x] SN-13 Harness: six rungs × both backends + the nebula cycle
+      round-trip (1/2 ↔ 2/2) + a phone-profile spot-check.
+      *Six-rung sweep clean on both backends; the cycle round-trip
+      proven in SN-09's battery; phone profile: a touchscreen tap on
+      Next lands on the Crab, zero errors.*
+
+## D — verification + close-out
+
+- [x] SN-14 FPS: both formations, both backends, vs the PC-05/CB
+      ledger entries.
+      *Pillars 25.5/28.8, Crab 27.2/28.7 (WebGPU/WebGL2, dpr 2, live)
+      — both formations over the ≥25 volume gate on both backends,
+      squarely in the PC-05 territory; usual shared-machine
+      conditions caveat applies.*
+- [x] SN-15 **The promotion review, re-run with two consumers** (the
+      PC-17 unpark clause): does volumeAtlas go upstream to tsl-lib
+      (bench/parity/docs per CONVENTIONS) or stay an app-level shared
+      module? Decide with the bench rules in hand; record the verdict
+      and the reasoning either way.
+      ***SPLIT VERDICT.** (1) `bakeAtlas`/`buildMarchMaterial`:
+      **stay app-level** — they are renderer-coupled (RenderTarget,
+      QuadMesh, MeshBasicNodeMaterial imports), which the library's
+      self-containment rule (G0-21: nodes import NOTHING, namespace-
+      injected) cannot admit without injecting half of three/webgpu;
+      and the march's cost class belongs to its shade callback, the
+      PC-17 objection that two consumers did not dissolve. (2)
+      `atlasSampler`: **QUALIFIES for promotion** — it can be
+      namespace-injected (TSL, texture, geometry opts), it is a leaf
+      graph builder, it benches (fixed taps, measurable parity/cost),
+      and it now has two consumers with parity receipts of 0.007/255.
+      **Execution deferred to an upstream session**: the promotion
+      loop runs in ../tsl-lib whose commits are the user's (the
+      bandedFlow/blackbody precedent) — recorded here as the next
+      upstream errand, not debt hidden in a tick.*
+- [x] SN-16 README (star death joins star birth; the 1054 story) +
+      memory update.
+      *Nebula bullet rewritten as the bookended cycle; structure list
+      gains volumeAtlas + the Crab trio. Memory updated at close.*
+- [ ] SN-17 Commit on main; site redeploy (dist → ../galaxy + Aurelius
+      commit, both left for the user's push).

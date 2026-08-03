@@ -18,6 +18,7 @@ import System, {
 } from './System'
 import Pillars, { NEBULA_INFO } from './Pillars'
 import Cluster, { CLUSTER_INFO, REDSHIFT_INFO } from './Cluster'
+import Crab, { CRAB_INFO } from './Crab'
 import LocalGroup, { GROUP_INFO, MEMBERS } from './LocalGroup'
 import Effects from './Effects'
 import { createSkybox, bakeSkybox } from './skybox'
@@ -324,6 +325,8 @@ export default function App() {
   )
   const [systemIndex, setSystemIndex] = useState(0)
   const [groupIndex, setGroupIndex] = useState(0)
+  // SN-07: the nebula rung cycles star birth and star death
+  const [nebulaIndex, setNebulaIndex] = useState(0)
   // The renderer, captured once init() has resolved — backend identity is
   // only final after that, so all backend reads go through this state.
   const [gl, setGl] = useState(null)
@@ -392,6 +395,8 @@ export default function App() {
     [starEntry],
   )
   const groupList = useMemo(() => [GROUP_INFO, ...MEMBERS.map((m) => m.info)], [])
+  // SN-07: stellar life, bookended — the Pillars (birth), the Crab (death)
+  const nebulaList = useMemo(() => [NEBULA_INFO, CRAB_INFO], [])
 
   let info
   let list
@@ -409,9 +414,13 @@ export default function App() {
     list = systemList
     index = systemIndex
     setIndex = setSystemIndex
-  } else if (rung.id === 'nebula' || rung.id === 'cluster') {
-    // one formation, no cycle — the facts ARE the payload (and the
-    // cluster's interaction is the redshift toggle, not a cycle)
+  } else if (rung.id === 'nebula') {
+    list = nebulaList
+    index = nebulaIndex
+    setIndex = setNebulaIndex
+  } else if (rung.id === 'cluster') {
+    // one formation, no cycle — the cluster's interaction is the
+    // redshift toggle, not a cycle
     list = null
     index = 0
     setIndex = null
@@ -420,7 +429,7 @@ export default function App() {
     index = groupIndex
     setIndex = setGroupIndex
   }
-  info = list ? list[index] : rung.id === 'cluster' ? CLUSTER_INFO : NEBULA_INFO
+  info = list ? list[index] : CLUSTER_INFO
 
   // GH-12 call: while the god is at work (a body held or off its rail),
   // the info panel becomes the God's Hands payload — the facts arrive at
@@ -519,9 +528,12 @@ export default function App() {
             restoreSignal={restoreCount}
           />
         )}
-        {rung.id === 'nebula' && (
-          <Pillars frozen={FROZEN} steps={COARSE ? 14 : 20} />
-        )}
+        {rung.id === 'nebula' &&
+          (nebulaIndex === 0 ? (
+            <Pillars frozen={FROZEN} steps={COARSE ? 14 : 20} />
+          ) : (
+            <Crab frozen={FROZEN} steps={COARSE ? 14 : 20} />
+          ))}
         {rung.id === 'galaxy' && <Galaxy type={GALAXY_TYPES[galaxyIndex]} />}
         {rung.id === 'group' && <LocalGroup frozen={FROZEN} />}
         {rung.id === 'cluster' && (
