@@ -15,3 +15,7 @@ android/keystore.properties
 frames/
 frames-*/
 *.mp4
+
+# Claude Code runtime state — the checked-in parts of .claude/ are
+# settings.json and agents/, not session locks
+.claude/scheduled_tasks.lock
