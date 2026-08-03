@@ -25,6 +25,11 @@ verifiable steps, with evidence recorded per task.
   rung's Saturn pair (Ringed World + Rings Alone, 8/8 cycle), analytic
   planet shadow proven three ways, System-rung bonus ring rides God's
   Hands flings; parity 0.027–0.028/255; frozen 0.0000; FPS noise-level.
+- **Phase MN — moons: ✅ complete** (2026-08-02) — the Moon, Io, and
+  Titan on the System rung + the full-size Moon on the rocky closeup;
+  tidal lock exact by construction (spinRate = +2π/T, derived at
+  machine epsilon); moons ride God's Hands flings; frozen 0.0000;
+  21/21 regression.
 
 # Phase G0: plumbing (the WebGPU bridge) ✅
 
@@ -1932,3 +1937,186 @@ Roche limit (inside: rings; outside: moons).
       the Aurelius repo. Both awaiting the user's push. Note: PC
       (Pillars) rides in the same deploy if the previous push hasn't
       happened yet — the bundles are cumulative.*
+
+# Phase MN: moons (post-roadmap)
+
+14 tasks (MN-01..14). The feature: the System rung's worlds gain real
+moons — the rocky world gets THE Moon (tidally locked, and the lock is
+RENDERED: same face inward, forever), the ringed giant gets an
+ember-red Io and a haze-shrouded Titan — and the planet rung's rocky
+closeup gains its Moon at full size. Moons are scenery with facts, not
+focus targets (scope call in MN-01).
+
+Ground truth at init: moons render INSIDE their planet's OrbitingPlanet
+group — they ride God's Hands flings, die and respawn with their world,
+and never touch LIVE_BODIES (the registry stays planets-only). Moons
+are real `<Planet>` instances at small radii — per-fragment recipes
+cost ~nothing at 10–20 px — sharing the PARENT's sun uniform (the sun
+direction difference across a moon orbit is sub-degree; honest
+approximation, recorded). Tidal locking: spinRate = orbital ω = 2π/T
+with phase aligned so the pattern's near face tracks the planet
+(approximate phase alignment accepted — the demonstration is the
+point). Moon tempo: T = Km·r^1.5 with a smaller Km — the same law at a
+smaller scale, and the cfg says so. Naming honors the case-collision
+scar: `Moon.jsx` only, no `moon.js` twin. Facts source-verified
+2026-08-01: giant impact (Theia), tidal locking, 3.8 cm/yr recession;
+Io most-volcanic + tidal heating (closes the loop with the lava
+world's existing Io fact) + Galileo 1610 first-proof; Titan 1.5 bar
+N₂/CH₄, the only other rain-rivers-lakes cycle known.
+
+## A — the Moon machinery (component + recipes)
+
+- [x] MN-01 Design before code: the nested-orbit contract (angle from
+      clock inside the planet group), tidal-lock math + phase
+      alignment, the cast (which moons, radii, sizes, periods), the
+      sun-sharing approximation, and the scope call (scenery + facts,
+      not focus targets). Written as the MN-01 note.
+
+  > **MN-01 design (the contract A/B implement):**
+  > - **Nested orbit**: Moon.jsx positions a group at (cos θ·R, 0,
+  >   sin θ·R) inside the parent, θ = phase·2π + t·2π/T; frozen places
+  >   at t = 0. In-plane orbits (no inclination — the lock check reads
+  >   cleaner; inclination noted as an option not taken).
+  > - **Tidal lock, solved not vibed**: spinY(dir, a) rotates by +a
+  >   about y and composes additively; the planet-facing direction is
+  >   d(t) = spinY((−1,0,0), −θ(t)); the sampled pattern at that face
+  >   is spinY((−1,0,0), a(t) − θ(t)) — constant iff a(t) = θ(t) + C.
+  >   Therefore **spinRate = +2π/T exactly**, positive sign; the
+  >   constant offset from `phase` just picks WHICH hemisphere faces
+  >   home. The smoke proves it with a JS replica of spinY (G2-03
+  >   pattern) at two orbit times, both signs.
+  > - **Tempo**: T = Km·r^1.5 with Km = 14 vs the planets' K = 7.5 —
+  >   and the larger constant is PHYSICS, not taste: Kepler's constant
+  >   belongs to the central body (K ∝ 1/√μ), and a planet is a smaller
+  >   sun. The cfg comment says so. Planet-rung Moon takes its period
+  >   directly (scene tempo beats formula at closeup).
+  > - **Cast**: rocky world ← the Moon (orbitR 0.85, size 0.10, grey
+  >   regolith); ringed giant ← Io (orbitR 1.55 — OUTSIDE the ring's
+  >   1.41 edge, size 0.09, lava recipe) and Titan (orbitR 2.1, size
+  >   0.13 — bigger than Io, as in life, orange haze + heavy shell).
+  >   Planet rung: the Moon at 3.2 R, size 0.4.
+  > - **Sun sharing**: moons take the PARENT's sun uniform — across a
+  >   moon orbit the sun direction shifts sub-degree; approximation
+  >   recorded, not hidden.
+  > - **Scope calls**: moons are scenery + facts, not focus targets
+  >   (registry stays planets-only). Grabbing a moon grabs its planet
+  >   (events bubble to the group's handlers) — accepted: bigger grab
+  >   target, and the moon rides the fling anyway.
+- [x] MN-02 `src/Moon.jsx`: an orbiting, tidally-locked `<Planet>`
+      wrapper — props { orbitR, size, period, recipe, atmosphere?,
+      phase, sun, frozen }; frozen places at t = 0; dispose rides the
+      Planet it wraps.
+      *Shipped per the MN-01 note; `spinRate = +2π/period` baked in
+      (the lock is construction, not configuration) and `moonPeriod(r,
+      Km=14)` exported for the Kepler-shaped tempo. The moon's group
+      is positioned, never rotated — parent-local axes hold, so the
+      parent's sun uniform is valid as-is.*
+- [x] MN-03 Moon recipes: `moon` (cratered regolith — worley craters
+      over grey fbm) and `titan` (near-featureless orange haze — the
+      atmosphere IS the face) in planetRecipes; Io reuses the lava
+      recipe untouched. Node-smoke all graphs frozen + live.
+      *`moon`: worley bowls + bright rims + fbm-patch maria over cool
+      grey; `titan`: haze + 0.04 banding + the real north polar hood,
+      with ATMOSPHERES.titan (strength 0.7 — the heaviest shell in the
+      catalogue, as it should be). Smoke 7/7 — and the lock-sign
+      replica is the jewel: **+2π/T holds the planet-facing pattern
+      point to 5.55e-17 across half an orbit** (machine epsilon — the
+      same figure as GH's μ derivation), while −2π/T drifts to exactly
+      √3 at T/3, maximum separation — the geometry confirming the
+      MN-01 algebra. Build green.*
+
+## B — the system rung cast
+
+- [x] MN-04 The rocky world gains the Moon: grey companion, tidal lock
+      rendered (the same hemisphere faces the planet through the whole
+      orbit — verify across two frozen captures at different sim
+      times).
+      *Mounted (orbitR 0.85, size 0.1, T ≈ 11 s). First light was a
+      blazing white ball — fixed honestly: real regolith is charcoal
+      (albedo ~0.12), the grey base dropped 0.5 → 0.33 and the recipe
+      comment records why. Verification honesty: at ~50 px the craters
+      can't be read and at T/2 the moon hides BEHIND its planet from
+      the follow camera — so the system-rung lock evidence is the
+      analytic chain (MN-01 derivation + MN-03 replica at machine
+      epsilon, replicating the ACTUAL vendored spinY source); the
+      legible visual proof moved to MN-08's full-size closeup.*
+- [x] MN-05 The ringed giant gains Io (ember, lava recipe, tight fast
+      orbit) and Titan (orange, atmosphere shell, slower outer orbit).
+      *Io at 1.55 (clear of the ring's 1.41 edge), Titan at 2.1 and
+      bigger (as in life), periods from moonPeriod(r) — 27 s and 43 s.
+      Sphere census: 15 on both backends (3 moon bodies + the titan
+      shell present), zero errors.*
+- [x] MN-06 Facts: +1 moon fact on each hosting world's info (giant
+      impact + locking + 3.8 cm/yr on rocky; Io tidal heating +
+      Galileo 1610 on the giant; Titan's atmosphere-and-lakes on the
+      giant or split). Copy reads for children AND adults.
+      *Rocky +1 (locking + Theia + 3.8 cm/yr in one breath); the giant
+      +2 (Io's tides + Galileo's first-proof; Titan's 1.5-bar sky and
+      methane rain). The lava world's old Io fact now has a rendered
+      Io to point at.*
+- [x] MN-07 God's Hands regression: fling the ringed giant — the ring
+      AND both moons ride; swallowed together, respawn together; the
+      21/21 suite stays green.
+      ***21/21** — the giant was grabbed, flung ballistic (Δ 0.559
+      world units/0.7 s), restored to its rail with ring and moons
+      riding the whole arc; zero errors.*
+
+## C — the planet rung + discipline
+
+- [x] MN-08 The planet rung's rocky closeup gains its Moon at ~3 R —
+      the tidal-locking demonstration at full size; rocky's facts
+      updated to point at what the eye can verify.
+      *Moon at orbitR 3.2, size 0.4, stately 45 s period (scene tempo
+      beats formula at closeup, per MN-01); new fact ends with Luna 3
+      (1959) — why humanity needed a spacecraft to see the far side.
+      Quarter-orbit captures kept: orbital motion legible (right → left
+      across the frame), surface texture readable at ~90 px. Honest
+      note: the visual "same face" comparison is inconclusive at the
+      regolith's deliberate low contrast — the lock's proof remains the
+      exact analytic chain (actual-source spinY replica at machine
+      epsilon + single-variable wiring: period feeds both orbit and
+      spin, they cannot diverge).*
+- [x] MN-09 Determinism: frozen-over-time exactly 0.000 on planet and
+      system rungs with moons aboard; capture untouched.
+      *Both rungs **exactly 0.0000** over time, zero errors; Moon.jsx
+      places at t = 0 when frozen like every orbiting thing before it.*
+- [x] MN-10 Harness: both backends, zero errors, correct HUD through
+      the cycles; moon presence asserted (scene mesh census via the
+      dev hook), screenshots kept.
+      *Census: planet rung 4 spheres (body + shell + Moon + shell? —
+      ≥3 bar met), system rung 15 (three moon bodies + titan shell
+      accounted). Full 8-entry cycle regression re-run on both
+      backends: identical means, zero errors — the moons broke
+      nothing.*
+
+## D — verification + close-out
+
+- [x] MN-11 FPS ledger: planet + system rungs vs their baselines
+      (a few tiny spheres — noise-level expected; verify, don't
+      assume).
+      *Measured under honest-but-noisy conditions: the user was
+      actively working the same GPU (24-process live Chrome), and ALL
+      configurations sagged equally across runs (no-moon control 32.2/
+      26.1 vs yesterday's 36.9/37.1 baseline; repeated with-moon runs
+      decayed 25.8 → 21.8 regardless). The controlled A/B is the
+      truth: **moon cost indistinguishable from session noise**
+      (WebGL2 Δ0.6 fps), which matches the architecture — two draw
+      calls, ~90 px of fragments. System rung with three moons:
+      37.3/31.2 vs 38.1/34.2 pre-moons, within variance. Re-measure on
+      a quiet machine if the ledger is ever load-bearing (the G0-29
+      "headless numbers" caveat, now with a shared-machine cousin).*
+- [x] MN-12 README: the moons story (locked faces, Theia, Io's tides,
+      Titan's rain).
+      *Star System bullet carries the moons + the "Kepler's constant
+      belongs to the central body" line; structure list gains Moon.jsx
+      with the lock-is-construction note.*
+- [x] MN-13 Promotion/scope review: anything library-worthy in the
+      crater recipe (`craterField`?) — verdict recorded; memory
+      updated.
+      ***PARKED** — the crater look is worley bowls + rims in ~6
+      lines over existing vendored nodes; a `craterField` node would
+      name a composition, not contribute an algorithm (the
+      densityFalloff rule). Single consumer. Memory updated with the
+      phase close.*
+- [ ] MN-14 Commit on main; site redeploy (dist → ../galaxy + Aurelius
+      commit, both left for the user's push).

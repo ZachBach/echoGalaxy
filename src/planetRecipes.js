@@ -118,6 +118,41 @@ export function ringed(TSL, { spunDir, clock }) {
   return { surface: TSL.mix(banded, TSL.color(0x8d764f), poles.mul(0.4)) }
 }
 
+// MN-03 — the Moon: cratered regolith. Worley cells give the craters
+// (dark bowls at the seeds, bright rims just outside), low-frequency
+// fbm patches darken into maria — the "seas" that are ancient lava.
+export function moon(TSL, { spunDir }) {
+  const w = worleyF1F2(TSL, spunDir.mul(3.4), { impl: 'fallback' })
+  const bowl = TSL.smoothstep(0.16, 0.04, w.x)
+  const rim = TSL.smoothstep(0.3, 0.16, w.x).mul(TSL.smoothstep(0.08, 0.16, w.x))
+  const base = fbm(TSL, spunDir.mul(4.2), { octaves: 3 }).mul(0.5).add(0.5)
+  const maria = TSL.smoothstep(0.6, 0.72, fbm(TSL, spunDir.mul(1.3), { octaves: 2 }).mul(0.5).add(0.5))
+  // real regolith is charcoal-dark (albedo ~0.12) — it only looks
+  // bright against black space; a high base washes out under bloom
+  const grey = base
+    .mul(0.14)
+    .add(0.33)
+    .sub(bowl.mul(0.15))
+    .add(rim.mul(0.1))
+    .sub(maria.mul(0.12))
+  return { surface: TSL.vec3(grey, grey, grey.mul(1.04)) }
+}
+
+// MN-03 — Titan: the atmosphere IS the face. Near-featureless orange
+// haze, the faintest banding, and the real north polar hood. The heavy
+// shell preset does the rest of the talking.
+export function titan(TSL, { spunDir }) {
+  const haze = fbm(TSL, spunDir.mul(2.1), { octaves: 2 }).mul(0.5).add(0.5)
+  const bands = TSL.sin(spunDir.y.mul(6)).mul(0.04)
+  const base = TSL.mix(
+    TSL.color(0xc9853d),
+    TSL.color(0xe2a95e),
+    haze.mul(0.45).add(bands).add(0.2),
+  )
+  const hood = TSL.smoothstep(0.55, 0.9, spunDir.y)
+  return { surface: TSL.mix(base, TSL.color(0x8f6a35), hood.mul(0.35)) }
+}
+
 // G1-16 — per-type atmosphere presets (atmosphereShell opts + shell scale).
 export const ATMOSPHERES = {
   rocky: { inner: 0x2b6cf6, outer: 0x57d4ff, strength: 0.55 },
@@ -125,6 +160,7 @@ export const ATMOSPHERES = {
   ice: { inner: 0x9fd8ef, outer: 0xe8fbff, strength: 0.45 },
   gas: { inner: 0x8a5a2b, outer: 0xe8cf9e, strength: 0.5, power: 3 },
   ringed: { inner: 0xa8895c, outer: 0xf2e6c8, strength: 0.4, power: 3 },
+  titan: { inner: 0xc9853d, outer: 0xf0c07a, strength: 0.7, power: 2.5 },
 }
 
-export const PLANET_RECIPES = { rocky, lava, ice, gas, ringed }
+export const PLANET_RECIPES = { rocky, lava, ice, gas, ringed, moon, titan }

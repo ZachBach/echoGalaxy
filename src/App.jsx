@@ -7,6 +7,7 @@ import Planet from './Planet'
 import Star from './Star'
 import BlackHole from './BlackHole'
 import RingedWorld from './RingedWorld'
+import Moon from './Moon'
 import System, {
   SYSTEM_INFO,
   GODS_HANDS_INFO,
@@ -345,13 +346,24 @@ export default function App() {
           ) : info.star ? (
             <Star frozen={FROZEN} />
           ) : (
-            <Planet
-              key={info.id}
-              recipe={info.recipe}
-              spinRate={info.spinRate}
-              atmosphere={info.atmosphere}
-              frozen={FROZEN}
-            />
+            <group key={info.id}>
+              <Planet
+                recipe={info.recipe}
+                spinRate={info.spinRate}
+                atmosphere={info.atmosphere}
+                frozen={FROZEN}
+              />
+              {info.moon && (
+                <Moon
+                  orbitR={info.moon.orbitR}
+                  size={info.moon.size}
+                  period={info.moon.period}
+                  phase={info.moon.phase}
+                  recipe={info.moon.recipe}
+                  frozen={FROZEN}
+                />
+              )}
+            </group>
           ))}
         {rung.id === 'system' && (
           <System

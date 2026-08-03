@@ -23,10 +23,14 @@ export const PLANET_TYPES = [
         'are happening right now. City lights only show on the night side.',
       'Earth is the densest planet in the Solar System; Mercury, Venus, ' +
         'and Mars are its rocky siblings.',
+      'Watch the grey moon: it turns exactly once per orbit — tidal ' +
+        'locking — so it never shows its far side. Humanity needed a ' +
+        'spacecraft (Luna 3, 1959) to see the Moon’s other face at all.',
     ],
     recipe: PLANET_RECIPES.rocky,
     atmosphere: ATMOSPHERES.rocky,
     spinRate: 0.04,
+    moon: { orbitR: 3.2, size: 0.4, period: 45, phase: 0.15, recipe: PLANET_RECIPES.moon },
   },
   {
     id: 'lava',

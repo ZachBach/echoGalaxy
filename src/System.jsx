@@ -14,6 +14,7 @@ import {
   predictFate,
 } from './orbitPhysics'
 import { buildRingMaterial, RING_INNER, RING_OUTER } from './ringMaterial'
+import Moon, { moonPeriod } from './Moon'
 
 // God's Hands (GH-04): the live-body registry — one source of positional
 // truth for rails AND ballistic bodies. System writes it every frame;
@@ -61,6 +62,7 @@ export const ORBITS = [
   },
   {
     id: 'rocky', recipe: PLANET_RECIPES.rocky, atmo: ATMOSPHERES.rocky, r: 3.5, size: 0.38, phase: 0.52,
+    moons: [{ id: 'moon', orbitR: 0.85, size: 0.1, phase: 0.3, recipe: 'moon' }],
     info: {
       name: 'The Rocky World', label: 'Second orbit · the temperate zone',
       description:
@@ -71,12 +73,22 @@ export const ORBITS = [
         'Its year runs ~1.9× the molten world’s — distance^1.5, live.',
         'The terminator line you see IS sunrise and sunset happening.',
         'In our system this seat is Earth’s: 1 AU, one year.',
+        'The grey moon is tidally locked — one spin per orbit, the same ' +
+          'face toward home forever. Ours was born when a Mars-sized ' +
+          'world struck the young Earth, and it drifts 3.8 cm farther ' +
+          'away every year.',
       ],
     },
   },
   {
     id: 'gas', recipe: PLANET_RECIPES.gas, atmo: ATMOSPHERES.gas, r: 5.3, size: 0.62, phase: 0.82,
     ring: { tilt: 0.35 }, // SR-10: every giant wears rings; this one modestly
+    // MN-05: Io INSIDE-adjacent (outside the ring's 1.41 edge), Titan
+    // out at 2.1 — bigger than Io, as in life
+    moons: [
+      { id: 'io', orbitR: 1.55, size: 0.09, phase: 0.6, recipe: 'lava' },
+      { id: 'titan', orbitR: 2.1, size: 0.13, phase: 0.1, recipe: 'titan', atmosphere: 'titan' },
+    ],
     info: {
       name: 'The Gas Giant', label: 'Third orbit · the system’s bouncer',
       description:
@@ -87,6 +99,13 @@ export const ORBITS = [
         'Its year is ~3.5× the molten world’s.',
         'The bands are jet streams; the wobbles between them are shear.',
         'Jupiter outweighs every other planet in our system combined — twice over.',
+        'The ember moon is an Io — kneaded molten by the giant’s tides. ' +
+          'When Galileo saw four moons circling Jupiter in 1610, it was ' +
+          'the first proof that not everything orbits the Earth.',
+        'The orange moon is a Titan: the only kind of moon with a thick ' +
+          'atmosphere — 1.5× Earth’s pressure, with methane rain, ' +
+          'rivers, and seas. The only other place where liquid falls ' +
+          'from clouds.',
       ],
     },
   },
@@ -321,6 +340,19 @@ function OrbitingPlanet({ orbit, frozen, hands, onEvent, restoreSignal }) {
           </mesh>
         </group>
       )}
+      {orbit.moons?.map((mn) => (
+        <Moon
+          key={mn.id}
+          orbitR={mn.orbitR}
+          size={mn.size}
+          period={moonPeriod(mn.orbitR)}
+          phase={mn.phase}
+          recipe={PLANET_RECIPES[mn.recipe]}
+          atmosphere={mn.atmosphere ? ATMOSPHERES[mn.atmosphere] : false}
+          sun={sunU}
+          frozen={frozen}
+        />
+      ))}
     </group>
   )
 }

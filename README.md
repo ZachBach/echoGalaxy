@@ -30,7 +30,14 @@ Within the rungs:
 
 - **Star System** — the star and four worlds on literal Kepler-third-law
   orbits (the inner molten world laps the outer ice world), each
-  terminator tracking its own sun direction. And **God's Hands**: grab
+  terminator tracking its own sun direction — and now **moons**: the
+  rocky world's grey companion is tidally locked (one spin per orbit,
+  same face home forever — the lock is exact in the shader, not
+  narrated), and the ringed giant carries an ember Io and a
+  haze-shrouded Titan. Moons ride God's Hands flings with their world,
+  and their tempo constant differs from the planets' for the honest
+  reason: Kepler's constant belongs to the central body. And **God's
+  Hands**: grab
   any planet and fling it — the moment you let go it obeys real
   Newtonian gravity (the same constant the rails run on). Too slow falls
   into the star, too fast escapes forever, in between it finds a new
@@ -97,6 +104,9 @@ Open the printed localhost URL. `npm run build` produces a production bundle.
 - `src/Pillars.jsx` + `src/pillarsMaterial.js` + `src/pillarsField.js` —
   the nebula rung: SDF+noise density field (pure module), boot-time
   z-slice atlas bake, bounded raymarch, cluster stars.
+- `src/Moon.jsx` — orbiting, tidally-locked `<Planet>` wrapper (the
+  lock is construction: spinRate = +2π/period, derived not tuned);
+  cratered-regolith + Titan-haze recipes live in planetRecipes.
 - `src/RingedWorld.jsx` + `src/ringMaterial.js` — the Saturn pair:
   Saturn-true radial ring profile (C/B/Cassini/A + Encke), analytic
   planet shadow (two dot products), the sun pre-rotated into each local
