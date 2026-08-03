@@ -59,6 +59,15 @@ Within the rungs:
 Every entry ships with a short explainer and a few facts — the educational
 payload is the point.
 
+**On a phone**, echoGalaxy is a full touch app: one-finger orbit, pinch
+zoom, pinch **past** the edge of a scale to climb the ladder, and God's
+Hands works by fingertip — grab a planet and fling it. The HUD compacts
+(facts collapse behind a toggle so the sky stays reachable), portrait
+framing pushes the camera back so nothing crops, and the whole app is an
+installable PWA that **boots offline** — every rung, every shader, no
+connection. This is the foundation the Play Store build (Trusted Web
+Activity) wraps.
+
 ## Stack
 
 Vite + React 19 + [@react-three/fiber](https://r3f.docs.pmnd.rs/) + three's

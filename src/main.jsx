@@ -28,3 +28,11 @@ createRoot(document.getElementById('root')).render(
     </Suspense>
   </StrictMode>,
 )
+
+// MB-10: the PWA service worker — prod only (a dev SW fights HMR).
+// Relative path keeps the /galaxy/ subpath scope correct.
+if (!import.meta.env.DEV && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {})
+  })
+}

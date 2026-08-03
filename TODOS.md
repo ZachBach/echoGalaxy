@@ -30,6 +30,8 @@ verifiable steps, with evidence recorded per task.
   tidal lock exact by construction (spinRate = +2π/T, derived at
   machine epsilon); moons ride God's Hands flings; frozen 0.0000;
   21/21 regression.
+- **Phase MB — mobile-ready: initialized** (2026-08-02, tasks at the
+  end of this file). Phase PS (Play Store packaging) follows it.
 
 # Phase G0: plumbing (the WebGPU bridge) ✅
 
@@ -2123,3 +2125,225 @@ N₂/CH₄, the only other rain-rivers-lakes cycle known.
       *`340f2f0` on main (341 insertions); site redeploy `4b2240c` in
       the Aurelius repo. Both awaiting the user's push. Three moons
       rise over the little universe.*
+
+# Phase MB: mobile-ready (post-roadmap, Play Store track 1 of 2)
+
+16 tasks (MB-01..16). The goal: echoGalaxy works beautifully on a
+phone — touch controls for every interaction (including God's Hands
+and rung-climbing), a HUD that doesn't cover the universe, honest
+mobile perf guardrails, and the PWA shell (manifest + service worker +
+installability) that Phase PS will wrap into a Trusted Web Activity
+for the Play Store.
+
+Ground truth at init: the TWA path runs in Chrome-on-Android — WebGPU
+on capable devices (Chrome 121+, Android 12+), and the WebGL2 fallback
+we verify every phase covers the rest (~98% of mobile) — the
+dual-backend discipline was mobile insurance all along. Touch reality
+today: OrbitControls handles one-finger rotate + two-finger pinch
+NATIVELY; God's Hands runs on R3F pointer events (which fire for
+touch — plausible but unverified); **zoom-through is wheel-only**
+(G3-30) — the rung climb needs a pinch-past-the-stop path; the hint
+line says "scroll to zoom" to people who have no wheel. The HUD's
+360px panel covers most of a phone screen. Deploy subpath matters:
+the app lives at /galaxy/ with `base: './'` — manifest start_url and
+scope must stay relative. Verification: puppeteer mobile emulation
+(phone viewport, hasTouch, deviceScaleFactor 3) + CDP touch/pinch
+synthesis; Lighthouse CLI for the PWA bar (≥80, the TWA requirement);
+emulated-throttling perf numbers recorded WITH the shared-machine
+caveat (the MN-11 lesson), real-device spot-checks go to ZACHTODOS.
+⚠ Working-tree note: App.jsx currently carries the user's own
+uncommitted capture-sink changes — MB's commit must stage selectively
+or confirm their inclusion with the user first (MB-16).
+
+## A — touch (the interactions)
+
+- [x] MB-01 Design before code: input-modality detection (coarse
+      pointer media query), the touch contract per interaction, the
+      pinch-through-the-stop design, the dpr/steps mobile policy, PWA
+      shell choices (manifest fields, SW strategy, icon pipeline), and
+      the CDP emulation verification approach. Written as the MB-01
+      note.
+
+  > **MB-01 design (the contract A/B/C implement):**
+  > - **Modality**: `COARSE = matchMedia('(pointer: coarse)').matches`
+  >   read once at module scope (the FROZEN pattern) — device class
+  >   doesn't change mid-session; not reactive by design. Drives hint
+  >   copy (A), compact HUD (B), dpr/steps policy (C).
+  > - **Touch contract**: OrbitControls speaks touch natively
+  >   (one-finger rotate, two-finger pinch dolly) — verified, not
+  >   assumed (MB-02). God's Hands runs on pointer events, which fire
+  >   for touch — the same grab/drag/fling path, verified under CDP
+  >   synthesis. HUD buttons are plain DOM — tap just works.
+  > - **Pinch-through-the-stop** (MB-03): a sibling of ZoomThrough
+  >   that watches ONLY touch pointers (pointerType === 'touch' —
+  >   inert for mouse, desktop byte-identical). While two pointers are
+  >   down and the camera is parked at a stop, accumulate the pinch
+  >   spread delta: shrinking spread (zoom-out intent) at the outer
+  >   stop climbs; growing spread at the inner stop descends;
+  >   ±40 px accumulated threshold, the wheel path's 700 ms debounce
+  >   shared in spirit. OrbitControls keeps handling the same touches
+  >   (it clamps at the stop; we observe passively — no conflict).
+  >   Mount guard identical to the wheel path (!CAPTURE && !focus &&
+  >   !god.held).
+  > - **dpr/steps policy** (C): COARSE ⇒ dpr [1, 1.5] and pillars
+  >   march at the 14-step budget point. Desktop untouched.
+  > - **PWA shell** (C): manifest with relative start_url/scope './'
+  >   (the /galaxy/ subpath), display standalone, theme #02030a;
+  >   icons 192/512 + maskable rendered from the app's own bodies;
+  >   SW leaning vite-plugin-pwa (hand-rolling precache over hashed
+  >   bundles is error-prone) — final call at MB-10.
+  > - **Verification**: puppeteer phone profile (390×844, dsf 3,
+  >   isMobile, hasTouch) + CDP `Input.dispatchTouchEvent` sequences
+  >   for drags and `Input.synthesizePinchGesture` for pinch;
+  >   touch-action on the canvas checked (R3F should set it — verify).*
+- [x] MB-02 Verify the existing surface under touch emulation — don't
+      assume: God's Hands grab/drag/fling via synthesized touch,
+      OrbitControls rotate + pinch, HUD buttons tappable. Fix only
+      what fails.
+      *"Verify, don't assume" earned its keep — THREE real findings:
+      (1) **R3F writes INLINE touch-action:auto on the canvas and
+      re-writes it after onCreated** — the browser then claims
+      one-finger drags and pointercancels OrbitControls mid-rotate
+      (grabs survived only because setPointerCapture blocks the
+      steal). Fix: a self-healing TouchPolicy frame guard — one string
+      compare per frame, immune to whoever writes last. (2) Chrome's
+      synthesizePinchGesture reinterprets gestures — the harness now
+      dispatches explicit two-finger sequences, and the convention is
+      probe-confirmed: spread-apart = zoom in. (3) **The phone HUD
+      covers y 335–820 and its interactive rows intercept sky
+      touches** — a tap on a planet drifting behind the ladder presses
+      a rung button instead (found when a test grab teleported the
+      harness to the Pillars). Recorded as the MB-05 case-in-the-
+      flesh; text regions pass through fine (pointer-events none).
+      Final suite 12/12: rotate Δ 2.55+, pinch both directions, touch
+      grab→fling ballistic, restore tappable, zero errors.*
+- [x] MB-03 Zoom-through for touch: pinching past the controls' stop
+      climbs/descends a rung (debounced like the wheel path); wheel
+      behavior byte-identical on desktop.
+      *TouchZoomThrough: watches ONLY pointerType 'touch' (inert for
+      mouse), accumulates pinch-spread delta while parked at a stop
+      (±40 px threshold, 700 ms debounce), same mount guard as the
+      wheel path. Proven: fingers-together at the outer stop climbed
+      Star System → Pillars of Creation; a mid-gesture stop-arrival
+      even tripped it during a plain zoom test — the debounce +
+      threshold tuning kept T3b's gentler pinch from false-firing
+      after the retune.*
+- [x] MB-04 Input-aware hint copy: touch devices read "drag to orbit ·
+      pinch to zoom · pinch past the edge…" — nobody is told to
+      scroll who cannot.
+      *COARSE = matchMedia('(pointer: coarse)') at module scope (the
+      FROZEN pattern); both hint variants (system-rung and default)
+      speak pinch on touch and scroll on desktop — asserted both ways
+      in the suite. Build green (621 modules).*
+
+## B — the HUD on a phone
+
+- [x] MB-05 Compact mobile HUD: collapsible facts panel (the name +
+      label always visible, facts expand on tap), ladder reachable,
+      safe-area insets respected; desktop layout untouched.
+      *`.hud.compact` on COARSE: kicker hidden, tighter ladder, facts
+      collapsed behind "read the facts ▸" — open, they scroll in a
+      glassy sheet (pointer-events auto only while open, max-height
+      42vh); safe-area inset padding + viewport-fit=cover. **The sky
+      metric: 94.7% of sampled screen points reach the canvas with
+      facts closed** (the intercepting HUD band is gone). Desktop:
+      facts always visible, no toggle, `.hud` class unchanged, frozen-
+      over-time still exactly 0.0000 — byte-clean.*
+- [x] MB-06 Portrait framing: decide per-aspect camera handling
+      (portrait crops the wide compositions — adjust distance on
+      narrow viewports or accept; decide, implement, note).
+      ***Distance-boost chosen**: ViewRig multiplies the rung camera by
+      clamp(1.2/aspect, 1, 2), capped by the rung's controls max so
+      OrbitControls never snaps it back in; re-frames on rotate (size
+      in deps). Desktop aspect clamps to 1 — untouched by
+      construction. Verified: the rocky globe + Moon fully inside the
+      390-wide frame, edge samples at brightness 1/255.*
+- [x] MB-07 Page behavior: viewport meta, touch-action on the canvas
+      (no browser page-zoom fighting OrbitControls), overscroll
+      containment (no pull-to-refresh mid-fling).
+      *viewport-fit=cover + theme-color #02030a + a description meta
+      (PWA/SEO prep for MB-09) in index.html; overscroll-behavior none
+      on body; canvas touch-action owned by the MB-02 TouchPolicy
+      guard. Suite 10/10, zero errors both profiles; build green.*
+
+## C — perf guardrails + the PWA shell
+
+- [x] MB-08 Mobile perf policy: coarse-pointer devices get dpr
+      clamped and the pillars march at the 14-step budget point;
+      measured under emulated throttling, honestly labeled as
+      emulated; real-device numbers are the human's spot-check
+      (ZACHTODOS).
+      *COARSE ⇒ dpr [1, 1.5] + pillars steps 14. Unthrottled phone
+      profile: **planet 59.2 / nebula 60.1 fps — vsync-capped, faster
+      than desktop** (fewer pixels + fewer steps). 4× CPU throttle:
+      42.6 / 14.3 — the nebula collapse is the throttle strangling
+      rAF scheduling, not the GPU (the march is GPU-bound); recorded
+      as the emulation artifact it is, per the MN-11 conditions
+      doctrine. Real-device numbers → ZACHTODOS (MB-15).*
+- [x] MB-09 manifest.json + icons: name/short_name, 192 + 512
+      maskable icons (rendered from the app's own bodies via the
+      capture rig or canvas), start_url './', scope './', display
+      standalone, theme #02030a.
+      *manifest.webmanifest with relative start_url/scope (the
+      /galaxy/ subpath survives), 3 icon entries incl. maskable —
+      and the icons ARE the app: the frozen spiral galaxy, golden
+      core and nebula veil, captured HUD-less at 512 and 192. Wired:
+      manifest link + apple-touch-icon in index.html. All verified
+      serving 200 with required fields.*
+- [x] MB-10 Service worker: precache the app shell for offline boot
+      (decide vite-plugin-pwa vs minimal hand-rolled — note the call);
+      the SW is also the TWA installability requirement.
+      ***Hand-rolled minimal chosen** — no dependency, no build
+      coupling: navigations network-first (deploys land immediately,
+      cache is the offline fallback), everything else cache-first
+      with background refill (hashed assets are immutable — cache-
+      first is exactly right). Registered prod-only, relative path
+      (subpath scope correct). **The ultimate proof passed: network
+      pulled, page reloaded — the entire universe boots offline.***
+- [x] MB-11 Lighthouse: installability green + score ≥80 (the TWA
+      bar), measured with the CLI against the production preview,
+      numbers recorded.
+      *Lighthouse retired its PWA category (v12) — the modern TWA
+      criteria are manifest + SW + installability, all proven
+      DIRECTLY above (offline boot beats any score). CLI numbers on
+      the preview: **performance 67 · accessibility 96 ·
+      best-practices 100 · SEO 91**. The 67 is the known 1.78 MB
+      monolith (G0-05's ledger note) — code-splitting stays the
+      recorded candidate fix, not a Play blocker.*
+
+## D — verification + close-out
+
+- [x] MB-12 Mobile-emulation harness: phone viewport × both backends ×
+      all five rungs boot zero-error; the touch suite green;
+      screenshots kept.
+      *10/10 rung boots (phone profile × both backends, correct HUD,
+      zero errors) + the full touch suite re-run 12/12 in the same
+      battery. Phone screenshots kept per rung.*
+- [x] MB-13 Desktop regression: frozen diffs vs current captures stay
+      0.000 — every mobile change is gated or additive; the desktop
+      experience is untouched.
+      *Three rungs (planet/system/nebula) frozen-over-time **exactly
+      0.0000**; desktop hint still speaks scroll; `.hud` class bare;
+      the portrait multiplier clamps to 1 at desktop aspect by
+      construction. Every mobile change is COARSE-gated or inert for
+      mouse.*
+- [x] MB-14 FPS under emulated mobile constraints recorded (MN-11
+      conditions discipline: check the machine before trusting
+      absolutes).
+      *The record (from MB-08, conditions labeled): phone profile
+      unthrottled **59.2/60.1 fps (vsync-capped)** planet/nebula; 4×
+      CPU throttle 42.6/14.3 with the nebula figure identified as an
+      rAF-scheduling emulation artifact. Real-device numbers assigned
+      to the human (ZACHTODOS).*
+- [x] MB-15 README (the mobile story) + ZACHTODOS (real-device
+      spot-check list; Play Store account prep preview for Phase PS).
+      *README: the "On a phone" paragraph — touch, compact HUD,
+      offline PWA, the TWA foundation. ZACHTODOS: the Play Store
+      voyage section — real-device gesture checklist, Add-to-Home
+      + airplane-mode test, iPhone WebGL2 sanity pass, the $25
+      account, package id decision, and the Play App Signing →
+      assetlinks.json SHA-256 handoff.*
+- [ ] MB-16 Commit on main (⚠ selective staging — App.jsx carries the
+      user's uncommitted capture-sink work; confirm or exclude);
+      site redeploy (dist → ../galaxy + Aurelius commit, both left
+      for the user's push).

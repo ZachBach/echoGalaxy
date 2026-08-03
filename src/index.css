@@ -16,6 +16,8 @@ body {
   color: #e8ecf5;
   font-family: system-ui, -apple-system, sans-serif;
   overflow: hidden;
+  /* MB-07: no pull-to-refresh or rubber-band mid-fling */
+  overscroll-behavior: none;
 }
 
 .app {
@@ -23,6 +25,9 @@ body {
   width: 100vw;
   height: 100vh;
 }
+
+/* MB-02: canvas touch-action is set in App onCreated — R3F writes an
+   INLINE touch-action:auto that beats any stylesheet rule. */
 
 /* capture mode sizes .app to the delivery resolution — let the page
    scroll instead of clipping it */
@@ -207,4 +212,60 @@ body:has(.app[style*='width']) {
   font-size: 10px;
   letter-spacing: 0.1em;
   color: #5c6889;
+}
+
+/* MB-05 — the compact HUD for touch devices: the full panel covered
+   60% of a portrait screen and its button rows intercepted sky
+   touches. Compact keeps name + ladder + nav; the facts collapse
+   behind a toggle and scroll in their own sheet when open. */
+.hud.compact {
+  left: 12px;
+  right: 12px;
+  bottom: 10px;
+  max-width: none;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.hud.compact .views {
+  margin-bottom: 8px;
+}
+
+.hud.compact .views button {
+  padding: 4px 8px;
+  font-size: 9px;
+}
+
+.hud.compact .kicker {
+  display: none;
+}
+
+.hud.compact h1 {
+  font-size: 20px;
+}
+
+.hud.compact .cls {
+  margin: 2px 0 8px;
+}
+
+.hud.compact .facts {
+  pointer-events: auto;
+  max-height: 42vh;
+  overflow-y: auto;
+  background: rgba(4, 6, 14, 0.85);
+  border: 1px solid #2a3350;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.hud .facts-toggle {
+  pointer-events: auto;
+  font-family: ui-monospace, "SFMono-Regular", monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.hud.compact .hint {
+  font-size: 9px;
 }

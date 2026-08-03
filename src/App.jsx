@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Vector3 } from 'three'
 import Galaxy from './Galaxy'
 import Planet from './Planet'
@@ -29,12 +29,22 @@ import { shotById, ASPECTS } from './capture/shots'
 const params = new URLSearchParams(window.location.search)
 const FROZEN = import.meta.env.DEV && params.has('freeze')
 
+// MB-01: input modality, read once at boot (device class doesn't change
+// mid-session). Drives hint copy, the compact HUD, and the perf policy.
+const COARSE =
+  typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
+
 // Capture mode: ?capture=<shotId>&aspect=4x5&fps=60
 // Dev only. Pins the rung and object index, hands the camera to the rig,
 // and steps the frame loop by hand.
 const CAPTURE = import.meta.env.DEV ? shotById(params.get('capture')) : null
 const CAPTURE_FPS = Number(params.get('fps')) || 60
 const CAPTURE_SIZE = ASPECTS[params.get('aspect') ?? '4x5'] ?? ASPECTS['4x5']
+const CAPTURE_SINK = CAPTURE ? params.get('captureSink') : null
+
+if (CAPTURE) {
+  window.__echoGalaxyCapture = { id: CAPTURE.id, state: 'arming' }
+}
 
 // Capture determinism: three's core Timer captures performance.now() at
 // renderer creation (`_startTime`) and reads it on every node-frame
@@ -78,11 +88,24 @@ function initialScale() {
 function ViewRig({ scale }) {
   const camera = useThree((s) => s.camera)
   const controls = useThree((s) => s.controls)
+  const size = useThree((s) => s.size)
   useEffect(() => {
-    camera.position.set(...SCALES[scale].camera)
+    const rung = SCALES[scale]
+    // MB-06: portrait crops horizontally (vfov is fixed, hfov shrinks
+    // with aspect) — push the camera back so the subject fits the
+    // narrow frame, capped by the rung's controls max so OrbitControls
+    // never snaps it back in. Desktop aspect ⇒ mul clamps to 1.
+    const aspect = size.width / size.height
+    const len = Math.hypot(...rung.camera)
+    const mul = Math.min(Math.max(1.2 / aspect, 1), 2, (rung.max - 0.1) / len)
+    camera.position.set(
+      rung.camera[0] * mul,
+      rung.camera[1] * mul,
+      rung.camera[2] * mul,
+    )
     camera.lookAt(0, 0, 0)
     controls?.update?.()
-  }, [scale, camera, controls])
+  }, [scale, camera, controls, size])
   return null
 }
 
@@ -201,6 +224,94 @@ function ZoomThrough({ scale, onShift }) {
   return null
 }
 
+// MB-02 finding: R3F writes INLINE touch-action:auto on the canvas —
+// and re-writes it after onCreated when its event system connects, so
+// neither a stylesheet rule nor a one-shot override survives. Without
+// `none`, the browser claims one-finger drags for page gestures and
+// pointercancels OrbitControls mid-rotate (grabs survived only because
+// setPointerCapture blocks the steal). Self-healing guard: one string
+// compare per frame, immune to whoever writes last.
+function TouchPolicy() {
+  const gl = useThree((s) => s.gl)
+  useFrame(() => {
+    const el = gl.domElement
+    if (el.style.touchAction !== 'none') el.style.touchAction = 'none'
+  })
+  return null
+}
+
+// MB-03: the touch sibling of ZoomThrough — pinching past the controls'
+// stop climbs/descends a rung. Watches ONLY touch pointers (inert for
+// mouse; desktop byte-identical). OrbitControls keeps handling the same
+// touches — it clamps at the stop, we observe passively.
+function TouchZoomThrough({ scale, onShift }) {
+  const camera = useThree((s) => s.camera)
+  const controls = useThree((s) => s.controls)
+  const gl = useThree((s) => s.gl)
+  const lastShift = useRef(0)
+  useEffect(() => {
+    const el = gl.domElement
+    const pts = new Map()
+    let lastSpread = 0
+    let accum = 0
+    const spread = () => {
+      const [a, b] = [...pts.values()]
+      return Math.hypot(a.x - b.x, a.y - b.y)
+    }
+    const down = (e) => {
+      if (e.pointerType !== 'touch') return
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      if (pts.size === 2) {
+        lastSpread = spread()
+        accum = 0
+      }
+    }
+    const move = (e) => {
+      if (e.pointerType !== 'touch' || !pts.has(e.pointerId)) return
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      if (pts.size !== 2 || !controls) return
+      const s = spread()
+      const d = s - lastSpread
+      lastSpread = s
+      const now = performance.now()
+      if (now - lastShift.current < 700) {
+        accum = 0
+        return
+      }
+      const dist = camera.position.distanceTo(controls.target)
+      const { min, max } = SCALES[scale]
+      // shrinking spread = zoom-out intent; growing = zoom-in
+      if (dist >= max - 0.05 && d < 0) accum += d
+      else if (dist <= min + 0.05 && d > 0) accum += d
+      else accum = 0
+      if (accum <= -40 && scale < SCALES.length - 1) {
+        lastShift.current = now
+        accum = 0
+        onShift(scale + 1)
+      } else if (accum >= 40 && scale > 0) {
+        lastShift.current = now
+        accum = 0
+        onShift(scale - 1)
+      }
+    }
+    const up = (e) => {
+      pts.delete(e.pointerId)
+      accum = 0
+    }
+    el.addEventListener('pointerdown', down)
+    el.addEventListener('pointermove', move)
+    el.addEventListener('pointerup', up)
+    el.addEventListener('pointercancel', up)
+    return () => {
+      el.removeEventListener('pointerdown', down)
+      el.removeEventListener('pointermove', move)
+      el.removeEventListener('pointerup', up)
+      el.removeEventListener('pointercancel', up)
+    }
+  }, [gl, camera, controls, scale, onShift])
+  return null
+}
+
 export default function App() {
   const [scale, setScale] = useState(initialScale)
   const [galaxyIndex, setGalaxyIndex] = useState(
@@ -219,6 +330,25 @@ export default function App() {
   // restore-order action; the signal counter resets every body to rails.
   const [god, setGod] = useState({ held: false, wild: false })
   const [restoreCount, setRestoreCount] = useState(0)
+  // MB-05: on touch devices the facts collapse — the HUD covered 60% of
+  // a portrait screen and its button rows intercepted sky touches.
+  const [factsOpen, setFactsOpen] = useState(!COARSE)
+  const [captureStarted, setCaptureStarted] = useState(false)
+  const [captureResult, setCaptureResult] = useState(null)
+
+  const onCaptureStart = useCallback(() => {
+    setCaptureStarted(true)
+    window.__echoGalaxyCapture = { id: CAPTURE.id, state: 'capturing' }
+  }, [])
+
+  const onCaptureDone = useCallback((result) => {
+    setCaptureResult(result)
+    window.__echoGalaxyCapture = {
+      id: CAPTURE.id,
+      state: result.ok ? 'complete' : 'failed',
+      ...result,
+    }
+  }, [])
 
   // One deep-space backdrop for every rung, app-lifetime; radius follows
   // the rung.
@@ -326,16 +456,20 @@ export default function App() {
           bakeSkybox(skybox, state.gl, { frozen: FROZEN })
         }}
         camera={{ position: SCALES[2].camera, fov: 55 }}
-        dpr={CAPTURE ? 1 : [1, 2]}
+        dpr={CAPTURE ? 1 : COARSE ? [1, 1.5] : [1, 2]}
         frameloop={CAPTURE ? 'never' : 'always'}
       >
         <color attach="background" args={['#02030a']} />
+        <TouchPolicy />
         {!CAPTURE && <ViewRig scale={scale} />}
         {!CAPTURE && <FocusRig scale={scale} focus={focus} />}
         {/* zoom-through suspends while focused: focus zoom ranges sit
             below the rung's stops and would false-trigger a descent */}
         {!CAPTURE && !focus && !god.held && (
           <ZoomThrough scale={scale} onShift={shiftScale} />
+        )}
+        {!CAPTURE && !focus && !god.held && (
+          <TouchZoomThrough scale={scale} onShift={shiftScale} />
         )}
         <primitive object={skybox} />
         {rung.id === 'planet' &&
@@ -373,7 +507,9 @@ export default function App() {
             restoreSignal={restoreCount}
           />
         )}
-        {rung.id === 'nebula' && <Pillars frozen={FROZEN} />}
+        {rung.id === 'nebula' && (
+          <Pillars frozen={FROZEN} steps={COARSE ? 14 : 20} />
+        )}
         {rung.id === 'galaxy' && <Galaxy type={GALAXY_TYPES[galaxyIndex]} />}
         {rung.id === 'group' && <LocalGroup frozen={FROZEN} />}
         <OrbitControls
@@ -390,6 +526,9 @@ export default function App() {
             fps={CAPTURE_FPS}
             width={CAPTURE_SIZE.w}
             height={CAPTURE_SIZE.h}
+            sink={CAPTURE_SINK}
+            onStart={onCaptureStart}
+            onDone={onCaptureDone}
           />
         )}
       </Canvas>
@@ -401,14 +540,22 @@ export default function App() {
         <div className="backend-badge">{backendName(gl)}</div>
       )}
 
-      {CAPTURE && (
+      {CAPTURE && !captureStarted && !captureResult && (
         <div className="hud">
-          <div className="kicker">capture · {CAPTURE.id} · click to choose the frames folder</div>
+          <div className="kicker">
+            capture · {CAPTURE.id} · {CAPTURE_SINK ? 'starting' : 'click to choose the frames folder'}
+          </div>
+        </div>
+      )}
+
+      {CAPTURE && captureResult && !captureResult.ok && (
+        <div className="hud">
+          <div className="kicker">capture failed · {captureResult.error}</div>
         </div>
       )}
 
       {!CAPTURE && (
-      <div className="hud">
+      <div className={'hud' + (COARSE ? ' compact' : '')}>
         <div className="views">
           {SCALES.map((s, i) => (
             <button
@@ -423,12 +570,24 @@ export default function App() {
         <div className="kicker">echoGalaxy · a free tool for exploring the universe</div>
         <h1>{info.name}</h1>
         <div className="cls">{info.label ?? info.hubble}</div>
-        <p>{info.description}</p>
-        <ul>
-          {info.facts.map((f, i) => (
-            <li key={i}>{f}</li>
-          ))}
-        </ul>
+        {factsOpen && (
+          <div className="facts">
+            <p>{info.description}</p>
+            <ul>
+              {info.facts.map((f, i) => (
+                <li key={i}>{f}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {COARSE && (
+          <button
+            className="facts-toggle"
+            onClick={() => setFactsOpen((o) => !o)}
+          >
+            {factsOpen ? 'hide the facts ▾' : 'read the facts ▸'}
+          </button>
+        )}
         {godPanel && <CannonballDial />}
         {!godPanel && list && (
           <div className="nav">
@@ -448,8 +607,12 @@ export default function App() {
         )}
         <div className="hint">
           {rung.id === 'system' && !FROZEN
-            ? 'grab a planet and fling it · drag to orbit · scroll to zoom'
-            : 'drag to orbit · scroll to zoom · zoom past the edge to change scale'}
+            ? COARSE
+              ? 'grab a planet and fling it · drag to orbit · pinch to zoom'
+              : 'grab a planet and fling it · drag to orbit · scroll to zoom'
+            : COARSE
+              ? 'drag to orbit · pinch to zoom · pinch past the edge to change scale'
+              : 'drag to orbit · scroll to zoom · zoom past the edge to change scale'}
         </div>
       </div>
       )}

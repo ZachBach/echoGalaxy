@@ -80,3 +80,28 @@ eyes, or your accounts. Ordered by dependency.
       voyages").
 - [ ] Consider writing up the bandedFlow/blackbody promotion story — the
       born-here→bench-gated→synced-back loop is a good engineering tale.
+
+## Play Store voyage — your side (Phases MB ✅ / PS)
+
+Phase MB (mobile-ready) is done and verified under emulation: touch
+controls, compact HUD, PWA shell, offline boot. Emulation is honest but
+not a phone — these need your actual hands:
+
+- [ ] **Real-device spot-check** (any modern Android, Chrome): load the
+      deployed site — orbit, pinch, pinch-past-the-edge to change
+      scale, grab-and-fling a planet on the System rung, toggle the
+      facts sheet. Then Chrome menu → "Add to Home screen" — confirm
+      the galaxy icon appears and the app opens standalone (no browser
+      chrome). Airplane mode → reopen: it should boot offline.
+- [ ] **iPhone sanity pass** (Safari): same gestures; iOS has no WebGPU
+      in Safari yet, so the badge-free WebGL2 path carries it — that's
+      by design.
+- [ ] **Google Play developer account** — play.google.com/console,
+      one-time $25. (Needed before any Phase PS upload.)
+- [ ] Decide the **package id** (suggest `com.aureliusdynamic.echogalaxy`)
+      — Phase PS will bake it into the TWA config.
+- [ ] When PS produces the app bundle: opt into **Play App Signing**
+      (Google holds the key), copy the SHA-256 certificate fingerprint
+      from Play Console → App integrity into `assetlinks.json` (PS
+      prepares the file with a placeholder), redeploy the site, then
+      submit.
