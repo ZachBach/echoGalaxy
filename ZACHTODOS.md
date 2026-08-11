@@ -90,6 +90,43 @@ eyes, or your accounts. Ordered by dependency.
       Because these frames are post-fix, this cut is **not** affected by
       the strobing bug at the top of this file — it can ship first, and
       it is the only asset not blocked on the missing 4:5 master.
+
+- [ ] **Capture the eight new world shots** (authored 2026-08-11). The
+      montage showed four of the twelve planet-rung bodies; `shots.js`
+      now carries the other eight as `15-lava` … `22-ice-giant`, geometry
+      verified (every camera position inside the rung's 2.6–12 clamp; the
+      two ring shots use `fovLock: 'h'` and sit at 6.8–7.2 / 9.0–9.2
+      because the disc is twice a bare planet's width). Same one-at-a-time
+      browser flow as before, all into the **existing** `frames-9x16/`
+      folder:
+      ```
+      localhost:5173/?capture=15-lava&aspect=9x16&fps=30&backend=webgl
+      localhost:5173/?capture=16-ice&aspect=9x16&fps=30&backend=webgl
+      localhost:5173/?capture=17-ringed&aspect=9x16&fps=30&backend=webgl
+      localhost:5173/?capture=18-rings&aspect=9x16&fps=30&backend=webgl
+      localhost:5173/?capture=19-desert&aspect=9x16&fps=30&backend=webgl
+      localhost:5173/?capture=20-ocean&aspect=9x16&fps=30&backend=webgl
+      localhost:5173/?capture=21-cloud&aspect=9x16&fps=30&backend=webgl
+      localhost:5173/?capture=22-ice-giant&aspect=9x16&fps=30&backend=webgl
+      ```
+      Contact-sheet them at `&fps=6` first — these are authored keyframes,
+      not verified framing, and that loop is the whole point of putting the
+      camera path in code.
+
+      **⚠ Two consequences of adding them, both real:**
+
+      1. **`assemble.mjs` now expects all 23 shots.** It iterates the whole
+         `SHOTS` array, so re-running it against `frames-9x16/` (which holds
+         only the original 15) will fail on the eight missing inputs until
+         they are rendered. The already-encoded
+         `video/echogalaxy-9x16.mp4` is a finished file and is unaffected.
+      2. **The montage would grow from 60.4 s to 93.1 s.** That is past the
+         90-second ceiling Facebook Reels enforces; Instagram Reels allows
+         up to about three minutes, so it would still post there. Verify
+         both limits before relying on this — platform rules move. If the
+         one-cut-fits-both property matters, the cleaner answer is a small
+         `--only` filter on `assemble.mjs` so these eight can be cut as a
+         separate "worlds" reel instead of bloating the main montage.
 - [ ] **Delete the frame folders** once both masters are encoded (they're
       the disk hogs; the mp4s are the keepers).
 

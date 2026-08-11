@@ -249,6 +249,147 @@ export const SHOTS = [
     via: { pos: [0, 4.2, 13.0] },
     to: { pos: [-1.2, 5.2, 12.2], target: [0, 0, 0] },
   },
+
+  // ——— The rest of the planet rung (2026-08-11). The montage showed four
+  // of the twelve bodies; these are the eight that had never been captured
+  // as frames. Appended after 14-coma so the existing 9:16 set stays valid.
+  //
+  // PLANET_TYPES indices, confirmed against planetData.js — note that star
+  // (4) and blackHole (5) are a spread and a bare identifier, so they have
+  // no literal `id:` line and a naive grep of that file miscounts:
+  //   rocky 0, lava 1, ice 2, gas 3, star 4, blackHole 5, ringed 6,
+  //   rings 7, desert 8, ocean 9, cloud 10, iceGiant 11
+  //
+  // Bare planets are radius 1.7 (Planet.jsx default — App passes no radius),
+  // which is why the 3.0–4.5 distance band and fovLock 'v' of the earlier
+  // planet shots is reused here. The two ring shots are the exception and
+  // carry their own geometry note below.
+
+  {
+    // Lava. The rocky world's shot sells city lights on the dark side;
+    // this one sells the opposite reading of the same terminator — the
+    // melt is emissive, so it needs no sun and the night limb burns just
+    // as bright. Swing well past the terminator so that lands.
+    id: '15-lava',
+    scale: 'planet',
+    index: 1,
+    seconds: 5.0,
+    ease: 'inout',
+    fovLock: 'v',
+    from: { pos: [3.0, 0.5, 3.3], target: [0, 0, 0] },
+    via: { pos: [1.0, 0.7, 3.8] },
+    to: { pos: [-2.2, 0.4, 3.4], target: [0, 0, 0] },
+  },
+  {
+    // Ice. The worley vein network is the subject and it is fine detail,
+    // so stay close and move slowly. The climb at the end catches the
+    // fresnel glaze on the limb, which is the recipe's other half.
+    id: '16-ice',
+    scale: 'planet',
+    index: 2,
+    seconds: 4.2,
+    ease: 'inout',
+    fovLock: 'v',
+    from: { pos: [1.6, -0.3, 3.2], target: [0, 0, 0] },
+    via: { pos: [0.4, 0.3, 3.5] },
+    to: { pos: [-1.1, 0.9, 3.4], target: [0, 0, 0] },
+  },
+  {
+    // The ringed world. Ring geometry: RING_OUTER 2.27 x RingedWorld's
+    // non-alone scale 1.15 = 2.61 units of disc radius, ~5.2 across —
+    // twice a bare planet's width, so this is fovLock 'h' and sits much
+    // further out than the planet shots above. At h-fov 45.2 the visible
+    // half-width is about 0.416*d, so d must clear ~6.3; the path holds
+    // 6.8–7.2 for margin.
+    //
+    // The move starts near the ring plane and climbs, opening the disc as
+    // it goes — that is what brings the planet's shadow across the far
+    // side of the rings into view, which planetData calls out as the proof
+    // they are a real disc and not a painted halo.
+    id: '17-ringed',
+    scale: 'planet',
+    index: 6,
+    seconds: 5.5,
+    ease: 'inout',
+    fovLock: 'h',
+    from: { pos: [4.6, 0.3, 5.0], target: [0, 0, 0] },
+    via: { pos: [2.6, 2.0, 6.0] },
+    to: { pos: [-1.8, 3.2, 6.2], target: [0, 0, 0] },
+  },
+  {
+    // The rings alone. Wider still — scale 1.55 puts the outer edge at
+    // 2.27*1.55 = 3.52, ~7.0 across, needing d over ~8.5 (max on this rung
+    // is 12, so the path's 9.0–9.2 fits).
+    //
+    // Inverted from 17 on purpose: start high with the disc open, then
+    // descend to near edge-on so it collapses toward a line. The copy's
+    // whole claim is that the sheet is ten metres thin — the only way a
+    // camera can argue that is to look along it.
+    id: '18-rings',
+    scale: 'planet',
+    index: 7,
+    seconds: 5.0,
+    ease: 'inout',
+    fovLock: 'h',
+    from: { pos: [0, 4.5, 8.0], target: [0, 0, 0] },
+    via: { pos: [2.5, 2.0, 8.5] },
+    to: { pos: [5.0, 0.25, 7.5], target: [0, 0, 0] },
+  },
+  {
+    // Desert. Slowest spin on the rung (0.028), so the camera supplies the
+    // motion rather than the body. Drift laterally across the basins and
+    // climb slightly into the polar cap at the end.
+    id: '19-desert',
+    scale: 'planet',
+    index: 8,
+    seconds: 4.0,
+    ease: 'inout',
+    fovLock: 'v',
+    from: { pos: [2.0, 0.9, 3.4], target: [0, 0, 0] },
+    to: { pos: [-1.4, 1.4, 3.6], target: [0, 0, 0] },
+  },
+  {
+    // Ocean. The drifting current field is what separates this from a
+    // recolored rocky world, and it only reads close in. Start slightly
+    // below the equator so the sparse islands cross frame as it rises.
+    id: '20-ocean',
+    scale: 'planet',
+    index: 9,
+    seconds: 4.2,
+    ease: 'inout',
+    fovLock: 'v',
+    from: { pos: [1.8, -0.5, 3.1], target: [0, 0, 0] },
+    via: { pos: [0.3, 0.1, 3.4] },
+    to: { pos: [-1.7, 0.6, 3.3], target: [0, 0, 0] },
+  },
+  {
+    // Cloud. The point of this world is refusal: the visible face is
+    // atmosphere, not ground. Slowest spin of all (0.018) and the heaviest
+    // atmosphere preset (strength 0.78), so push gently inward and let the
+    // deck stay stubbornly opaque as it fills the frame.
+    id: '21-cloud',
+    scale: 'planet',
+    index: 10,
+    seconds: 4.0,
+    ease: 'inout',
+    fovLock: 'v',
+    from: { pos: [1.2, 0.6, 4.0], target: [0, 0, 0] },
+    to: { pos: [-0.6, 1.0, 3.2], target: [0, 0, 0] },
+  },
+  {
+    // Ice giant. Same logic as 03-gas — lateral drift so bandedFlow reads
+    // as movement in the bands — but eight bands instead of six and the
+    // methane-blue ramp, which is the whole reason it is a separate
+    // category from the gas giant rather than a recolor.
+    id: '22-ice-giant',
+    scale: 'planet',
+    index: 11,
+    seconds: 4.0,
+    ease: 'inout',
+    fovLock: 'v',
+    from: { pos: [0.9, 0.5, 3.3], target: [0, 0, 0] },
+    to: { pos: [-1.1, 1.2, 3.7], target: [0, 0, 0] },
+  },
 ]
 
 // Cross-dissolve length used between every pair of clips, in seconds.
