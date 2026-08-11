@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "capture:social": "node scripts/capture-social.mjs",
     "sync:tsl": "node scripts/sync-tsl-lib.mjs && npm run check:tsl && npm run build",
-    "check:tsl": "node scripts/check-tsl-lib.mjs && node scripts/smoke-tsl-lib.mjs"
+    "check:tsl": "node scripts/check-tsl-lib.mjs && node scripts/smoke-tsl-lib.mjs",
+    "check:content": "node scripts/check-astronomy-content.mjs",
+    "backlog:csv": "node scripts/backlog-to-csv.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
