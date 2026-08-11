@@ -68,12 +68,15 @@ eyes, or your accounts. Ordered by dependency.
 
 ## Repo housekeeping
 
-- [ ] **`git push`** in echoGalaxy — main is ahead 1 (the capture-rig
+- [x] **`git push`** in echoGalaxy — main is ahead 1 (the capture-rig
       commit isn't on origin). No redeploy needed: capture mode is
       dev-only and stripped from the production bundle.
-- [ ] Stray `package-lock.json` sitting at the AureliusDynamicSolutons
+      *Done — `main` verified 0 ahead / 0 behind `origin/main` (2026-08-11).*
+- [x] Stray `package-lock.json` sitting at the AureliusDynamicSolutons
       root (outside both repos) — looks like an accidental npm run in the
       parent folder; delete it or gitignore it.
+      *Deleted in the Aurelius repo's `prune:` commits; the path is gone
+      from disk (verified 2026-08-11).*
 - [x] tsl-lib upstream — nothing pending; watch-list entry committed
       (`58e1935`) and pushed. ✓
 
@@ -190,8 +193,13 @@ WITH its passwords in build.gradle. The history was rewritten before any
 push — nothing ever left this machine — but treat that keystore as
 burned anyway:
 
-- [ ] Delete `android/app/release.keystore` from disk and generate a
+- [x] Delete `android/app/release.keystore` from disk and generate a
       fresh one (command in `android/keystore.properties.example`).
+      *Half done — the burned keystore is gone from disk (verified
+      2026-08-11: no `android/app/release.keystore`, and nothing matching
+      `keystore` is tracked besides the `.example`). **Generating the
+      replacement is still open** and is folded into the two items below,
+      which stay unchecked.*
 - [ ] Fill `android/keystore.properties` (gitignored) with the new
       credentials — build.gradle now reads from it and will never
       accept hardcoded passwords again.

@@ -480,10 +480,32 @@ upstream per the roadmap checklist — upstream bench/docs run in
       library's deliberate 0.5 night floor in `dayA` (a design fact worth
       knowing: the night limb is never fully dark). Not a bug, verified
       working as designed.*
-- [ ] G1-07 City lights: `night` mask × a trigLattice-derived land/settlement
+- [x] G1-07 City lights: `night` mask × a trigLattice-derived land/settlement
       pattern, warm point glow on the dark side (rocky planet only).
-- [ ] G1-08 Material hygiene: recipe swap rebuilds the material (key per
+      *Already shipped — it landed inside G1-12 (see that note) and the box
+      was simply never ticked. Re-verified structurally 2026-08-11: `rocky()`
+      returns `nightLights` = warm 0xffc46b × land × trigLattice(freq 11)
+      clusters × ¬snow, and `planetMaterial.js` composes it only as
+      `nightLights.mul(night)`. rocky carries no `emissive`, so there is no
+      path by which the lights can reach the day side, and it is the only
+      recipe of the eleven returning a nightLights term — rocky-only as
+      specified.*
+- [x] G1-08 Material hygiene: recipe swap rebuilds the material (key per
       type), dispose on unmount — same pattern as the Lab.
+      *Dispose was already correct on both the body and the atmosphere
+      material. The keying was not: `Planet.jsx` defaulted `cfg = {}` in the
+      parameter list, and an object literal in a default is freshly allocated
+      on every render, so the material `useMemo`'s Object.is check saw a new
+      dep each time and rebuilt the whole node graph per render — for every
+      planet on the rung. No caller passes `cfg` at all (`planetData.js`
+      never defines one, so even App's `cfg={info.cfg}` is undefined), so
+      this fired universally, and System.jsx calls `setMode` from inside
+      `useFrame` — grabbing or flinging a planet re-rendered and recompiled
+      every material. Fixed by hoisting a frozen `EMPTY_CFG` constant, which
+      leaves `recipe` as the real per-type key exactly like the Lab's
+      `entry`. Verified: all 11 recipes still build on r184, vendor gate
+      clean (58 files, 28 members, 28 gallery entries), production build
+      clean at 628 modules.*
 - [x] G1-09 Core smoke: one planet renders on both backends, zero errors,
       before the type work starts.
       *Vehicle: `src/PlanetLab.jsx` behind `?planet=1` (dev-only, lazy —

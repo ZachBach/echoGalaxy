@@ -9,9 +9,21 @@ import { sunDir } from './sun'
 //
 // atmosphere: false | { scale=1.03, ...atmosphereShell opts } — an
 // additive fresnel shell over the body, brightest on the day side.
+//
+// G1-08 material hygiene: the material memo below is keyed per type —
+// `recipe` is the type identity (PLANET_RECIPES entries are module-level
+// functions), and every other dep must be referentially stable or the
+// node graph recompiles on each render. That is why the cfg default is
+// this hoisted constant and not an inline `= {}`: an object literal in a
+// parameter default is freshly allocated every render, so Object.is sees
+// a new dep each time and the memo never holds. Callers passing cfg or
+// atmosphere must pass stable references (module constants or useMemo)
+// for the same reason — no caller currently passes cfg at all.
+const EMPTY_CFG = Object.freeze({})
+
 export default function Planet({
   recipe,
-  cfg = {},
+  cfg = EMPTY_CFG,
   radius = 1.7,
   spinRate = 0.04,
   atmosphere = false,
