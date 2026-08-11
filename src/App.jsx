@@ -21,6 +21,7 @@ import Crab, { CRAB_INFO } from './Crab'
 import LocalGroup, { GROUP_INFO, MEMBERS } from './LocalGroup'
 import Effects from './Effects'
 import { createSkybox, bakeSkybox } from './skybox'
+import Sky, { SKY_INFO } from './Sky'
 import { GALAXY_TYPES } from './galaxyData'
 import { PLANET_TYPES } from './planetData'
 import { createRenderer, backendName } from './renderer'
@@ -30,6 +31,12 @@ import { shotById, ASPECTS } from './capture/shots'
 
 const params = new URLSearchParams(window.location.search)
 const FROZEN = import.meta.env.DEV && params.has('freeze')
+
+// ZD: real-sky mode. 'zodiac' (default) draws the thirteen ecliptic figures;
+// 'all' draws all 88; 'stars' drops the figures and keeps the catalogue;
+// 'off' returns to the procedural skybox alone. Not dev-gated — this is a
+// shipping feature, and the link is worth sharing.
+const SKY_MODE = params.get('sky') ?? 'zodiac'
 
 // MB-01: input modality, read once at boot (device class doesn't change
 // mid-session). Drives hint copy, the compact HUD, and the perf policy.
@@ -530,6 +537,20 @@ export default function App() {
           <TouchZoomThrough scale={scale} onShift={shiftScale} />
         )}
         <primitive object={skybox} />
+        {/* ZD — the real sky, but only on the two rungs where it is TRUE.
+            These stars are catalogued as seen from the Solar System, so they
+            belong at planet and system scale. From the galaxy rung outward
+            we are looking at the Milky Way from outside it, and Earth's
+            constellations would be a lie told from the wrong vantage point.
+            `?sky=` overrides: off | stars | all (all 88 figures). */}
+        {SKY_MODE !== 'off' && (rung.id === 'system' || rung.id === 'planet') && (
+          <Sky
+            radius={rung.sky - 2}
+            showFigures={SKY_MODE !== 'stars'}
+            figures={SKY_MODE === 'all' ? 'all' : 'zodiac'}
+            showEcliptic={rung.id === 'system' && SKY_MODE !== 'stars'}
+          />
+        )}
         {rung.id === 'planet' &&
           (info.blackhole ? (
             <BlackHole frozen={FROZEN} />
