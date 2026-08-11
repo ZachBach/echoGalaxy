@@ -4,7 +4,14 @@ dist-ssr
 *.local
 .DS_Store
 *.log
-video/
+
+# Capture media travels by hand, not by git. `video/*` rather than
+# `video/` on purpose: git will not descend into an excluded directory,
+# so a bare `video/` makes the negation below impossible. The handoff
+# doc is prose, not media, and must outlive the frame folders — ZACHTODOS
+# tells you to delete those once the masters are encoded.
+video/*
+!video/HANDOFF-design.md
 
 # signing material — never in history (the 2026-08-03 lesson)
 *.keystore

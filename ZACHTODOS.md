@@ -52,9 +52,27 @@ eyes, or your accounts. Ordered by dependency.
       4:5, 30 fps, 40.4 s, ~6 Mbps, 29 MB; frames sampled at 2/20/38 s
       show the rocky open, the Pillars mid-cut, and the Local Group
       close card. The end-to-end watch is still your eyes' job.)*
-- [ ] **Capture + assemble the 9:16 Reels cut** — same ten URLs with
-      `aspect=9x16` into a `frames-9x16/` folder, then:
-      `node scripts/assemble.mjs --frames ./frames-9x16 --out echogalaxy-9x16.mp4 --titles`
+      **⚠ Correction 2026-08-11: that file is no longer at that path** —
+      there is no mp4 anywhere in the repo except the fifteen screencasts
+      in `video/promo/`. `video/HANDOFF-design.md` says the master "you
+      hold" and that media "travels by hand, not by git", so it most
+      likely left with a hand-delivery rather than being lost — but do
+      not plan on swapping shots into a master that is not on this
+      machine. If it cannot be found, the 4:5 cut is a full re-assemble,
+      not a two-shot patch.
+- [ ] **Assemble the 9:16 Reels cut** — **the capture half is already
+      done.** `video/frames-9x16/` holds 1,980 frames on disk, and
+      `video/HANDOFF-design.md` records them as the COMPLETE fifteen-shot
+      montage, freshly rendered *after* the clock fix. Verified on disk
+      2026-08-11: 1,980 frames at 1080×1920, fifteen shots — 01-hook,
+      02-rocky, 03-gas, 04-star, 05-system, 05b-pillars, 06-spiral,
+      07-barred, 08-elliptical, 09-irregular, 10-group, 11-blackhole,
+      12-godshands, 13-crab, 14-coma. So this is one
+      command, not a capture session — ffmpeg is installed:
+      `node scripts/assemble.mjs --frames ./video/frames-9x16 --out echogalaxy-9x16.mp4 --titles`
+      (note the path is `video/frames-9x16`, not `./frames-9x16`).
+      Because these frames are post-fix, the 9:16 cut is **not** affected
+      by the strobing bug at the top of this file — it can ship first.
 - [ ] **Delete the frame folders** once both masters are encoded (they're
       the disk hogs; the mp4s are the keepers).
 
