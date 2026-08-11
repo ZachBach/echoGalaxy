@@ -8,6 +8,39 @@ import { remap } from './tsl-lib/ramp/remap.js'
 import { dissolve } from './tsl-lib/pattern/dissolve.js'
 import { bandedFlow } from './tsl-lib/pattern/bandedFlow.js'
 import { fresnel } from './tsl-lib/fresnel/fresnel.js'
+import { ringDensity } from './ringMaterial.js'
+
+// Specular sun glint — Blinn-Phong half-vector against the world normal. One
+// normalize, one dot, one pow. Water and ice are the only surfaces in this set
+// smooth enough to throw a real highlight; on rock it would read as plastic.
+// max(0) before pow() is load-bearing: a negative base under a fractional or
+// large exponent is one of the documented backend divergences.
+function sunGlint(TSL, sun, { power = 90 } = {}) {
+  const eye = TSL.cameraPosition.sub(TSL.positionWorld).normalize()
+  const h = sun.add(eye).normalize()
+  return TSL.normalWorld.dot(h).max(0).pow(power)
+}
+
+// The rings' shadow on the globe — the reverse of the shadow ringMaterial
+// already casts from the globe onto the rings. March from the surface point
+// toward the sun and ask where that ray crosses the ring plane:
+//   n·(dir + t·sun) = 0  →  t = −(n·dir)/(n·sun)
+// Only a forward crossing (t > 0) can occlude, and ringDensity is already zero
+// outside the annulus, so it doubles as the radial test. The denominator is
+// clamped in magnitude with its sign restored through step(), so a sun lying
+// in the ring plane can never divide by zero and paint a NaN; the term fades
+// out there anyway, since edge-on rings cast no usable shadow.
+function ringShadow(TSL, dir, sun, normal) {
+  const N = TSL.vec3(normal[0], normal[1], normal[2])
+  const sn = N.dot(sun)
+  const signed = sn.abs().max(0.06).mul(TSL.step(0, sn).mul(2).sub(1))
+  const t = N.dot(dir).negate().div(signed)
+  const hit = dir.add(sun.mul(t))
+  const r = hit.sub(N.mul(N.dot(hit))).length()
+  return ringDensity(r)
+    .mul(TSL.smoothstep(0, 0.03, t))
+    .mul(TSL.smoothstep(0.05, 0.18, sn.abs()))
+}
 
 // Planet surface recipes on the G1-01 contract:
 //   (TSL, ctx) => { surface, nightLights?, emissive? }
@@ -66,14 +99,18 @@ export function lava(TSL, { spunDir, clock }) {
 // G1-14 — ice: worley crack veins (fallback impl by upstream choice — it
 // benches faster) + depth tint + a light fresnel glaze. The rim itself
 // belongs to the atmosphere shell, so the recipe keeps the glaze subtle.
-export function ice(TSL, { spunDir }) {
+export function ice(TSL, { spunDir, sun }) {
   const w = worleyF1F2(TSL, spunDir.mul(2.8), { impl: 'fallback' })
   const cracks = TSL.smoothstep(0.07, 0.0, w.y.sub(w.x))
   const depth = fbm(TSL, spunDir.mul(1.4), { octaves: 3 }).mul(0.5).add(0.5)
+  // Tighter and weaker than the ocean's: polished ice is a sharper mirror than
+  // water but covers less of the disc, and the crack network breaks it up.
+  const glint = sunGlint(TSL, sun, { power: 140 }).mul(cracks.oneMinus())
   return {
     surface: TSL.mix(TSL.color(0xdff0f7), TSL.color(0x2b6cf6).mul(0.55), depth.mul(0.6))
       .mul(cracks.mul(-0.55).add(1))
-      .add(TSL.color(0xbfe9ff).mul(fresnel(TSL, { power: 2 }).mul(0.5))),
+      .add(TSL.color(0xbfe9ff).mul(fresnel(TSL, { power: 2 }).mul(0.5)))
+      .add(TSL.color(0xffffff).mul(glint.mul(0.55))),
   }
 }
 
@@ -101,7 +138,10 @@ export function gas(TSL, { spunDir, clock }) {
 // fewer, softer, paler bands (its haze layer mutes the contrast Jupiter
 // flaunts). The rings are a separate material (ringMaterial.js); this
 // is only the globe.
-export function ringed(TSL, { spunDir, clock }) {
+// cfg.ringNormal — the ring plane's normal in this body's local frame, which
+// switches on the ring shadow. Callers that draw rings around the globe pass
+// it; a bare `ringed` world without rings leaves it off and pays nothing.
+export function ringed(TSL, { spunDir, dir, sun, clock, cfg = {} }) {
   const t = bandedFlow(TSL, spunDir, {
     bands: 4,
     warpAmp: 0.1,
@@ -115,7 +155,13 @@ export function ringed(TSL, { spunDir, clock }) {
     [1.0, 0xc4a26b],
   ])
   const poles = TSL.smoothstep(0.7, 0.95, spunDir.y.abs())
-  return { surface: TSL.mix(banded, TSL.color(0x8d764f), poles.mul(0.4)) }
+  let surface = TSL.mix(banded, TSL.color(0x8d764f), poles.mul(0.4))
+  if (cfg.ringNormal) {
+    // 0.82 not 1.0: the B ring is opaque but the rings scatter light sideways,
+    // so the shadow band on Saturn is deep grey, never black.
+    surface = surface.mul(ringShadow(TSL, dir, sun, cfg.ringNormal).mul(-0.82).add(1))
+  }
+  return { surface }
 }
 
 // A dry terrestrial world: wind-sculpted mineral terrain rather than the
@@ -142,7 +188,7 @@ export function desert(TSL, { spunDir, clock }) {
 // A water-rich world. Islands deliberately stay sparse so it reads as an
 // ocean planet rather than a recolored Earth, while the drifting field gives
 // the sea a living surface at close range.
-export function ocean(TSL, { spunDir, clock }) {
+export function ocean(TSL, { spunDir, sun, clock }) {
   const currents = trigLattice(TSL, spunDir, {
     terms: 3,
     freq: 4.1,
@@ -158,7 +204,13 @@ export function ocean(TSL, { spunDir, clock }) {
     [1.0, 0x9fe8e6],
   ])
   const islands = TSL.mix(TSL.color(0x103a32), TSL.color(0x69a45c), currents.mul(0.5).add(0.5))
-  return { surface: TSL.mix(water, islands, land) }
+  // Open water only — the glint is what tells you at a glance that the blue is
+  // liquid. It needs no day-side mask: the caller multiplies surface by the
+  // terminator's shade, so it goes out on its own at the evening line.
+  const glint = sunGlint(TSL, sun).mul(land.oneMinus())
+  return {
+    surface: TSL.mix(water, islands, land).add(TSL.color(0xfff4d6).mul(glint.mul(0.9))),
+  }
 }
 
 // A Venus-like cloud deck. The planet is represented by the atmosphere we
@@ -223,6 +275,55 @@ export function moon(TSL, { spunDir }) {
   return { surface: TSL.vec3(grey, grey, grey.mul(1.04)) }
 }
 
+// SS-04 — Mercury: grey, and specifically NOT Mars.
+//
+// Before Phase SS, Mercury and Mars shared the `desert` recipe, which ramps
+// through rust-oranges — those are Mars's iron oxides, and Mercury has
+// almost none. Mercury's regolith is dark, iron-poor silicate: geometric
+// albedo 0.106, slightly darker than the Moon's 0.12 and only faintly
+// warmer in tone.
+//
+// Three features distinguish it from the Moon recipe, all real:
+//   craters        heavier than the Moon's — no atmosphere, no erosion,
+//                  and a longer exposure to the inner-system impact flux
+//   smooth plains  vast volcanic flood deposits (Caloris and the northern
+//                  plains) that resurfaced whole regions, reading brighter
+//                  and crater-poor
+//   lobate scarps  Mercury's signature: kilometre-high cliffs running for
+//                  hundreds of km, thrust up when the cooling core made the
+//                  entire planet CONTRACT. No other planet is visibly
+//                  wrinkled by its own shrinkage.
+export function mercury(TSL, { spunDir }) {
+  const w = worleyF1F2(TSL, spunDir.mul(4.6), { impl: 'fallback' })
+  const bowl = TSL.smoothstep(0.15, 0.03, w.x)
+  const rim = TSL.smoothstep(0.28, 0.15, w.x).mul(TSL.smoothstep(0.07, 0.15, w.x))
+
+  // Smooth volcanic plains: low-frequency patches that suppress cratering
+  // and sit slightly brighter than the ancient highlands.
+  const plains = TSL.smoothstep(
+    0.54,
+    0.68,
+    fbm(TSL, spunDir.mul(1.15), { octaves: 2 }).mul(0.5).add(0.5),
+  )
+
+  // Lobate scarps: ridged noise (|fbm| folded) thresholded into thin
+  // sinuous lines, thinned where the young plains have buried them.
+  const ridged = fbm(TSL, spunDir.mul(2.3), { octaves: 3 }).abs()
+  const scarps = TSL.smoothstep(0.16, 0.03, ridged).mul(plains.mul(0.6).oneMinus())
+
+  const grain = fbm(TSL, spunDir.mul(5.5), { octaves: 3 }).mul(0.5).add(0.5)
+  // Darker base than the Moon's 0.33 seat — albedo 0.106 vs 0.12 — with a
+  // faint warm bias, not Mars's saturated rust.
+  const grey = grain
+    .mul(0.13)
+    .add(0.28)
+    .sub(bowl.mul(0.14))
+    .add(rim.mul(0.09))
+    .add(plains.mul(0.07))
+    .add(scarps.mul(0.06))
+  return { surface: TSL.vec3(grey.mul(1.04), grey, grey.mul(0.94)) }
+}
+
 // MN-03 — Titan: the atmosphere IS the face. Near-featureless orange
 // haze, the faintest banding, and the real north polar hood. The heavy
 // shell preset does the rest of the talking.
@@ -252,6 +353,32 @@ export const ATMOSPHERES = {
   iceGiant: { inner: 0x1266a3, outer: 0x9ae8ef, strength: 0.55, power: 3 },
 }
 
+// Per-type day/night edge. An airless body has a knife-edge terminator and a
+// near-black night side, because there is no air to scatter sunlight past the
+// geometric boundary; a deep atmosphere smears the same boundary into a wide
+// twilight and lifts the night side off black. `dawn` is the smoothstep window
+// on dot(surface, sun) — narrow is hard — and `floor` is the night ambient.
+// Same shape as ATMOSPHERES above: keyed by type, overridable per body.
+export const TERMINATORS = {
+  // Mercury has no atmosphere at all — only a surface-bounded exosphere so
+  // thin its atoms never collide with each other. Nothing scatters sunlight
+  // past the geometric edge, so its terminator is the hardest in the scene
+  // and its night side is the darkest: the sharpest edge here is the most
+  // physically correct one, not a stylistic choice.
+  mercury: { dawn: [-0.02, 0.04], floor: 0.015, dusk: [0.015, -0.04] },
+  moon: { dawn: [-0.03, 0.06], floor: 0.02, dusk: [0.02, -0.05] },
+  desert: { dawn: [-0.06, 0.18], floor: 0.06 },
+  ice: { dawn: [-0.05, 0.16], floor: 0.05 },
+  rocky: { dawn: [-0.12, 0.32], floor: 0.12 },
+  ocean: { dawn: [-0.12, 0.32], floor: 0.12 },
+  lava: { dawn: [-0.12, 0.3], floor: 0.1 },
+  iceGiant: { dawn: [-0.18, 0.42], floor: 0.13 },
+  gas: { dawn: [-0.2, 0.45], floor: 0.14 },
+  ringed: { dawn: [-0.2, 0.45], floor: 0.14 },
+  cloud: { dawn: [-0.3, 0.55], floor: 0.2 },
+  titan: { dawn: [-0.34, 0.6], floor: 0.26 },
+}
+
 export const PLANET_RECIPES = {
   rocky,
   lava,
@@ -263,5 +390,14 @@ export const PLANET_RECIPES = {
   cloud,
   iceGiant,
   moon,
+  mercury,
   titan,
 }
+
+// recipe function → its terminator preset. Recipes are module-level functions
+// and are already the type identity everywhere else (see Planet.jsx's memo
+// note), so keying off the function lets every body pick up the right day/night
+// edge without each call site having to pass one.
+export const TERMINATOR_FOR = new Map(
+  Object.entries(PLANET_RECIPES).map(([type, fn]) => [fn, TERMINATORS[type]]),
+)

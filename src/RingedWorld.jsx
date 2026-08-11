@@ -22,6 +22,13 @@ import { buildRingMaterial, RING_INNER, RING_OUTER } from './ringMaterial'
 const TILT = [0.466, 0, 0.12] // 26.7°, with a compositional lean
 const TILT_ALONE = [0.7, 0, 0.1]
 
+// Here the globe and the rings share one tilted group, so in the planet's own
+// frame the ring plane is simply y = 0 and its normal is +Y. That switches on
+// the rings' shadow across the globe — the mirror of the globe's shadow on the
+// rings that ringMaterial already casts. Frozen: <Planet> memos on cfg
+// identity, so an inline literal would rebuild the node graph every render.
+const RINGED_CFG = Object.freeze({ ringNormal: [0, 1, 0] })
+
 export default function RingedWorld({ frozen = false, ringsOnly = false }) {
   const scale = ringsOnly ? 1.55 : 1.15
   const tilt = ringsOnly ? TILT_ALONE : TILT
@@ -52,6 +59,7 @@ export default function RingedWorld({ frozen = false, ringsOnly = false }) {
       {!ringsOnly && (
         <Planet
           recipe={PLANET_RECIPES.ringed}
+          cfg={RINGED_CFG}
           radius={scale}
           atmosphere={ATMOSPHERES.ringed}
           sun={sunU}

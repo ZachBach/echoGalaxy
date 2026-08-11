@@ -14,6 +14,7 @@ import {
 } from './orbitPhysics'
 import { buildRingMaterial, RING_INNER, RING_OUTER } from './ringMaterial'
 import Moon, { moonPeriod } from './Moon'
+import Aurora from './Aurora'
 import { DEFAULT_SYSTEM, SYSTEMS } from './systemData'
 
 export { DEFAULT_SYSTEM, SYSTEMS }
@@ -277,12 +278,27 @@ function OrbitingPlanet({ orbit, frozen, hands, onEvent, restoreSignal, choreo }
     <group ref={ref} {...handlers}>
       <Planet
         recipe={orbit.recipe}
+        cfg={orbit.cfg}
         radius={orbit.size}
         atmosphere={orbit.atmo}
         sun={sunU}
-        spinRate={0.15}
+        spinRate={orbit.spinRate ?? 0.15}
+        obliquity={orbit.obliquity}
         frozen={frozen}
       />
+      {/* SW — the auroral oval, only where a magnetosphere exists to make
+          one. Earth glows; Venus and Mars do not, and that asymmetry is
+          the comparative-planetology lesson, not an omission. */}
+      {orbit.aurora && (
+        <Aurora
+          radius={orbit.size}
+          storm={orbit.aurora.storm}
+          magPoleTilt={orbit.aurora.magPoleTilt}
+          spinRate={orbit.spinRate ?? 0.15}
+          strength={orbit.aurora.strength ?? 1}
+          frozen={frozen}
+        />
+      )}
       {ringMat && (
         <group rotation={[orbit.ring.tilt, 0, 0]}>
           <mesh rotation-x={-Math.PI / 2} material={ringMat} renderOrder={2}>

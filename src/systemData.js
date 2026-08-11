@@ -1,4 +1,34 @@
 import { ATMOSPHERES, PLANET_RECIPES } from './planetRecipes'
+import { PLANETS, sceneSpinRate, obliquityRad } from './solarBodies'
+
+// SS-05 — every planet used to spin at a hardcoded 0.15, which quietly
+// contradicted two facts this scene already prints: that a Venus day is
+// longer than a Venus year, and that Uranus turns on its side. Rates now
+// derive from measured rotation periods through `sceneSpinRate` (see
+// solarBodies.js for why they are compressed rather than literal, and how
+// retrograde motion falls out of obliquity instead of a second hand-set
+// flag). Ordering and sign are real; only the magnitudes are squeezed.
+const spin = (key) => sceneSpinRate(PLANETS[key])
+
+// Axial tilt, same deal: measured obliquity out of solarBodies.js rather than
+// a second set of hand-typed radians here. Unlike spin these are NOT squeezed
+// — the tilts are literal, so Uranus really does lie on its side and Venus is
+// really upside down.
+const tilt = (key) => obliquityRad(PLANETS[key])
+
+// Saturn's rings sit over its equator, so one number is both the globe's
+// obliquity and the ring group's tilt — deriving both from the same call is
+// what stops the two from drifting apart. (This replaces a hand-set 0.52;
+// the measured 26.73° is 0.4665 rad.)
+//
+// The ring mesh is drawn inside a group tilted by this about X and is itself
+// rotated −π/2 about X, so its local +Z normal lands at (0, cos t, sin t) in
+// the globe's frame. That vector is what `ringed` needs to cast the ring
+// shadow. Frozen because <Planet> memos on cfg identity (see Planet.jsx).
+const SATURN_RING_TILT = tilt('saturn')
+const SATURN_CFG = Object.freeze({
+  ringNormal: [0, Math.cos(SATURN_RING_TILT), Math.sin(SATURN_RING_TILT)],
+})
 
 // System distances are deliberately compressed so every orbit remains visible
 // in one scene. Their ordering and the Kepler r^1.5 timing relationship remain
@@ -39,19 +69,30 @@ const solarSystem = {
   },
   orbits: [
     {
-      id: 'sol-mercury', recipe: PLANET_RECIPES.desert, atmo: false, r: 2.2, size: 0.2, phase: 0.13,
+      // SS-04: Mercury had shared Mars's `desert` recipe, so it rendered in
+      // Martian rust. Mercury's regolith is dark, iron-poor silicate — grey,
+      // and slightly darker than the Moon (albedo 0.106 vs 0.12).
+      id: 'sol-mercury', recipe: PLANET_RECIPES.mercury, atmo: false, r: 2.2, size: 0.2, phase: 0.13,
+      obliquity: tilt('mercury'), // 0.03° — the most upright planet in the system
+      spinRate: spin('mercury'),
       info: {
         name: 'Mercury', label: 'First orbit · smallest planet',
-        description: 'A scorched, airless rocky world racing nearest to the Sun.',
+        description:
+          'A scorched, airless world of grey silicate rock — cratered like the Moon, ' +
+          'and wrinkled by cliffs raised when its cooling core made the whole planet shrink.',
         facts: [
           'Mercury completes one Solar orbit in 88 Earth days.',
           'It has almost no atmosphere to spread heat, so day and night temperatures differ dramatically.',
           'Its surface records billions of years of impacts in craters and basins.',
+          'Mercury is grey, not red. It has almost no iron oxide in its surface — the rusty worlds are Mars and its dust.',
+          'The long cliffs crossing its surface are lobate scarps: the crust buckled as the planet contracted while its core cooled.',
         ],
       },
     },
     {
       id: 'sol-venus', recipe: PLANET_RECIPES.cloud, atmo: ATMOSPHERES.cloud, r: 3.05, size: 0.3, phase: 0.62,
+      obliquity: tilt('venus'), // 177.36° — flipped, hence its retrograde spin
+      spinRate: spin('venus'),
       info: {
         name: 'Venus', label: 'Second orbit · cloud-covered greenhouse',
         description: 'A rocky planet hidden beneath a dense, reflective atmosphere of carbon-dioxide clouds.',
@@ -64,6 +105,8 @@ const solarSystem = {
     },
     {
       id: 'sol-earth', recipe: PLANET_RECIPES.rocky, atmo: ATMOSPHERES.rocky, r: 4.0, size: 0.38, phase: 0.31,
+      obliquity: tilt('earth'), // 23.44° — the tilt that makes seasons
+      spinRate: spin('earth'),
       moons: [{ id: 'sol-moon', orbitR: 0.85, size: 0.1, phase: 0.3, recipe: PLANET_RECIPES.moon }],
       info: {
         name: 'Earth', label: 'Third orbit · ocean world',
@@ -77,6 +120,15 @@ const solarSystem = {
     },
     {
       id: 'sol-mars', recipe: PLANET_RECIPES.desert, atmo: ATMOSPHERES.desert, r: 5.05, size: 0.25, phase: 0.78,
+      obliquity: tilt('mars'), // 25.19° — nearly Earth's, so Mars has seasons too
+      spinRate: spin('mars'),
+      // Phobos and Deimos are 11 km and 6 km in radius — at true scale they
+      // would be well under a pixel here, so they are overscaled like Io is.
+      // Their ORDER and relative size are honest; their diameters are not.
+      moons: [
+        { id: 'sol-phobos', orbitR: 0.46, size: 0.028, phase: 0.2, recipe: PLANET_RECIPES.moon },
+        { id: 'sol-deimos', orbitR: 0.68, size: 0.02, phase: 0.71, recipe: PLANET_RECIPES.moon },
+      ],
       info: {
         name: 'Mars', label: 'Fourth orbit · cold desert',
         description: 'A small rocky world with a thin atmosphere, iron-rich dust, polar ice, and an ancient river story.',
@@ -89,10 +141,20 @@ const solarSystem = {
     },
     {
       id: 'sol-jupiter', recipe: PLANET_RECIPES.gas, atmo: ATMOSPHERES.gas, r: 6.7, size: 0.62, phase: 0.48,
+      obliquity: tilt('jupiter'), // 3.13° — almost no seasons on Jupiter
+      spinRate: spin('jupiter'),
+      // No ringNormal: Jupiter's rings are gossamer dust and cast no shadow
+      // anyone has ever seen. The ring mesh here is a visual hint, not Saturn.
       ring: { tilt: 0.35 },
+      // The four Galileans, in their real order and their real RELATIVE sizes
+      // (Ganymede largest, Europa smallest). All four are overscaled by the
+      // same ~5.6× against Jupiter, so comparing them to each other is honest
+      // even though comparing them to the planet is not.
       moons: [
-        { id: 'sol-io', orbitR: 1.55, size: 0.09, phase: 0.6, recipe: PLANET_RECIPES.lava },
-        { id: 'sol-titan', orbitR: 2.1, size: 0.13, phase: 0.1, recipe: PLANET_RECIPES.titan, atmosphere: ATMOSPHERES.titan },
+        { id: 'sol-io', orbitR: 1.0, size: 0.09, phase: 0.6, recipe: PLANET_RECIPES.lava },
+        { id: 'sol-europa', orbitR: 1.28, size: 0.077, phase: 0.15, recipe: PLANET_RECIPES.ice },
+        { id: 'sol-ganymede', orbitR: 1.6, size: 0.13, phase: 0.82, recipe: PLANET_RECIPES.moon },
+        { id: 'sol-callisto', orbitR: 1.95, size: 0.119, phase: 0.42, recipe: PLANET_RECIPES.moon },
       ],
       info: {
         name: 'Jupiter', label: 'Fifth orbit · largest planet',
@@ -100,13 +162,26 @@ const solarSystem = {
         facts: [
           'Jupiter outweighs every other planet in the Solar System combined.',
           'Its Great Red Spot is a storm larger than Earth that has persisted for centuries.',
-          'The glowing moon is an Io analogue: tides from a giant planet can keep a small world volcanically active.',
+          'The four large moons are Galileo’s: Io, Europa, Ganymede, and Callisto — the first worlds ever seen orbiting something other than Earth.',
+          'Io is the most volcanically active body in the Solar System. Jupiter’s tides knead it hard enough to keep it molten.',
+          'Ganymede is larger than the planet Mercury, and is the only moon known to generate its own magnetic field.',
         ],
       },
     },
     {
       id: 'sol-saturn', recipe: PLANET_RECIPES.ringed, atmo: ATMOSPHERES.ringed, r: 8.45, size: 0.54, phase: 0.08,
-      ring: { tilt: 0.52 },
+      obliquity: SATURN_RING_TILT, // 26.7°, and the rings ride the equator
+      spinRate: spin('saturn'),
+      cfg: SATURN_CFG,
+      ring: { tilt: SATURN_RING_TILT },
+      // Titan orbits SATURN, not Jupiter. orbitR 2.1 clears the ring system
+      // (RING_OUTER 2.27 × size 0.54 ≈ 1.23), which is also the real geometry:
+      // Titan sits at ~20 Saturn radii, the A ring ends at ~2.3.
+      moons: [
+        { id: 'sol-enceladus', orbitR: 1.4, size: 0.022, phase: 0.55, recipe: PLANET_RECIPES.ice },
+        { id: 'sol-rhea', orbitR: 1.72, size: 0.038, phase: 0.28, recipe: PLANET_RECIPES.moon },
+        { id: 'sol-titan', orbitR: 2.1, size: 0.13, phase: 0.1, recipe: PLANET_RECIPES.titan, atmosphere: ATMOSPHERES.titan },
+      ],
       info: {
         name: 'Saturn', label: 'Sixth orbit · ringed giant',
         description: 'A pale gas giant surrounded by a vast, thin disk of water-ice particles.',
@@ -114,11 +189,16 @@ const solarSystem = {
           'Saturn’s rings are billions of icy particles, each orbiting independently.',
           'The Cassini Division is a real gap sculpted by orbital resonance with the moon Mimas.',
           'Saturn is less dense than water, though no ocean could ever be large enough to float it.',
+          'Titan is Saturn’s largest moon — bigger than the planet Mercury, and the only moon with a thick atmosphere.',
+          'Enceladus sprays water from cracks at its south pole. Those geysers are what supplies Saturn’s faint outer E ring.',
+          'Saturn’s confirmed moon count passed 290 in 2026 and is still climbing — the number in your textbook is probably already out of date.',
         ],
       },
     },
     {
       id: 'sol-uranus', recipe: PLANET_RECIPES.iceGiant, atmo: ATMOSPHERES.iceGiant, r: 10.45, size: 0.43, phase: 0.57,
+      obliquity: tilt('uranus'), // 97.77° — on its side, poles to the sun
+      spinRate: spin('uranus'),
       info: {
         name: 'Uranus', label: 'Seventh orbit · sideways ice giant',
         description: 'A blue-green ice giant tipped almost onto its side, likely by a giant impact early in its history.',
@@ -131,6 +211,8 @@ const solarSystem = {
     },
     {
       id: 'sol-neptune', recipe: PLANET_RECIPES.iceGiant, atmo: ATMOSPHERES.iceGiant, r: 12.55, size: 0.4, phase: 0.25,
+      obliquity: tilt('neptune'), // 28.32°
+      spinRate: spin('neptune'),
       info: {
         name: 'Neptune', label: 'Eighth orbit · wind-swept ice giant',
         description: 'The outermost major planet, a deep-blue ice giant with some of the fastest winds measured in the Solar System.',

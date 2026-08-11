@@ -26,13 +26,14 @@ export default function Planet({
   cfg = EMPTY_CFG,
   radius = 1.7,
   spinRate = 0.04,
+  obliquity = 0,
   atmosphere = false,
   sun = sunDir,
   frozen = false,
 }) {
   const material = useMemo(
-    () => buildPlanetMaterial({ recipe, cfg, spinRate, sun, frozen }),
-    [recipe, cfg, spinRate, sun, frozen],
+    () => buildPlanetMaterial({ recipe, cfg, spinRate, obliquity, sun, frozen }),
+    [recipe, cfg, spinRate, obliquity, sun, frozen],
   )
   useEffect(() => () => material.dispose(), [material])
 
