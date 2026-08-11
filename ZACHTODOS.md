@@ -60,19 +60,36 @@ eyes, or your accounts. Ordered by dependency.
       not plan on swapping shots into a master that is not on this
       machine. If it cannot be found, the 4:5 cut is a full re-assemble,
       not a two-shot patch.
-- [ ] **Assemble the 9:16 Reels cut** — **the capture half is already
-      done.** `video/frames-9x16/` holds 1,980 frames on disk, and
-      `video/HANDOFF-design.md` records them as the COMPLETE fifteen-shot
-      montage, freshly rendered *after* the clock fix. Verified on disk
-      2026-08-11: 1,980 frames at 1080×1920, fifteen shots — 01-hook,
-      02-rocky, 03-gas, 04-star, 05-system, 05b-pillars, 06-spiral,
-      07-barred, 08-elliptical, 09-irregular, 10-group, 11-blackhole,
-      12-godshands, 13-crab, 14-coma. So this is one
-      command, not a capture session — ffmpeg is installed:
-      `node scripts/assemble.mjs --frames ./video/frames-9x16 --out echogalaxy-9x16.mp4 --titles`
-      (note the path is `video/frames-9x16`, not `./frames-9x16`).
-      Because these frames are post-fix, the 9:16 cut is **not** affected
-      by the strobing bug at the top of this file — it can ship first.
+- [x] **Assemble the 9:16 Reels cut** — no capture session was needed:
+      `video/frames-9x16/` already held the complete fifteen-shot montage
+      (1,980 frames at 1080×1920), rendered *after* the clock fix.
+      **Encoded 2026-08-11 → `video/echogalaxy-9x16.mp4`.** Probed clean:
+      h264 / yuv420p, 1080×1920 exact, 30 fps, 1,812 frames,
+      **60.400000 s** (matches the computed timeline exactly), 8.5 Mbps,
+      61.3 MB, `moov` ahead of `mdat` so it streams without a full
+      download. Sampled at 1.2 / 14 / 20.5 / 37 / 57 s: all six title
+      cards burn in on their intended shots (echoGalaxy over the hook,
+      Real Kepler orbits over the system rails, Pillars of Creation,
+      The Local Group), and 14-coma closes title-free as designed.
+      **The end-to-end watch is still your eyes' job.**
+
+      **⚠ Two traps in the command this list used to give.** The path is
+      `./video/frames-9x16`, not `./frames-9x16`. And `assemble.mjs`
+      defaults to `--fps 60` while these frames are **30 fps** — every
+      shot's frame count is exactly `seconds × 30` against `shots.js`.
+      Omitting `--fps 30` halves every duration while the dissolve
+      offsets stay computed from `seconds`, so the transitions land in
+      the wrong places and the cut is silently ruined. The command that
+      actually works:
+      `node scripts/assemble.mjs --frames ./video/frames-9x16 --out video/echogalaxy-9x16.mp4 --aspect 9x16 --fps 30 --titles`
+      (`--aspect 9x16` matters too — it selects the title layout;
+      the 4x5 default would misplace the cards.) ffmpeg is installed but
+      its winget shim is **not on PATH** — it lives at
+      `%LOCALAPPDATA%\Microsoft\WinGet\Packages\Gyan.FFmpeg_*\ffmpeg-8.1.2-full_build\bin`.
+
+      Because these frames are post-fix, this cut is **not** affected by
+      the strobing bug at the top of this file — it can ship first, and
+      it is the only asset not blocked on the missing 4:5 master.
 - [ ] **Delete the frame folders** once both masters are encoded (they're
       the disk hogs; the mp4s are the keepers).
 
