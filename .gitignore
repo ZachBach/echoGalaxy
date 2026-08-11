@@ -7,11 +7,15 @@ dist-ssr
 
 # Capture media travels by hand, not by git. `video/*` rather than
 # `video/` on purpose: git will not descend into an excluded directory,
-# so a bare `video/` makes the negation below impossible. The handoff
-# doc is prose, not media, and must outlive the frame folders — ZACHTODOS
-# tells you to delete those once the masters are encoded.
+# so a bare `video/` makes the negation below impossible.
+#
+# The negation covers *.md rather than named files: the handoff docs are
+# prose, not media, and must outlive the frame folders that ZACHTODOS tells
+# you to delete once the masters are encoded. Naming them one at a time
+# already failed once — HANDOFF.md was written next to an ignore rule that
+# only knew about HANDOFF-design.md, so git could not see it at all.
 video/*
-!video/HANDOFF-design.md
+!video/*.md
 
 # signing material — never in history (the 2026-08-03 lesson)
 *.keystore

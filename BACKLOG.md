@@ -152,6 +152,21 @@ npm run backlog:csv
 It fails loudly on duplicate or out-of-order IDs and reports any gap in the
 ST-001 → ST-500 range.
 
+## What is already built
+
+**Do not start at ST-001.** Commit `7fdc7e9` landed 3,342 lines of astronomy
+content against phases STA–STD. [BACKLOG-COVERAGE.md](BACKLOG-COVERAGE.md) maps
+every one of the 485 received tasks to what exists: **198 drafted · 92 partial ·
+6 in the research dossier · 135 open · 54 process**.
+
+Read it before picking up any task. Two cautions it establishes:
+
+- `DRAFTED` means prose exists, **not** that the task is done. Across those
+  3,342 lines there are roughly seven source references, against a definition of
+  done demanding three per task.
+- Nothing in the repo imports that content yet, and the existing validator
+  checks structure, not truth.
+
 ## Progress
 
 | Phase | Name | Range | Received | Open |
