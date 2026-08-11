@@ -24,6 +24,7 @@ import { createSkybox, bakeSkybox } from './skybox'
 import { GALAXY_TYPES } from './galaxyData'
 import { PLANET_TYPES } from './planetData'
 import { createRenderer, backendName } from './renderer'
+import { factsFor, hasLadder, AUDIENCES, AUDIENCE_LABELS } from './factsLadder'
 import CaptureRig from './capture/CaptureRig'
 import { shotById, ASPECTS } from './capture/shots'
 
@@ -350,6 +351,11 @@ export default function App() {
   // MB-05: on touch devices the facts collapse — the HUD covered 60% of
   // a portrait screen and its button rows intercepted sky touches.
   const [factsOpen, setFactsOpen] = useState(!COARSE)
+  // The facts ladder's read rung. Entries from the astronomy content layer
+  // carry factsKids + factsAdvanced; the older catalogues carry a flat
+  // `facts` that factsFor() falls back to, so this state changes nothing
+  // for them and the switch below stays hidden on those rungs.
+  const [audience, setAudience] = useState('kids')
   // CB-10: the cluster rung's redshift-space toggle — one boolean; the
   // scene glides its uniform toward the target (snaps when frozen).
   const [zSpace, setZSpace] = useState(false)
@@ -639,9 +645,23 @@ export default function App() {
         {factsOpen && (
           <div className="facts">
             <p>{info.description}</p>
+            {hasLadder(info) && (
+              <div className="ladder">
+                {AUDIENCES.map((a) => (
+                  <button
+                    key={a}
+                    className={a === audience ? 'active' : ''}
+                    aria-pressed={a === audience}
+                    onClick={() => setAudience(a)}
+                  >
+                    {AUDIENCE_LABELS[a]}
+                  </button>
+                ))}
+              </div>
+            )}
             <ul>
-              {info.facts.map((f, i) => (
-                <li key={i}>{f}</li>
+              {factsFor(info, audience).map((f, i) => (
+                <li key={`${audience}-${i}`}>{f}</li>
               ))}
             </ul>
           </div>

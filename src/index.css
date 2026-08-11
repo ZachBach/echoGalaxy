@@ -266,6 +266,36 @@ body:has(.app[style*='width']) {
   margin-bottom: 8px;
 }
 
+/* The facts ladder switch. Only rendered for entries carrying both rungs
+   (hasLadder), so it never appears on the older catalogues. Deliberately
+   the same visual language as the rung buttons — it is the same kind of
+   control, choosing a depth rather than a scale. */
+.hud .ladder {
+  pointer-events: auto;
+  display: flex;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+
+.hud .ladder button {
+  background: transparent;
+  border: 1px solid #2a3350;
+  color: #7d8bb0;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-family: ui-monospace, "SFMono-Regular", monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.hud .ladder button.active {
+  border-color: #4a7dff;
+  color: #e8ecf5;
+}
+
 .hud.compact .hint {
   font-size: 9px;
 }
