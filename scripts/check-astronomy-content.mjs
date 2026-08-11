@@ -160,6 +160,50 @@ for (const m of MODULES) {
 }
 if (!placeholders) pass('no placeholder text found')
 
+/* 8 — reference tables vs. profiles --------------------------------- *
+ * The tables and the profiles state the same numbers twice, so they can
+ * disagree — and did: Antares carried mag 0.6 (the bright extreme of its
+ * variation) against the ranking's 0.96. Structure checks can't see that
+ * class of error, only a cross-reference can. Variables are compared on
+ * their representative `mag`; `magRange` carries the variation.           */
+console.log('\n[8] reference tables agree with profiles')
+const byName = new Map(STAR_PROFILES.map((s) => [s.name, s]))
+let disagreements = 0
+
+for (const row of BRIGHTNESS_RANKING) {
+  const star = byName.get(row.name)
+  if (!star || typeof star.mag !== 'number') continue
+  if (Math.abs(star.mag - row.mag) > 0.02) {
+    fail(`${row.name}: profile mag ${star.mag} vs BRIGHTNESS_RANKING ${row.mag}`)
+    disagreements++
+  }
+}
+for (const row of NEAREST_RANKING) {
+  const star = byName.get(row.name)
+  if (!star || typeof star.distance !== 'number' || typeof row.distance !== 'number') continue
+  if (Math.abs(star.distance - row.distance) > 0.05) {
+    fail(`${row.name}: profile distance ${star.distance} ly vs NEAREST_RANKING ${row.distance} ly`)
+    disagreements++
+  }
+}
+for (const star of STAR_PROFILES) {
+  if (!Array.isArray(star.magRange) || typeof star.mag !== 'number') continue
+  const [lo, hi] = star.magRange
+  if (star.mag < lo || star.mag > hi) {
+    fail(`${star.name}: mag ${star.mag} falls outside magRange [${lo}, ${hi}]`)
+    disagreements++
+  }
+}
+if (!disagreements) pass('profiles and reference tables state the same numbers')
+
+// The catalogue claims to cover "the brightest stars in Earth's sky", so a
+// top-16 entry with no profile is a broken promise, not a gap. Alpha Centauri
+// is exempt: it is ranked as a combined pair but profiled as A and B.
+const topRanked = BRIGHTNESS_RANKING.filter((r) => r.rank <= 16 && r.name !== 'Alpha Centauri')
+const unprofiled = topRanked.filter((r) => !byName.has(r.name))
+if (unprofiled.length) fail(`top-16 stars without a profile: ${unprofiled.map((r) => r.name).join(', ')}`)
+else pass(`all ${topRanked.length} top-16 brightest stars carry a profile`)
+
 /* summary ----------------------------------------------------------- */
 console.log('\n─────────────────────────────────────────')
 console.log(`entries          ${entryCount}`)

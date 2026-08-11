@@ -488,6 +488,33 @@ export const BRIGHTEST_STARS = [
       'Gravity darkening makes the poles thousands of kelvin hotter than the equator, so its measured properties depend heavily on viewing angle.',
     ],
   },
+  // ST-151. Sources: SIMBAD (bet Cen — B1III, parallax 8.32 ± 0.50 mas → ~392 ly,
+  // V 0.58) and the tabulated brightest-star ranking (rank 11, combined V 0.61,
+  // 390 ly), fetched 2026-08-11. Both agree; 390 ly is the rounded consensus.
+  {
+    id: 'hadar',
+    name: 'Hadar',
+    designation: 'β Centauri',
+    constellation: 'Centaurus',
+    spectral: 'B1III',
+    distance: 390,
+    mag: 0.61,
+    rank: 11,
+    description:
+      'The fainter of the two Pointers — the bright pair that leads the eye to the ' +
+      'Southern Cross. A hot blue giant lying some ninety times further away than ' +
+      'the neighbour it appears to travel beside.',
+    factsKids: [
+      'Hadar is one of the two bright "Pointer" stars that show the way to the Southern Cross.',
+      'Its partner in the sky, Alpha Centauri, is our closest neighbour star. Hadar is about ninety times further away — they only look like a pair from here.',
+      'It is a hot blue giant, far larger and hotter than the Sun.',
+    ],
+    factsAdvanced: [
+      'B1III at roughly 390 ly, apparent magnitude 0.61 — the eleventh brightest star in Earth’s sky.',
+      'With Alpha Centauri it forms the Pointers to Crux, and that pairing is pure line of sight: Alpha Centauri is 4.34 ly away, Hadar about ninety times more distant. It is the clearest naked-eye demonstration that a constellation is a projection, not a structure.',
+      'A hot, massive B-type giant — massive enough to end in core collapse rather than as a white dwarf.',
+    ],
+  },
   {
     id: 'altair',
     name: 'Altair',
@@ -510,6 +537,33 @@ export const BRIGHTEST_STARS = [
       'A7V at 16.73 ly with a rotation period near 9 hours, giving it an equatorial radius about 20% larger than its polar radius.',
       'Interferometric imaging in 2007 produced a resolved surface map showing the oblateness and gravity darkening directly — a first for a normal main-sequence star.',
       'In Chinese and Japanese tradition it is the Cowherd, separated from Vega the Weaver Girl by the Milky Way, reunited one night a year — the Qixi and Tanabata festivals.',
+    ],
+  },
+  // ST-153. Sources: SIMBAD (alf Cru — B0.5IV+B1V, parallax 10.13 ± 0.50 mas →
+  // ~322 ly) and the tabulated brightest-star ranking (rank 13, combined V 0.76
+  // from components 1.33 + 1.73, 320 ly), fetched 2026-08-11.
+  {
+    id: 'acrux',
+    name: 'Acrux',
+    designation: 'α Crucis',
+    constellation: 'Crux',
+    spectral: 'B0.5IV + B1V',
+    distance: 320,
+    mag: 0.76,
+    rank: 13,
+    description:
+      'The brightest star of the Southern Cross, and the southernmost first-magnitude ' +
+      'star in the sky — a close pair of hot blue stars that a small telescope splits ' +
+      'cleanly in two.',
+    factsKids: [
+      'Acrux is the brightest star in the Southern Cross.',
+      'It looks like one star, but even a small telescope shows two.',
+      'It sits so far south that most of the northern half of the world never sees it at all.',
+    ],
+    factsAdvanced: [
+      'B0.5IV + B1V at roughly 320 ly. The two components shine at magnitude 1.33 and 1.73; their combined light reaches 0.76, ranking thirteenth in the sky.',
+      'The southernmost first-magnitude star, near −63° declination. A star at that declination never rises for observers north of about 27°N — which is why the Cross is unknown to most of Europe and North America but flies on southern flags.',
+      'Both components are hot, massive B-type stars, each destined for core collapse rather than a white-dwarf ending.',
     ],
   },
   {
@@ -543,7 +597,11 @@ export const BRIGHTEST_STARS = [
     constellation: 'Scorpius',
     spectral: 'M1.5Iab',
     distance: 550,
-    mag: 0.6,
+    // `mag` is the representative value that makes the ranking sortable; the
+    // variation lives in magRange. 0.6 is the BRIGHT EXTREME of the range, not a
+    // typical brightness, and quoting it here contradicted BRIGHTNESS_RANKING.
+    // SIMBAD gives V 0.91, the ranking table 0.96 — both inside the variation.
+    mag: 0.96,
     magRange: [0.6, 1.6],
     rank: 15,
     description:
