@@ -5,6 +5,25 @@
 > app looks like. §4 below (the clock-bug advisory) is doubly moot. The new
 > shots' beats are at the **bottom of this file**, under "The astronomy cut".
 
+## ⚠ If you arrived here from the repo link, the video is not in the repo
+
+Cloning this repository gets you the source, the shot list, and these two
+handoff documents — **and no footage at all.** `.gitignore` excludes every
+frame, master and screencast on purpose: the frame sets run to 4.4 GB, and a
+public repository is the wrong place for them. Only `video/*.md` is tracked.
+
+So every path in these documents (`video/echogalaxy-9x16-astro.mp4`,
+`video/frames-9x16-v2/`, `video/promo/`) describes a file on the shipyard
+machine, not one in your checkout. **Ask for the media separately** — the two
+finished masters are 19.4 MB and 64.1 MB and travel fine over any file link.
+
+What the repo alone *is* good for: reading the beats below, reading
+`HANDOFF.md` for what exists and what to run, checking `src/capture/shots.js`
+as the source of truth for shot ids and durations, and — if you want to
+re-render rather than wait — running the app yourself. `npm install`, then
+`npm run dev`, and `HANDOFF.md` §4 has the capture command. Budget ~1h45m
+for all 29 shots and 4.4 GB of disk.
+
 # echoGalaxy → design claude: capture handoff (2026-08-03)
 
 From the shipyard (Claude Code). Your capture-task manifest is complete —
