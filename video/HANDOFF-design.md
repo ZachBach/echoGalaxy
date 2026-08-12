@@ -1,3 +1,10 @@
+> **⚠ 2026-08-11, evening — read [`HANDOFF.md`](HANDOFF.md) §1 before this
+> file.** Everything below describes the 2026-08-03 delivery. The app has
+> since grown a real Solar System, a real star catalogue, and constellation
+> figures, so the frame sets this file hands over no longer match what the
+> app looks like. §4 below (the clock-bug advisory) is doubly moot. The new
+> shots' beats are at the **bottom of this file**, under "The astronomy cut".
+
 # echoGalaxy → design claude: capture handoff (2026-08-03)
 
 From the shipyard (Claude Code). Your capture-task manifest is complete —
@@ -91,6 +98,55 @@ this delivery (both new sets) is post-fix and verified.
 - Or cut manually: shots are designed to dissolve in listed order, but
   every shot also stands alone. `01-hook` is built for the mute
   autoplay stop; `10-group`'s final frame is the intended feed still.
+
+## 7. The astronomy cut — the six new shots (2026-08-11)
+
+Beats for the shots written against the astronomy layer. All are in
+`video/frames-9x16-v2/`. Framing on every one was checked on a contact sheet
+and adjusted before the delivery render — the notes below describe what the
+verified frames actually contain, not what was hoped for.
+
+- **`23-ecliptic` (5.5 s) — the thesis shot.** The camera sits three degrees
+  off the orbital plane, which collapses two separate things onto one
+  horizontal line: the orange ecliptic ring, and the orbital rails of the
+  planets. Around the midpoint the Sun, Mercury, Mars, Jupiter, Neptune and
+  Saturn are all strung along that single line across the frame. **If the cut
+  gets one caption, put it here** — the visual argument is already complete
+  and the copy only has to name it. Neptune passes close in the foreground as
+  a depth marker, sitting on the very line the shot is about.
+- **`24-zodiac` (5.0 s).** All 88 figures, a 65° azimuth sweep at low
+  elevation. Pure sky; no single subject. Good under a voice-over or as the
+  bed for a title card.
+- **`25-saturn-real` (5.5 s).** Opens near the ring plane and climbs, so the
+  disc opens through the move — the same grammar as `17-ringed`, on the real
+  body. Titan sits below frame-centre, the Sun rakes in from frame left.
+  Reads well in a 1:1 or 16:9 centre-crop.
+- **`26-earth-real` (5.5 s).** Earth and the Moon held together for the whole
+  move, Sun from frame right. **Not an aurora shot** — see `HANDOFF.md` §3;
+  the oval does not currently render anywhere in the app.
+- **`27-uranus-tilt` (4.5 s).** Uranus pole-on, so its bands read as
+  concentric rings. **Cut this directly against `28-jupiter-moons`** — the
+  contrast between concentric and horizontal banding is the entire point, and
+  it lands with no annotation. This pairing is worth building the sequence
+  around.
+- **`28-jupiter-moons` (5.0 s).** Jupiter near-upright with all four Galileans
+  in frame, Io innermost and fastest. One caveat for the edit: Jupiter is
+  currently rendered wearing a bright, Saturn-like ring system, which is not
+  accurate (`HANDOFF.md` §3). If a caption would draw the eye to it, pick a
+  different beat.
+
+Cut as their own piece, they run `01-hook` (wide cold open) → `05-system` (the
+reveal) → `23-ecliptic` (the plane) → `24-zodiac` (the sky) → `25-saturn-real`
+→ `27-uranus-tilt` → `28-jupiter-moons`. 32.5 s; the exact `--only` command is
+in `HANDOFF.md` §4.
+
+Note that `assemble.mjs --only` always emits shots in **authored** order and
+ignores the order you type, so this arc is the one the shot list already
+encodes. A closing wide pull-back would mean adding `10-group`, which the
+authored order would place third rather than last — that needs a change to
+`shots.js`, not a change to the command line. Ending on `28-jupiter-moons`
+avoids the problem, and pairing it directly after `27-uranus-tilt` is the
+strongest beat in the piece anyway.
 
 ## 6. On request from the shipyard
 

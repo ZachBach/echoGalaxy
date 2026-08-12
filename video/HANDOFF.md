@@ -124,8 +124,9 @@ Running now, unattended:
 npm run capture:social -- --aspect 9x16 --fps 30 --out video/frames-9x16-v2
 ```
 
-29 shots, 4,017 frames, roughly 4–5 hours of machine time. Output is
-`video/frames-9x16-v2/`, about 4.8 GB. Then assemble:
+29 shots, 4,017 frames. Measured steady-state rate on this machine is about
+**1,960 frames/hour**, so roughly **2.5 hours** including the per-shot browser
+launch. Output is `video/frames-9x16-v2/`, about 4.8 GB. Then assemble:
 
 ```bash
 node scripts/assemble.mjs --frames ./video/frames-9x16-v2 \
@@ -135,15 +136,35 @@ node scripts/assemble.mjs --frames ./video/frames-9x16-v2 \
 At 122.7 s the full 29-shot cut is **longer than a Reels slot wants**. Two
 sensible cuts out of the same frames:
 
-- **Feed cut (~60 s)** — the original fifteen, re-rendered, with `05-system`
-  now correct. Closest to the master you already know.
-- **Astronomy cut (~32 s)** — `01-hook`, `05-system`, `23-ecliptic`,
-  `24-zodiac`, `25-saturn-real`, `27-uranus-tilt`, `28-jupiter-moons`,
-  `10-group`. This is the one that shows what shipped today, and
-  `23-ecliptic` is its thesis frame.
+`assemble.mjs --only` cuts a subset directly from the full frame folder — no
+copying, and shots keep their authored order however you list them:
 
-`assemble.mjs` takes whatever subset you leave in a folder, so a cut is a copy
-of the frames you want into a new directory.
+```bash
+# Feed cut (61.4 s) — the original fifteen, with 05-system now correct
+node scripts/assemble.mjs --frames ./video/frames-9x16-v2 \
+  --out video/echogalaxy-9x16-feed.mp4 --aspect 9x16 --fps 30 --titles \
+  --only 01-hook,02-rocky,03-gas,04-star,05-system,05b-pillars,06-spiral,07-barred,08-elliptical,09-irregular,10-group,11-blackhole,12-godshands,13-crab,14-coma
+
+# Astronomy cut (32.5 s) — what shipped today. 23-ecliptic is the thesis frame.
+node scripts/assemble.mjs --frames ./video/frames-9x16-v2 \
+  --out video/echogalaxy-9x16-astro.mp4 --aspect 9x16 --fps 30 --titles \
+  --only 01-hook,05-system,23-ecliptic,24-zodiac,25-saturn-real,27-uranus-tilt,28-jupiter-moons
+```
+
+**`--only` does not let you reorder.** Shots always run in the order they are
+authored in `shots.js`, whatever order you list them on the command line —
+deliberately, because the shot list encodes which moves dissolve into each
+other and a command-line reorder would break momentum across the cuts
+silently. So the astronomy cut ends on `28-jupiter-moons`. Adding `10-group`
+to it would place that shot **third**, not last, because that is where it sits
+in the authored list. If you want a wide pull-back to close, the shot list
+itself has to change.
+
+Title cards anchor to shot ids rather than to absolute time, so they cannot
+drift when the cut changes; a card whose shot is absent is dropped and
+reported. Four new cards were added for the astronomy shots, and `02-rocky`'s
+card was corrected from "Five shader worlds" to "Twelve" — the montage used to
+show four of the planet rung's twelve bodies and now shows all of them.
 
 ---
 
