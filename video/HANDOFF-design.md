@@ -130,10 +130,10 @@ verified frames actually contain, not what was hoped for.
   it lands with no annotation. This pairing is worth building the sequence
   around.
 - **`28-jupiter-moons` (5.0 s).** Jupiter near-upright with all four Galileans
-  in frame, Io innermost and fastest. One caveat for the edit: Jupiter is
-  currently rendered wearing a bright, Saturn-like ring system, which is not
-  accurate (`HANDOFF.md` §3). If a caption would draw the eye to it, pick a
-  different beat.
+  in frame, Io innermost and fastest. Jupiter's ring was rendering as a bright
+  Saturn copy when this shot was first framed; it now uses a dust profile and
+  reads as a faint translucent band, so the shot is safe to caption and safe
+  to cut against Saturn without the two looking like the same planet.
 
 Cut as their own piece, they run `01-hook` (wide cold open) → `05-system` (the
 reveal) → `23-ecliptic` (the plane) → `24-zodiac` (the sky) → `25-saturn-real`

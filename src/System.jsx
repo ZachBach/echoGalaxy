@@ -66,7 +66,15 @@ function OrbitingPlanet({ orbit, frozen, hands, onEvent, restoreSignal, choreo }
   const ringMat = useMemo(
     () =>
       orbit.ring
-        ? buildRingMaterial({ sun: [0, 0.5, 0.86], scale: orbit.size, shadow: false })
+        ? buildRingMaterial({
+            sun: [0, 0.5, 0.86],
+            scale: orbit.size,
+            shadow: false,
+            // Both default to Saturn's, so an entry that says only `tilt`
+            // keeps exactly the material it had before these existed.
+            profile: orbit.ring.profile,
+            gain: orbit.ring.gain,
+          })
         : null,
     [orbit],
   )

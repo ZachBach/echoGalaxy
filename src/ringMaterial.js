@@ -35,18 +35,53 @@ export function ringDensity(x) {
   return d.mul(grain.mul(0.38).add(0.72)).clamp(0, 1)
 }
 
+// Jupiter's rings are dust, not ice, and they are nothing like the profile
+// above: a narrow main ring where Adrastea and Metis shed debris, a broad
+// gossamer skirt outside it from Amalthea and Thebe, and no gaps at all —
+// there are no shepherd resonances carving a Cassini Division out of a
+// dust sheet. Optical depth is around 1e-6, which is why nobody saw them
+// until Voyager 1 in 1979 and why they show up only in forward-scattered
+// light.
+//
+// So this profile is deliberately near the floor of visibility. It exists
+// to hint that something is there, which is what systemData asks for; a
+// second Saturn on Jupiter is a factual error a science audience catches.
+export function dustRingDensity(x) {
+  const main = band(x, 1.66, 1.84, 0.06)
+  const gossamer = band(x, 1.84, RING_OUTER, 0.14).mul(0.3)
+  const grain = fbm(TSL, TSL.vec3(x.mul(18), 1.9, 2.6), { octaves: 2 })
+    .mul(0.5)
+    .add(0.5)
+  return main.add(gossamer).mul(grain.mul(0.34).add(0.76)).clamp(0, 1)
+}
+
+const PROFILES = { saturn: ringDensity, dust: dustRingDensity }
+
 export function buildRingMaterial({
   sun = [0, 0.6, 0.8],
   scale = 1,
   shadow = true,
+  // 'saturn' is the default so the two existing callers — the planet rung's
+  // ringed world and Saturn itself — are untouched by this option existing.
+  profile = 'saturn',
+  // Overall opacity multiplier. Jupiter's ring is not merely a different
+  // shape from Saturn's, it is orders of magnitude fainter, and shape alone
+  // does not carry that.
+  gain = 1,
 } = {}) {
+  const density = PROFILES[profile]
+  if (!density) {
+    throw new Error(
+      `Unknown ring profile "${profile}". Use ${Object.keys(PROFILES).join(' or ')}.`,
+    )
+  }
   const m = new MeshBasicNodeMaterial()
 
   // ring-plane position in R units (planar-uv trick, black-hole
   // disc precedent); the plane is z = 0 in mesh-local space
   const p = TSL.uv().sub(0.5).mul(2 * RING_OUTER)
   const x = p.length()
-  const rho = ringDensity(x)
+  const rho = density(x)
 
   // icy grey-blue → warm gold with density
   const tint = TSL.mix(
@@ -73,7 +108,7 @@ export function buildRingMaterial({
   }
 
   m.colorNode = tint.mul(brightness).mul(shade)
-  m.opacityNode = rho.mul(0.92)
+  m.opacityNode = rho.mul(0.92 * gain)
   m.transparent = true
   m.side = DoubleSide
   m.depthWrite = false

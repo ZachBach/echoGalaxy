@@ -96,23 +96,28 @@ which states Kepler's third law as motion instead of as a caption.
   real-sky mode. Only `24-zodiac` uses it (`all`); everything else renders the
   shipping default.
 
-### Found — two content gaps, both flagged not fixed
+### Found — two content gaps, one fixed and one still open
 
-Both touch shared files that `CLAUDE.md` says to coordinate on before editing,
-and both are judgement calls rather than obvious bugs. **Neither blocks the
-video**; they affect what the footage claims.
+1. **Jupiter rendered Saturn's rings — fixed.** `systemData.js` said in a
+   comment that Jupiter's rings are "gossamer dust… a visual hint, not
+   Saturn", but only the comment said so: the entry carried a tilt alone, and
+   `buildRingMaterial`'s default is Saturn's density profile. Jupiter was
+   rendering a bright ice ring complete with a **Cassini Division it has no
+   business having**.
 
-1. **The auroral oval never renders.** `Aurora.jsx` and `spaceWeather.js` are
-   complete and `System.jsx:292` mounts the oval under `orbit.aurora` — but no
-   orbit in `systemData.js` defines an `aurora` key, so the condition is never
-   true. The feature is wired end to end and switched off by absent data.
-   Earth's shot is framed for the tilt and the Moon instead; if that data
-   lands, `26-earth-real` is the shot to re-frame for it.
-2. **Jupiter renders Saturn's rings.** `systemData.js:146` says, in a comment,
-   "Jupiter's rings are gossamer dust… a visual hint, not Saturn" — but
-   `System.jsx:69` calls `buildRingMaterial` identically for both, varying only
-   `scale`. In `28-jupiter-moons` Jupiter wears a bright, broad, banded ring
-   system. A science-literate audience will catch it.
+   `buildRingMaterial` now takes `profile` (`'saturn' | 'dust'`) and `gain`,
+   both defaulting to Saturn's so the two existing callers are untouched.
+   Jupiter's entry is `{ tilt: 0.35, profile: 'dust', gain: 0.14 }` — a main
+   ring plus gossamer skirt, no gaps, dropped to a hint. Verified against a
+   re-render: Jupiter's ring is now translucent enough to see stars and the
+   orbit rails through, and Saturn's is pixel-unchanged.
+
+2. **The auroral oval never renders — still open.** `Aurora.jsx` and
+   `spaceWeather.js` are complete and `System.jsx` mounts the oval under
+   `orbit.aurora` — but no orbit in `systemData.js` defines an `aurora` key,
+   so the condition is never true. The feature is wired end to end and
+   switched off by absent data. `26-earth-real` is framed for the tilt and the
+   Moon instead; if that data lands, it is the shot to re-frame for it.
 
 ---
 

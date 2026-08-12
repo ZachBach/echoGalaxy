@@ -145,7 +145,16 @@ const solarSystem = {
       spinRate: spin('jupiter'),
       // No ringNormal: Jupiter's rings are gossamer dust and cast no shadow
       // anyone has ever seen. The ring mesh here is a visual hint, not Saturn.
-      ring: { tilt: 0.35 },
+      //
+      // That was the intent from the start, but until now only the comment
+      // said so: `ring` carried a tilt alone, and buildRingMaterial's default
+      // is Saturn's profile, so Jupiter rendered a bright ice ring complete
+      // with a Cassini Division it has no business having. `dust` swaps in the
+      // main-ring-plus-gossamer shape and the gain drops it to a hint.
+      // gain 0.3 still read as a solid tan band in a close pass; 0.14 is the
+      // value where 28-jupiter-moons shows something is there without the
+      // frame arguing it is a ring system.
+      ring: { tilt: 0.35, profile: 'dust', gain: 0.14 },
       // The four Galileans, in their real order and their real RELATIVE sizes
       // (Ganymede largest, Europa smallest). All four are overscaled by the
       // same ~5.6× against Jupiter, so comparing them to each other is honest
