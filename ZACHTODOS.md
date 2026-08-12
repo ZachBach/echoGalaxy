@@ -4,6 +4,146 @@ The machine side is done: roadmap G0–G3 complete, capture rig verified
 deterministic, framing approved. Everything left needs your hands, your
 eyes, or your accounts. Ordered by dependency.
 
+---
+
+# Phase 0 — do these four, in this order
+
+Everything below Phase 0 is older and parts of it are stale. **If you only
+read one section, read this one.**
+
+> ### ⚠ Decide this first: the aurora landed after the render
+>
+> Commit `9e61653` ("Earth gets its oval") went in at **22:31**. The frames
+> for `26-earth-real` were written at **21:17**. So **the two finished cuts
+> do not show the auroral oval**, and they never will without another render.
+>
+> It also added a **30th shot, `29-aurora` (4.5 s), which has never been
+> rendered at all.** 29 of 30 shots are on disk.
+>
+> Two honest options:
+>
+> **A — Ship what you have now.** Both cuts are correct and complete for the
+> 29 shots they contain; the aurora is simply absent. Design starts today.
+> ~1h45m of machine time is saved. You add the aurora to the *next* cut.
+>
+> **B — Render the one missing shot, then re-cut.** `capture-social` takes
+> `--shots`, so this is **4.5 s of footage, not another full pass**: 135
+> frames, a couple of minutes. Three commands, from the repo root:
+>
+> ```bash
+> # 1. render just the new shot — a separate folder, because the script
+> #    refuses a non-empty output directory (that guard is what stops
+> #    frame sets getting mixed)
+> npm run capture:social -- --aspect 9x16 --fps 30 --shots 29-aurora --out video/frames-aurora
+>
+> # 2. move its 135 frames in beside the other 29 shots
+> cp video/frames-aurora/29-aurora.*.png video/frames-9x16-v2/
+>
+> # 3. re-cut the astronomy reel with the aurora on the end
+> node scripts/assemble.mjs --frames ./video/frames-9x16-v2 \
+>   --out video/echogalaxy-9x16-astro.mp4 --aspect 9x16 --fps 30 --titles \
+>   --only 01-hook,05-system,23-ecliptic,24-zodiac,25-saturn-real,27-uranus-tilt,28-jupiter-moons,29-aurora
+> ```
+>
+> That takes the astronomy cut from 32.5 s to **36.6 s**. The feed cut does
+> not contain `29-aurora` and does not need re-cutting at all.
+>
+> **`--fps 30` and `--aspect 9x16` are not optional** — the defaults are 60
+> and 4x5, and mixing frame rates inside one folder ruins the assembly
+> silently. It encodes fine and plays wrong.
+>
+> **I would take B.** The cost is minutes, not hours, and the aurora is the
+> last content gap from the whole roadmap — shipping the promo without it,
+> a day after fixing it, is the kind of thing you notice later. But A is
+> genuinely fine and nothing about it is wrong.
+>
+> - [ ] Decided: A or B
+
+### 1. Watch both videos, start to finish
+
+```
+video\echogalaxy-9x16-astro.mp4     32.5 s   ← watch this one first
+video\echogalaxy-9x16-feed.mp4      61.4 s
+```
+
+Nobody has watched either end to end. I checked frames at five timestamps,
+which proves the title cards land and the maths is right — it proves nothing
+about pacing, or about a dissolve that lands badly mid-shot. **This is the
+only step that cannot be done for you**, and doing it after design starts
+cutting is how a flaw gets built on.
+
+Two things to watch for specifically: the Pillars shot (~20 s in the feed
+cut) has a hard-edged slab at the base of the pillars that may or may not be
+intentional, and `05-system` is the shot that changed most.
+
+- [ ] Watched the astronomy cut
+- [ ] Watched the feed cut
+
+### 2. Put the two files on a GitHub Release
+
+The repo is public and design can read it, **but the video is not in it** —
+`.gitignore` excludes 7.2 GB of frames and every master on purpose. A repo
+link alone hands them instructions to footage they cannot see.
+
+1. Go to **github.com/ZachBach/echoGalaxy/releases/new**
+2. Tag: `promo-2026-08-11`  ·  Title: `Promotion cuts — 2026-08-11`
+3. Drag in **both** mp4s from step 1
+4. Publish, copy the URL
+5. Paste it into `video/HANDOFF.md` §0, where it says
+   *"EDIT: paste the published release URL here"*
+6. Commit and push that one-line change
+
+Release assets live outside git history, so this does not bloat the repo and
+is not permanent. **Do not `git add` the mp4s** — 84 MiB committed to a
+public repo can never be taken back out, and next week's re-render adds
+another 84.
+
+- [ ] Release published
+- [ ] URL pasted into HANDOFF.md §0 and pushed
+
+### 3. Send design one link
+
+The repo URL plus the release URL. They need nothing else — `HANDOFF.md`
+tells them what exists and what to run, `HANDOFF-design.md` has the per-shot
+beats and the suggested order for the astronomy cut.
+
+**Do not send `echogalaxy-9x16.mp4`.** It is the pre-Jupiter-fix, pre-sky
+cut from midday, and it has the least specific filename of the four, which
+makes it the one most likely to get grabbed by mistake.
+
+- [ ] Sent
+
+### 4. Write the captions
+
+Still the last thing between a finished file and an actual post. The HUD copy
+is ready-made source — the blueshift line and "a view no probe will ever
+photograph" were always the hooks, and `23-ecliptic` now gives you a better
+one: every planet on a single line, because the zodiac and the orbits are the
+same plane.
+
+- [ ] Instagram Reels + Facebook Reels captions written
+
+---
+
+## Not blocking the video, worth doing next
+
+- ~~The auroral oval never renders.~~ **Fixed 2026-08-11 22:31** (`9e61653`).
+  Earth now carries the `aurora` key and `29-aurora` was written as its own
+  shot rather than a re-frame of `26-earth-real`. The giants are deliberately
+  left off — their aurorae are a planet-wide glow, not an oval, and drawing
+  one would be drawing it wrong. See the decision box in Phase 0: this landed
+  *after* the render, so it is not in the delivered cuts.
+- **The 4:5 cut** — no longer blocked, see §5 below. That is your LinkedIn
+  and Instagram-feed placement, which you currently do not have.
+- **A fresh signing keystore** — the burned one is verifiably gone from disk
+  *and* from git history, but `android/keystore.properties` has never been
+  created, so a Play Store build cannot sign. You said Play Store is later;
+  this is the first step whenever later arrives.
+
+> **Stale below this line.** The ⚠ RE-RENDER item that used to open this file
+> described a clock bug fixed on 2026-08-03 and a 4:5 master that no longer
+> exists. `video/HANDOFF.md` supersedes this file wherever the two disagree.
+
 ## Launch video — production
 
 - [ ] **⚠ RE-RENDER 05-system + 02-rocky and re-assemble the 4:5 master
