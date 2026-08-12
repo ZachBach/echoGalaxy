@@ -106,6 +106,25 @@ Beats for the shots written against the astronomy layer. All are in
 and adjusted before the delivery render — the notes below describe what the
 verified frames actually contain, not what was hoped for.
 
+**The sky behind every planet- and system-rung shot changed on the final
+render**, so this affects far more than `24-zodiac`:
+
+- **25,199 stars, up from 8,355.** The Bright Star Catalogue stops at the
+  naked-eye limit, so the faint band 6.5–7.5 comes from Hipparcos. The
+  background is roughly three times denser than in any earlier delivery.
+- **All 88 constellation figures now draw by default**, not the thirteen
+  zodiac ones. They are deliberately soft — opacity dropped from 0.38 to 0.22
+  — so they read as texture behind the subject rather than as a diagram over
+  it. If a shot needs them stronger for a particular beat, say so and it is
+  one number.
+- The **ecliptic keeps its own brighter orange line**, which is what still
+  separates it from the figure lines now that there are so many more of them.
+
+Practical consequence for the edit: these shots have more going on in the
+background than the 2026-08-03 delivery, so lower-third copy sits better over
+the darker quadrants. `23-ecliptic` and `24-zodiac` have the most legible
+lower thirds; `05-system` is busiest at the bottom.
+
 - **`23-ecliptic` (5.5 s) — the thesis shot.** The camera sits three degrees
   off the orbital plane, which collapses two separate things onto one
   horizontal line: the orange ecliptic ring, and the orbital rails of the
