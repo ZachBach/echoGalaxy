@@ -110,7 +110,25 @@ console.log('\n[6] assemble title cues reference real shots')
     : ok(`${cued.length} title cue(s) all resolve`)
 }
 
-console.log('\n[7] runtime')
+// A title card is a factual claim burned into the footage. This one shipped
+// saying 8,355 while the sky held 25,199, because the catalogue grew and the
+// copy did not. Numbers in cards are checked against their source.
+console.log('\n[7] title copy agrees with the data')
+{
+  const { STARS } = await import('../src/skyCatalog.js')
+  const claim = [...assembleSrc.matchAll(/text:\s*'([\d,]+) real stars'/g)].map((m) => m[1])
+  if (!claim.length) {
+    ok('no star-count claim in any title card')
+  } else {
+    for (const c of claim) {
+      const n = Number(c.replace(/,/g, ''))
+      if (n === STARS.length) ok(`"${c} real stars" matches skyCatalog (${STARS.length})`)
+      else fail(`a title card claims ${c} stars, but skyCatalog holds ${STARS.length}`)
+    }
+  }
+}
+
+console.log('\n[8] runtime')
 {
   const raw = SHOTS.reduce((a, s) => a + s.seconds, 0)
   const total = raw - DISSOLVE * (SHOTS.length - 1)

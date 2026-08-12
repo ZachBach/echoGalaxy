@@ -141,10 +141,18 @@ ahead of `mdat` so they stream without a full download:
 Frame arithmetic checks end to end on all three: 4,017 − (28 dissolves × 12
 frames) = 3,681 = 122.7 s exactly, and the two subsets likewise.
 
-Spot-checked by eye, not just by arithmetic: at 16.2 s the astronomy cut shows
-the all-88 sky sweep under "8,355 real stars", and at 30.5 s Jupiter carries
+Spot-checked by eye, not just by arithmetic: at 15.5 s the astronomy cut shows
+the all-88 sky sweep under "25,199 real stars", at 11.0 s `23-ecliptic` puts
+every world on one line under "One plane. Every world.", and Jupiter carries
 the corrected faint dust ring — so the §3 fix survived into the delivered
 encode.
+
+**The star card was wrong once and is now gated.** It read "8,355 real stars"
+after the catalogue tripled to 25,199, because the sky grew and the copy did
+not. `npm run check:shots` step 7 now compares any `N real stars` claim in
+`assemble.mjs` against `skyCatalog.STARS.length` and fails on a mismatch — a
+title card is a factual claim burned into the footage, and one the footage
+contradicts is worse than no card at all.
 
 To re-cut a different subset, see `--only` below; to re-render from scratch:
 

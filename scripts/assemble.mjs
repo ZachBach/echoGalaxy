@@ -93,7 +93,11 @@ const TITLE_CUES = [
   // The astronomy layer. Cards are dropped automatically when their shot is
   // not in the cut, so these cost nothing to a cut that omits them.
   { shot: '23-ecliptic', offset: 0.5, seconds: 3.6, text: 'One plane. Every world.' },
-  { shot: '24-zodiac', offset: 0.4, seconds: 3.4, text: '8,355 real stars' },
+  // Keep this number in step with skyCatalog.STARS.length. It was 8,355 when
+  // the sky was the Bright Star Catalogue alone; the Hipparcos faint band took
+  // it to 25,199. A title card that states a figure the footage contradicts is
+  // worse than one that states nothing.
+  { shot: '24-zodiac', offset: 0.4, seconds: 3.4, text: '25,199 real stars' },
   { shot: '25-saturn-real', offset: 0.5, seconds: 3.6, text: 'Real tilts. Real rings.' },
   { shot: '27-uranus-tilt', offset: 0.4, seconds: 3.2, text: 'Uranus lies on its side' },
 ]
