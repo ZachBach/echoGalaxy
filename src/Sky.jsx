@@ -22,11 +22,15 @@ export default function Sky({
   radius = 58,
   magLimit = 6.5,
   gain = 0.4,
-  figures = 'zodiac',
+  figures = 'all',
   showStars = true,
   showFigures = true,
   showEcliptic = false,
-  figureOpacity = 0.38,
+  // Tuned for thirteen figures; all 88 at that strength turn the sky into a
+  // diagram that competes with the planets for the eye. Softened so the
+  // figures read as something you notice second, after the subject — the
+  // stars carry the richness now, and there are three times as many of them.
+  figureOpacity = 0.22,
 }) {
   const field = useMemo(
     () => (showStars ? buildStarField({ radius, magLimit, gain }) : null),

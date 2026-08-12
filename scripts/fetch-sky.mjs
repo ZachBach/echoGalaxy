@@ -43,15 +43,35 @@ import { dirname, join } from 'node:path'
 const here = dirname(fileURLToPath(import.meta.url))
 const OUT = join(here, '..', 'src', 'skyCatalog.js')
 
-const MAG_LIMIT = 6.5 // naked-eye limit; also the BSC's completeness limit
+// The BSC's own completeness limit, and the naked-eye limit. Every star at or
+// brighter than this comes from the Bright Star Catalogue and keeps its HR
+// number, because the constellation figures join on HR and nothing else.
+const BSC_LIMIT = 6.5
+// How deep the *drawn* sky goes. Past BSC_LIMIT the stars come from Hipparcos
+// and carry no HR — they are population, never figure vertices. 7.5 roughly
+// triples the star count for about a quarter-megabyte gzipped; 8.5 would
+// septuple it and more than double the bundle, which an offline-booting PWA
+// should not pay for stars this faint.
+const MAG_LIMIT = 7.5
 const OBLIQUITY = (23.4392811 * Math.PI) / 180
 
 const VIZIER =
   'https://vizier.cds.unistra.fr/viz-bin/asu-tsv' +
   '?-source=V/50/catalog' +
-  '&-out=HR,Name,RAJ2000,DEJ2000,Vmag,B-V' +
+  '&-out=HR,Name,RAJ2000,DEJ2000,Vmag,B-V,HD' +
   '&-out.max=10000' +
-  `&Vmag=%3C${MAG_LIMIT}` +
+  `&Vmag=%3C${BSC_LIMIT}` +
+  '&-sort=Vmag'
+
+// Hipparcos for the faint band only. Coordinates here are already decimal
+// degrees (RAICRS/DEICRS), unlike the BSC's sexagesimal RAJ2000/DEJ2000, so
+// the two need different parsers — see parseHip below.
+const VIZIER_HIP =
+  'https://vizier.cds.unistra.fr/viz-bin/asu-tsv' +
+  '?-source=I/239/hip_main' +
+  '&-out=HIP,HD,RAICRS,DEICRS,Vmag,B-V' +
+  '&-out.max=unlimited' +
+  `&Vmag=${BSC_LIMIT}..${MAG_LIMIT}` +
   '&-sort=Vmag'
 
 const LINES =
@@ -123,6 +143,7 @@ function parseStars(tsv) {
     const dir = toEclipticDir(raDeg, decDeg)
     stars.set(hr, {
       hr,
+      hd: parseInt(c[6], 10) || null,
       name: (c[1] || '').trim(),
       raDeg,
       decDeg,
@@ -134,6 +155,46 @@ function parseStars(tsv) {
     })
   }
   return stars
+}
+
+/**
+ * The faint band, from Hipparcos. These stars exist to make the sky look like
+ * the sky; they are never figure vertices, so they carry hr 0 rather than a
+ * fabricated identifier.
+ *
+ * Two differences from the BSC parser, both easy to get wrong:
+ *   • RAICRS/DEICRS are decimal degrees, not sexagesimal.
+ *   • Dedupe is on HD, not on position. A star sitting at V 6.49 in the BSC
+ *     and V 6.52 in Hipparcos would otherwise be drawn twice, and the two
+ *     catalogues genuinely disagree at that level. HD is an exact key, so no
+ *     angular tolerance has to be invented.
+ */
+function parseHip(tsv, seenHd) {
+  const out = []
+  let skipped = 0
+  for (const line of tsv.split('\n')) {
+    if (!line || line.startsWith('#') || line.startsWith('-')) continue
+    const c = line.split('\t')
+    if (c.length < 6) continue
+    const hd = parseInt(c[1], 10)
+    const raDeg = parseFloat(c[2])
+    const decDeg = parseFloat(c[3])
+    const vmag = parseFloat(c[4])
+    if (!Number.isFinite(raDeg) || !Number.isFinite(decDeg) || !Number.isFinite(vmag)) continue
+    if (Number.isFinite(hd) && seenHd.has(hd)) { skipped += 1; continue }
+    const bvRaw = parseFloat(c[5])
+    const bv = Number.isFinite(bvRaw) ? bvRaw : 0
+    out.push({
+      hr: 0,
+      name: '',
+      vmag,
+      bv,
+      hasBv: Number.isFinite(bvRaw),
+      temp: bvToTemp(bv),
+      ...toEclipticDir(raDeg, decDeg),
+    })
+  }
+  return { faint: out, skipped }
 }
 
 /* ── figures ───────────────────────────────────────────────────────── */
@@ -157,14 +218,24 @@ function parseFigures(csv) {
 
 console.log('\nfetch-sky — building the real sky\n')
 
-const [tsv, csv] = await Promise.all([
+const [tsv, csv, hipTsv] = await Promise.all([
   get(VIZIER, 'Bright Star Catalogue (VizieR V/50)'),
   get(LINES, 'ConstellationLines (CC BY 4.0)'),
+  get(VIZIER_HIP, `Hipparcos faint band V ${BSC_LIMIT}–${MAG_LIMIT} (VizieR I/239)`),
 ])
 
 const stars = parseStars(tsv)
 const figures = parseFigures(csv)
 console.log(`\n  parsed ${stars.size} stars, ${figures.size} constellation figures`)
+
+// The faint band rides along for density only. Dedupe on HD so a star the two
+// catalogues place either side of BSC_LIMIT is not drawn twice.
+const seenHd = new Set([...stars.values()].map((s) => s.hd).filter(Boolean))
+const { faint, skipped } = parseHip(hipTsv, seenHd)
+console.log(
+  `  parsed ${faint.length} faint stars from Hipparcos` +
+    (skipped ? ` (${skipped} dropped as duplicates of BSC entries)` : ''),
+)
 
 // Resolve figures to segments of HR pairs, dropping any vertex the
 // magnitude-limited catalogue does not contain — and reporting it, because
@@ -198,7 +269,9 @@ if (missing.size) {
 // ship. In practice at V<6.5 that is everything, but the filter keeps the
 // invariant explicit: no figure can reference a star we dropped.
 const used = new Set(segments.flatMap(([, a, b]) => [a, b]))
-const list = [...stars.values()].sort((a, b) => a.vmag - b.vmag)
+// Figures were resolved against the BSC set alone, above, so appending the
+// faint band here cannot change a single line — by construction, not by luck.
+const list = [...stars.values(), ...faint].sort((a, b) => a.vmag - b.vmag)
 
 const r4 = (n) => Math.round(n * 1e4) / 1e4
 const r2 = (n) => Math.round(n * 100) / 100

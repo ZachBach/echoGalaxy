@@ -56,7 +56,11 @@ const CAPTURE_SIZE = ASPECTS[params.get('aspect') ?? '4x5'] ?? ASPECTS['4x5']
 const CAPTURE_SINK = CAPTURE ? params.get('captureSink') : null
 
 // The shot's own sky mode outranks the URL, which outranks the default.
-const SKY_MODE = CAPTURE?.sky ?? SKY_PARAM ?? 'zodiac'
+// Default 'all': the whole celestial sphere of figures, not just the thirteen
+// the ecliptic crosses. The zodiac-only default was the cautious first cut —
+// with 25,199 stars behind them the full 88 read as a real sky rather than a
+// diagram, and the ecliptic still gets its own line to distinguish it.
+const SKY_MODE = CAPTURE?.sky ?? SKY_PARAM ?? 'all'
 
 if (CAPTURE) {
   window.__echoGalaxyCapture = { id: CAPTURE.id, state: 'arming' }
