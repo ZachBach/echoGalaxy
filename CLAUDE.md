@@ -77,6 +77,9 @@ npm run check:content   # astronomy content gate (ids, facts ladder, the 88)
 npm run check:planet    # planet materials on every obliquity + ring geometry
 npm run check:shots     # capture list: follow ids, sky modes, title cues
 npm run check:all       # all four gates, in order
+npm run check:shaders   # browser gate: every tsl-lib node AND material
+                        # compiles and draws on BOTH backends (~3 min, two
+                        # Chrome launches — deliberately not in check:all)
 npm run capture:social  # render social-video frame sets (see video/HANDOFF.md)
 npm run backlog:csv     # export BACKLOG.md tasks to CSV for a tracker
 ```
