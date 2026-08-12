@@ -6,9 +6,11 @@ import { buildStarField, buildFigures, buildEcliptic } from './skyMaterial'
 // Mounts three layers, all on shells just inside the procedural skybox so
 // they read as infinitely far away:
 //
-//   stars     8,355 Bright Star Catalogue entries to V ≤ 6.5 — the naked-eye
-//             limit — at true ecliptic positions, coloured by real
-//             temperature through the vendored blackbody node.
+//   stars     25,199 entries to V ≤ 7.5, at true ecliptic positions and
+//             coloured by real temperature through the vendored blackbody
+//             node. The Bright Star Catalogue supplies everything to the
+//             naked-eye limit of 6.5; the faint band from 6.5 to 7.5 comes
+//             from Hipparcos, which is what took this from 8,355.
 //   figures   the constellation stick figures. Defaults to the zodiac,
 //             because those are the thirteen the ecliptic actually crosses.
 //   ecliptic  the Sun's annual path. In this scene it is the circle y = 0,

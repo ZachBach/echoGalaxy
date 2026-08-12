@@ -1,5 +1,6 @@
 import { ATMOSPHERES, PLANET_RECIPES } from './planetRecipes'
 import { PLANETS, sceneSpinRate, obliquityRad } from './solarBodies'
+import { MAGNETOSPHERES } from './spaceWeather'
 
 // SS-05 — every planet used to spin at a hardcoded 0.15, which quietly
 // contradicted two facts this scene already prints: that a Venus day is
@@ -25,6 +26,34 @@ const tilt = (key) => obliquityRad(PLANETS[key])
 // rotated −π/2 about X, so its local +Z normal lands at (0, cos t, sin t) in
 // the globe's frame. That vector is what `ringed` needs to cast the ring
 // shadow. Frozen because <Planet> memos on cfg identity (see Planet.jsx).
+// SW — the auroral oval, derived rather than hand-set, exactly like spin and
+// tilt above. MAGNETOSPHERES is the single source of which bodies have a
+// working dynamo, how far the magnetic axis leans off the spin axis, and how
+// hard the solar wind is driving them.
+//
+// Returns undefined for anything that should NOT get an oval mesh, which is
+// most of the system, and that absence is the lesson rather than an omission:
+//
+//   mercury  a real magnetosphere, but no atmosphere to light up
+//   venus    no dynamo at all, only an induced magnetosphere
+//   mars     'diffuse' — patchy crustal magnetism gives localised aurorae and
+//            a planet-wide glow, which is not an oval and is not what this
+//            component draws. Left off rather than drawn wrong.
+//
+// The giants (aurora: true in the table) are also left off for now, and that
+// one is a colour problem, not a data problem: buildAuroraMaterial hard-codes
+// Earth's emission lines — O I 557.7 green, O I 630.0 red, N2+ 427.8 violet.
+// Those come from an atmosphere of oxygen and nitrogen. Jupiter and Saturn
+// glow in H2 Lyman and Werner bands, overwhelmingly ultraviolet, with only a
+// faint reddish visible component. Painting Earth's green on a hydrogen world
+// would be the same class of error as Jupiter wearing Saturn's rings. Giving
+// them ovals needs a palette parameter on the material first.
+const aurora = (key) => {
+  const m = MAGNETOSPHERES[key]
+  if (!m || m.aurora !== true) return undefined
+  return { storm: m.storm, magPoleTilt: m.magPoleTilt }
+}
+
 const SATURN_RING_TILT = tilt('saturn')
 const SATURN_CFG = Object.freeze({
   ringNormal: [0, Math.cos(SATURN_RING_TILT), Math.sin(SATURN_RING_TILT)],
@@ -107,6 +136,17 @@ const solarSystem = {
       id: 'sol-earth', recipe: PLANET_RECIPES.rocky, atmo: ATMOSPHERES.rocky, r: 4.0, size: 0.38, phase: 0.31,
       obliquity: tilt('earth'), // 23.44° — the tilt that makes seasons
       spinRate: spin('earth'),
+      // The only oval in the scene, and the only one this material's colours
+      // are actually right for. Venus and Mars are its control group.
+      //
+      // storm and magPoleTilt come from the table — a quiet 0.35, because the
+      // module is right that the quiet default is the honest one. `strength`
+      // is a legibility gain, not a physical claim: at this scene's scale
+      // Earth is a 300 px sphere and the oval is a thin shell seen edge-on, so
+      // the honest brightness resolves to almost nothing. Overscaling it for
+      // visibility is the same bargain this scene already makes with orbit
+      // spacing and moon sizes, and the HUD makes that bargain explicit.
+      aurora: { ...aurora('earth'), strength: 3 },
       moons: [{ id: 'sol-moon', orbitR: 0.85, size: 0.1, phase: 0.3, recipe: PLANET_RECIPES.moon }],
       info: {
         name: 'Earth', label: 'Third orbit · ocean world',
@@ -115,6 +155,8 @@ const solarSystem = {
           'Earth is the only world currently known to host life.',
           'Its day/night boundary is the terminator: sunrise and sunset are happening there at once.',
           'The Moon turns once per orbit, so the same face stays turned toward Earth.',
+          'The aurora is a ring around the magnetic pole, not the spin pole, and Earth’s magnetic axis leans about 11° off — so it sits visibly off-centre.',
+          'Venus and Mars have no working dynamo and no oval. That difference is a large part of why only one of the three kept its air.',
         ],
       },
     },

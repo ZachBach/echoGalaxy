@@ -561,6 +561,36 @@ export const SHOTS = [
     via: { pos: [2.0, 1.6, 4.6] },
     to: { pos: [-2.4, 2.0, 4.2] },
   },
+  {
+    // The auroral oval, which needed data before it needed a camera: the
+    // component and spaceWeather.js were complete for weeks while no orbit
+    // defined an `aurora` key, so nothing rendered. Now Earth has one.
+    //
+    // This is a separate shot from 26-earth-real rather than a re-frame of
+    // it, because the two want opposite things. 26 wants the Earth-Moon pair
+    // in one frame, which means standing off at d 3.2 — and at that distance
+    // the oval is a thin additive shell edge-on against a lit globe, which is
+    // to say invisible. This one gives up the Moon and closes to 1.9.
+    //
+    // Aurorae read at the LIMB, where the line of sight passes lengthwise
+    // through the shell — which is also the only way anyone has ever
+    // photographed one from orbit. So the move stays close and rolls the pole
+    // across frame rather than looking straight down at it.
+    //
+    // Earth's magnetic axis leans 11° off its spin axis and the oval rides
+    // the spin, so over four seconds the ring visibly wobbles rather than
+    // sitting still. That wobble is the shot's second payload and the reason
+    // it is not a still.
+    id: '29-aurora',
+    scale: 'system',
+    follow: 'sol-earth',
+    seconds: 4.5,
+    ease: 'inout',
+    fovLock: 'v',
+    from: { pos: [-0.55, 0.95, 1.55] },
+    via: { pos: [0.35, 1.15, 1.45] },
+    to: { pos: [1.15, 0.85, 1.25] },
+  },
 ]
 
 // Cross-dissolve length used between every pair of clips, in seconds.
