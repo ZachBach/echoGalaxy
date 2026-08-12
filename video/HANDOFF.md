@@ -1,218 +1,280 @@
 # echoGalaxy — promotion video handoff
 
-**State verified on disk 2026-08-11.** Everything below was checked against
-the actual files, not against the older notes. Where this contradicts
-`ZACHTODOS.md`, this file is newer — see §2, which is the one that matters.
+**State verified on disk 2026-08-11 (evening).** This supersedes the morning
+version of this file, which is now wrong in its headline claim. Where this
+contradicts `ZACHTODOS.md` or `HANDOFF-design.md`, this file is newer.
 
-Companion document: [`HANDOFF-design.md`](HANDOFF-design.md) is the capture
-delivery from the design side (per-shot beats, timing cues, the black-hole and
-Finger-of-God story cues). Read it for **how to cut**; read this for **what
+Companion document: [`HANDOFF-design.md`](HANDOFF-design.md) carries the
+per-shot beats and timing cues — read it for **how to cut**, this for **what
 exists and what to run**.
 
 Media is gitignored by design — it travels by hand, not by git.
 
 ---
 
-## 1. The 9:16 Reels cut is finished and shippable today
+## 1. ⚠ Read this first: the finished 9:16 master is stale
 
-`video/echogalaxy-9x16.mp4` — **64.2 MB, 1080×1920, 30 fps, 60.4 s, h264/yuv420p,
-`moov` ahead of `mdat` so it streams without a full download.**
+The morning version of this file said `echogalaxy-9x16.mp4` was ready to ship
+today. **It is not, and the reason is not a bug — it is that the app grew.**
 
-Fifteen shots, dissolve-joined, six title cards burned in. Every frame is
-post-clock-fix (§2), so this cut is **not** affected by the strobing bug. The
-arithmetic checks out end to end: 1,980 source frames − (14 dissolves × 12
-frames at 0.4 s) = 1,812 encoded frames = exactly 60.4 s.
+Every frame in `video/frames-9x16/` and `video/frames-4x5-new/` was rendered on
+**2026-08-03**. The master was assembled at **12:39 on 2026-08-11**. The
+astronomy content layer landed *after* that, between **15:45 and 15:52** the
+same day:
 
-Shot order and durations:
+| Commit | Landed | What it added |
+|---|---|---|
+| `eba37d1` | 15:45 | the star catalogue — 8,355 real stars to naked-eye magnitude |
+| `ce93ab5` | 15:51 | the real Solar System: eight planets, real obliquities, moons |
+| `f0e94f9` | 15:51 | the real sky — constellation figures and the ecliptic |
+| `c843454` | 15:52 | the content gate's cross-referencing |
 
-| # | Shot | s | # | Shot | s |
-|---|---|---|---|---|---|
-| 1 | 01-hook | 1.4 | 9 | 08-elliptical | 3.2 |
-| 2 | 02-rocky | 5.0 | 10 | 09-irregular | 3.2 |
-| 3 | 03-gas | 4.2 | 11 | 10-group | 6.0 |
-| 4 | 04-star | 3.0 | 12 | 11-blackhole | 5.0 |
-| 5 | 05-system | 7.0 | 13 | 12-godshands | 6.0 |
-| 6 | 05b-pillars | 4.6 | 14 | 13-crab | 4.6 |
-| 7 | 06-spiral | 3.6 | 15 | 14-coma | 6.0 |
-| 8 | 07-barred | 3.2 | | | |
+So the cut you hold shows an app that no longer exists. Concretely:
 
-**The only outstanding task on this cut is watching it end to end.** That is
-your eyes' job and nobody else's — sampled frames at 1.2 / 14 / 20.5 / 37 / 57 s
-confirmed the title cards land on their intended shots, but sampling is not
-watching.
+- **`05-system` is the worst case.** That rung used to hold a generic
+  four-body system. It now holds the real Solar System, out to Neptune at
+  12.55 units — and the old camera path topped out at a half-width of 6.2,
+  which frames as far as Jupiter and crops everything past it.
+- **Every planet-rung and system-rung shot** now has real constellation
+  figures and the ecliptic behind it. `02-rocky`, `03-gas`, `04-star`,
+  `11-blackhole`, `12-godshands` all look materially different today.
+- Shader-driven rungs — galaxies, Pillars, Crab, Coma, Local Group — are
+  **unaffected**. Those shots are still accurate.
 
-→ **Ship this to Instagram Reels and Facebook Reels. It is ready.**
+**Do not ship the existing 9:16 master.** A re-render is in progress; see §4.
 
 ---
 
-## 2. ⚠ The 4:5 cut is a full capture session, not a patch
+## 2. What the shot list covers now — 29 shots, up from 15
 
-`ZACHTODOS.md` opens with "RE-RENDER 05-system + 02-rocky and re-assemble the
-4:5 master". **That plan is no longer possible, and the reason is worse than
-the missing mp4 already noted there.**
+`src/capture/shots.js` is the source of truth. Total runtime 122.7 s, 4,017
+frames at 30 fps.
 
-What is actually on disk for 4:5:
+**The fifteen already in the old master** — `01-hook`, `02-rocky`, `03-gas`,
+`04-star`, `05-system`, `05b-pillars`, `06-spiral`, `07-barred`,
+`08-elliptical`, `09-irregular`, `10-group`, `11-blackhole`, `12-godshands`,
+`13-crab`, `14-coma`. All re-rendered against the current app.
 
-| Asset | Status |
-|---|---|
-| `echoGalaxy-4x5.mp4` (the master) | **Gone.** No mp4 anywhere in the repo except `echogalaxy-9x16.mp4` and the fifteen screencasts in `promo/`. |
-| `video/frames-4x5-new/` | Present — **but only the four new shots**: 11-blackhole (150), 12-godshands (180), 13-crab (138), 14-coma (180). 648 frames, 1080×1350. |
-| 4:5 frames for shots 01 → 10-group | **Do not exist on this machine.** |
+**Eight authored but never once rendered** until now — `15-lava`, `16-ice`,
+`17-ringed`, `18-rings`, `19-desert`, `20-ocean`, `21-cloud`, `22-ice-giant`.
+These complete the planet rung: the old montage showed four of its twelve
+bodies. Framing on all eight was verified on a contact sheet before this
+render, which is the first time anyone has looked at them.
 
-So there is nothing to patch two shots *into*, and no source frames to
-re-assemble *from*. Producing a 4:5 master now means capturing shots
-**01-hook through 10-group plus 05b-pillars — eleven shots, ~45 s of footage**
-— from scratch, then assembling those together with the four existing 4:5
-shots.
+**Six new, written for the astronomy layer** — these are the additions, and
+they are the reason to re-cut rather than patch:
 
-`HANDOFF-design.md` §4 assumed you still held the old master and advised
-against shipping 02-rocky and 05-system from it. That advice is now moot: there
-is no old master to ship anything from.
+| Shot | s | What it is for |
+|---|---|---|
+| `23-ecliptic` | 5.5 | The plane, stated once. Three degrees off it, so the Sun's annual path and every orbital rail collapse onto one horizontal line through the frame. They coincide because they are the same plane — and this is the single clearest frame in the whole library. |
+| `24-zodiac` | 5.0 | All 88 constellation figures, swept across 65° of azimuth. Real stars at real positions in real colours. |
+| `25-saturn-real` | 5.5 | Saturn at its true 26.7° obliquity, rings riding the equator, Titan drifting below, the Sun raking in from frame left. |
+| `26-earth-real` | 5.5 | Earth's 23.44° tilt and the tidally-locked Moon holding one face through the whole move. |
+| `27-uranus-tilt` | 4.5 | Uranus at 97.77° — pole aimed at camera, so its bands read as concentric rings while every other banded world in the cut has horizontal stripes. Cut it next to `28` and it needs no caption. |
+| `28-jupiter-moons` | 5.0 | Jupiter, near-upright at 3.13°, with all four Galileans inside one frame. |
 
-### The capture session, if you want the 4:5
+`05-system` was **re-authored**, not merely re-rendered: it now opens low and
+close on the inner worlds and pulls back to 33 units, revealing all eight. By
+the end Mercury has swept a third of its year while Neptune has barely moved,
+which states Kepler's third law as motion instead of as a caption.
 
-`npm run dev`, then one URL at a time in Chrome or Edge, **all frames into one
-folder**. Click the page when prompted. Free ~4–8 GB first.
+---
 
-```
-localhost:5173/?capture=01-hook&aspect=4x5&fps=30&backend=webgl
-localhost:5173/?capture=02-rocky&aspect=4x5&fps=30&backend=webgl
-localhost:5173/?capture=03-gas&aspect=4x5&fps=30&backend=webgl
-localhost:5173/?capture=04-star&aspect=4x5&fps=30&backend=webgl
-localhost:5173/?capture=05-system&aspect=4x5&fps=30&backend=webgl
-localhost:5173/?capture=05b-pillars&aspect=4x5&fps=30&backend=webgl
-localhost:5173/?capture=06-spiral&aspect=4x5&fps=30&backend=webgl
-localhost:5173/?capture=07-barred&aspect=4x5&fps=30&backend=webgl
-localhost:5173/?capture=08-elliptical&aspect=4x5&fps=30&backend=webgl
-localhost:5173/?capture=09-irregular&aspect=4x5&fps=30&backend=webgl
-localhost:5173/?capture=10-group&aspect=4x5&fps=30&backend=webgl
-```
+## 3. Two things the capture rig gained, and two things it found
 
-**Use `fps=30`, not 60.** The old instructions said 60 to match the original
-frame folder — that folder is gone, and the four surviving 4:5 shots are 30 fps.
-Mixing rates inside one folder silently ruins the assembly (see §3).
+### Gained
 
-Then copy the four existing shots in alongside and assemble:
+- **`follow: '<orbit id>'`** — a shot can now ride an orbiting body. Its
+  `from`/`via`/`to` become offsets from that body and the camera aims at it.
+  This is what makes `25`–`28` possible: Earth laps its orbit in 60 s, so at
+  close range it walks out of a fixed frame in about two seconds. Positions
+  come from `System.orbitPosition` on the capture clock — the same function
+  and the same time source the drawn rails use, so the camera and the body
+  cannot disagree. A `follow` naming an unknown id fails the capture loudly
+  rather than silently mis-framing.
+- **`sky: 'off' | 'stars' | 'zodiac' | 'all'`** — per-shot override of the
+  real-sky mode. Only `24-zodiac` uses it (`all`); everything else renders the
+  shipping default.
+
+### Found — two content gaps, both flagged not fixed
+
+Both touch shared files that `CLAUDE.md` says to coordinate on before editing,
+and both are judgement calls rather than obvious bugs. **Neither blocks the
+video**; they affect what the footage claims.
+
+1. **The auroral oval never renders.** `Aurora.jsx` and `spaceWeather.js` are
+   complete and `System.jsx:292` mounts the oval under `orbit.aurora` — but no
+   orbit in `systemData.js` defines an `aurora` key, so the condition is never
+   true. The feature is wired end to end and switched off by absent data.
+   Earth's shot is framed for the tilt and the Moon instead; if that data
+   lands, `26-earth-real` is the shot to re-frame for it.
+2. **Jupiter renders Saturn's rings.** `systemData.js:146` says, in a comment,
+   "Jupiter's rings are gossamer dust… a visual hint, not Saturn" — but
+   `System.jsx:69` calls `buildRingMaterial` identically for both, varying only
+   `scale`. In `28-jupiter-moons` Jupiter wears a bright, broad, banded ring
+   system. A science-literate audience will catch it.
+
+---
+
+## 4. The re-render, and what to do when it lands
+
+Running now, unattended:
 
 ```bash
-cp video/frames-4x5-new/*.png <your-capture-folder>/
-node scripts/assemble.mjs --frames <your-capture-folder> --out video/echogalaxy-4x5.mp4 --aspect 4x5 --fps 30 --titles
+npm run capture:social -- --aspect 9x16 --fps 30 --out video/frames-9x16-v2
 ```
 
-Cheap sanity pass first, strongly recommended: run the same eleven URLs with
-`&fps=6` and glance at every clip. Framing was only ever reviewed on
-01 / 02 / 04 / 05 / 10 — **03-gas, 06-spiral, 07-barred, 08-elliptical, and
-09-irregular have never been eyeballed by anyone.** Keyframes live in
-`src/capture/shots.js`; the loop is minutes.
+29 shots, 4,017 frames, roughly 4–5 hours of machine time. Output is
+`video/frames-9x16-v2/`, about 4.8 GB. Then assemble:
+
+```bash
+node scripts/assemble.mjs --frames ./video/frames-9x16-v2 \
+  --out video/echogalaxy-9x16-v2.mp4 --aspect 9x16 --fps 30 --titles
+```
+
+At 122.7 s the full 29-shot cut is **longer than a Reels slot wants**. Two
+sensible cuts out of the same frames:
+
+- **Feed cut (~60 s)** — the original fifteen, re-rendered, with `05-system`
+  now correct. Closest to the master you already know.
+- **Astronomy cut (~32 s)** — `01-hook`, `05-system`, `23-ecliptic`,
+  `24-zodiac`, `25-saturn-real`, `27-uranus-tilt`, `28-jupiter-moons`,
+  `10-group`. This is the one that shows what shipped today, and
+  `23-ecliptic` is its thesis frame.
+
+`assemble.mjs` takes whatever subset you leave in a folder, so a cut is a copy
+of the frames you want into a new directory.
 
 ---
 
-## 3. Three traps in `assemble.mjs` that silently ruin a cut
+## 5. The 4:5 master is no longer blocked
 
-Every one of these produces a file that encodes fine and looks wrong.
+The morning file said producing 4:5 meant a manual browser session, one URL at
+a time, clicking a folder picker for each of eleven shots. **That is no longer
+true, and appears not to have been true for a while** — `scripts/capture-social.mjs`
+drives headless Chrome over the DevTools protocol and receives frames on a
+loopback sink. It needs no interaction at all:
 
-1. **`--fps` defaults to 60.** These frame sets are 30. Omit the flag and every
-   duration halves while the dissolve offsets stay computed from `seconds`, so
-   transitions land in the wrong places.
-2. **`--aspect` defaults to `4x5`.** It selects the title-card layout. Assemble
-   a 9:16 set without `--aspect 9x16` and the cards are misplaced.
-3. **The path is `./video/frames-…`, not `./frames-…`.** Older notes give the
-   wrong one.
+```bash
+npm run capture:social -- --aspect 4x5 --fps 30 --out video/frames-4x5-v2
+```
 
-**ffmpeg is installed (8.1.2 via winget) but is not on PATH.** It lives at:
+Same 29 shots, same unattended run, 1080×1350. Worth queueing after the 9:16
+finishes — running both at once just makes them compete for the CPU, since
+the renderer is software rasterised.
+
+`1x1` (1080×1080) is a third aspect the rig already supports, same way.
+
+### The three assembly traps still apply
+
+Every one produces a file that encodes fine and looks wrong.
+
+1. **`--fps` defaults to 60.** These sets are 30. Omit it and every duration
+   halves while dissolve offsets stay computed from `seconds`.
+2. **`--aspect` defaults to `4x5`** and selects the title-card layout.
+3. **The path is `./video/frames-…`, not `./frames-…`.**
+
+**ffmpeg is installed (8.1.2 via winget) but is not on PATH:**
 
 ```
 %LOCALAPPDATA%\Microsoft\WinGet\Packages\Gyan.FFmpeg_*\ffmpeg-8.1.2-full_build\bin
 ```
 
-The command that is known to work, for reference:
+### Cutting a subset — `--only`
 
-```bash
-node scripts/assemble.mjs --frames ./video/frames-9x16 --out video/echogalaxy-9x16.mp4 --aspect 9x16 --fps 30 --titles
+The full list is 29 shots and **122.7 s**, past the 90 s Facebook Reels
+ceiling and longer than most viewers will watch. `--only` cuts any subset
+from the same shot list, so one authored source yields several reels:
+
+```
+node scripts/assemble.mjs --frames ./video/frames-9x16 \
+  --only 01-hook,02-rocky,03-gas --out video/short.mp4 \
+  --aspect 9x16 --fps 30 --titles
 ```
 
+Three things it does on purpose:
+
+- **Authored order always wins.** `--only 14-coma,01-hook` still cuts
+  01-hook first. The shot list encodes which moves dissolve into each
+  other; letting a command line reorder them would break momentum across
+  the cuts without any error.
+- **An unknown id is fatal**, never skipped. Silently dropping a typo
+  gives you a shorter film and no reason why.
+- **Title cues whose shot is absent are dropped and reported by name.** A
+  subset that excludes `10-group` loses "The Local Group. Free + open." —
+  which is correct, but you should hear about it rather than notice at
+  upload.
+
+Verified end to end: a three-shot cut computed 9.8 s and encoded to
+exactly 294 frames at 30 fps = 9.800000 s. The degenerate single-shot cut
+emits a valid graph with no dangling dissolve.
+
 ---
 
-## 4. The clock bug, for context
+## 6. The screencast library — `video/promo/`
 
-The capture rig once wrote raw millisecond timestamps into `clock.elapsedTime`,
-so every consumer ran 1000× fast. **Stills looked perfect** — which is why the
-framing review missed it — but in motion, 05-system's planets teleport around
-their rails frame to frame and 02-rocky's moon does the same. Shader-driven
-shots (galaxies, star, Pillars) were never affected.
-
-`CaptureRig` now owns the clock and the fix is verified frame by frame. Every
-frame currently on disk, in both folders, is post-fix. Any new capture is too.
-This section exists only so nobody re-introduces footage from an old backup.
-
----
-
-## 5. The screencast library — `video/promo/`
-
-Fifteen real-time interaction captures, 1600×900, each as both `.webm` (VP9
-source) and `.mp4` (H.264 yuv420p, faststart — drops straight into any editor).
-These are **not** part of either montage; they are B-roll and standalone posts.
+Fifteen real-time interaction captures, 1600×900, each as `.webm` (VP9) and
+`.mp4` (H.264 yuv420p, faststart). **These predate the astronomy layer too** —
+`saturn`, `moon`, `rings-alone`, `godshands-*` and `scale-climb` all show the
+old system rung. The galaxy, nebula and black-hole clips are unaffected and
+remain good B-roll.
 
 `blackhole` · `cloud` · `coma-redshift` · `crab` · `desert` · `galaxy-morph` ·
 `godshands-clean` · `godshands-hud` · `ice-giant` · `moon` · `ocean` ·
 `pillars` · `rings-alone` · `saturn` · `scale-climb`
 
-Two worth knowing:
-
-- **`godshands-hud`** is the only asset showing the cannonball fate dial live.
-  Capture mode hides the HUD, so the dial does **not** appear in the
-  12-godshands montage frames. If the dial matters to a cut, composite it from
-  here or use picture-in-picture.
-- **`galaxy-morph`** (49 MB source) is the star-migration morph between Hubble
-  classes — stars physically migrating, not a crossfade. It is the single most
-  "how did they do that" clip in the library.
+- **`godshands-hud`** is still the only asset showing the cannonball fate dial
+  live — capture mode hides the HUD.
+- **`galaxy-morph`** (49 MB) is the star-migration morph between Hubble
+  classes. Stars physically migrate; it is not a crossfade.
 
 ---
 
-## 6. Publishing
+## 7. Captions
 
-| Platform | Asset | Status |
-|---|---|---|
-| Instagram Reels | `echogalaxy-9x16.mp4` | **Ready** |
-| Facebook Reels | `echogalaxy-9x16.mp4` | **Ready** |
-| LinkedIn | 4:5 master | Blocked on §2 |
-| Facebook feed | 4:5 master | Blocked on §2 |
+Still unwritten, and the well is now much deeper. The astronomy layer carries
+**834 facts across 171 entries**, each at two reading levels, in
+`src/stellarData.js`, `src/starData.js`, `src/constellationData.js` and
+`src/skyCultureData.js`. Run `npm run check:content` for the inventory.
+
+The `factsKids` rung is already tuned for short, punchy, non-specialist copy —
+that is the register social captions want. Strongest hooks on hand:
+
+- "Every star you can see at night is a sun."
+- "One teaspoon of it would weigh about as much as an elephant."
+- "Stars do not twinkle in space. Twinkling is our air wobbling the light on
+  its way down."
+- "There are thirteen constellations on that ring, not twelve. Ophiuchus is on
+  it too — it just never got a horoscope." (pairs with `23-ecliptic`)
+- "A view no probe will ever photograph."
+
+For `23-ecliptic` specifically, the measured claim in `Sky.jsx`'s `SKY_INFO` is
+the caption: zodiac figure stars sit a median **6.1°** from the ecliptic,
+against **39.6°** for every other constellation. The zodiac hugging that plane
+is a result, not a layout choice.
 
 Link the deployed app in every post.
 
-**Captions are not written yet.** The HUD facts are ready-made copy and were
-authored to be quotable — the blueshift line and "a view no probe will ever
-photograph" are the strongest hooks. As of today there is also a much deeper
-well to draw from: the astronomy content layer in `src/stellarData.js`,
-`src/starData.js`, `src/constellationData.js`, and `src/skyCultureData.js`
-carries **834 facts across 171 entries**, each written at two levels. The
-`factsKids` rung is already tuned for short, punchy, non-specialist copy —
-"Every star you can see at night is a sun", "One teaspoon of it would weigh
-about as much as an elephant" — which is exactly the register social captions
-want. Run `npm run check:content` to see the inventory.
+---
+
+## 8. Disk
+
+| Folder | Size | Keep? |
+|---|---|---|
+| `video/frames-9x16/` | 2.3 GB | **Stale** — superseded by `-v2`. Safe to delete once `-v2` is assembled and watched. |
+| `video/frames-4x5-new/` | 486 MB | **Stale** — four shots, pre-additions. Its "only 4:5 footage left" status no longer matters now that 4:5 is one unattended command. |
+| `video/frames-9x16-v2/` | ~4.8 GB | The new set. |
+| `video/promo/` | 172 MB | Keep — the mp4s are the deliverable. |
+
+86 GB free at the start of this session, so nothing needs deleting to proceed.
 
 ---
 
-## 7. Cleanup, once both masters are encoded
+## 9. Still your eyes' job
 
-The frame folders are the disk hogs; the mp4s are the keepers.
-
-| Folder | Size |
-|---|---|
-| `video/frames-9x16/` | 2.3 GB |
-| `video/frames-4x5-new/` | 488 MB |
-
-**Do not delete `frames-4x5-new/` until the 4:5 master exists.** Those 648
-frames are the only 4:5 footage left, and re-rendering them costs another
-capture session. `frames-9x16/` is safe to delete as soon as you have watched
-`echogalaxy-9x16.mp4` end to end and are happy with it.
-
----
-
-## 8. Available on request
-
-Re-renders at any fps, `1x1` (1080×1080) versions of any shot, new shots
-(23 are authored in `src/capture/shots.js`; only 15 have ever been rendered —
-`15-lava` through `22-ice-giant` exist as keyframes and have never been
-captured), or scripted-interaction variants through the choreography system.
-Frame counts, determinism, and framing come verified with every delivery.
+Frame counts, determinism, and framing come verified. **Watching the assembled
+cut end to end does not.** Sampled frames confirmed framing on all 29 shots
+before this render, but sampling is not watching, and the two shots that
+carried the 2026-08-03 clock bug (`02-rocky`, `05-system`) are exactly the kind
+that look perfect as stills and wrong in motion. That bug is fixed and every
+frame here is post-fix — but check those two first anyway.

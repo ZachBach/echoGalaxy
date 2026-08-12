@@ -15,11 +15,21 @@
 //   --out <file>     output file (default echogalaxy.mp4)
 //   --fps <n>        must match the fps used at capture (default 60)
 //   --aspect <id>    4x5, 9x16, or 1x1 (default 4x5)
+//   --only <ids>     comma-separated shot ids — cut a subset instead of all
 //   --titles         burn in the title cards
 //   --font <path>    font file for --titles
 //   --print          print the ffmpeg command instead of running it
 //
 // Requires ffmpeg on PATH.
+//
+// On --only: the full list runs past two minutes, which is longer than some
+// platforms accept and longer than most viewers will watch, so a subset cut
+// is the normal case rather than the exception. Shots keep their AUTHORED
+// order regardless of the order given here — the shot list encodes which
+// moves dissolve into each other, and letting a command line reorder them
+// would silently break momentum across the cuts. Unknown ids are fatal
+// rather than skipped: quietly dropping a typo'd id yields a shorter film
+// than asked for and no indication why.
 
 import { spawn } from 'node:child_process'
 import { SHOTS, DISSOLVE } from '../src/capture/shots.js'
@@ -37,6 +47,25 @@ const FPS = Number(arg('fps', '60'))
 const FONT = arg('font', '/Windows/Fonts/segoeui.ttf')
 const ASPECT = arg('aspect', '4x5')
 const WANT_TITLES = flag('titles')
+const ONLY = arg('only', null)
+
+// The cut: the shots this run assembles, always in authored order.
+const CUT = (() => {
+  if (!ONLY) return SHOTS
+  const want = ONLY.split(',').map((s) => s.trim()).filter(Boolean)
+  const known = new Set(SHOTS.map((s) => s.id))
+  const unknown = want.filter((id) => !known.has(id))
+  if (unknown.length) {
+    throw new Error(
+      `--only names ${unknown.length} shot(s) that are not in the list: ${unknown.join(', ')}\n` +
+        `Available: ${SHOTS.map((s) => s.id).join(', ')}`,
+    )
+  }
+  const wanted = new Set(want)
+  return SHOTS.filter((s) => wanted.has(s.id))
+})()
+
+if (!CUT.length) throw new Error('The cut is empty — nothing to assemble.')
 
 const TITLE_LAYOUTS = {
   '4x5': { fontSize: 'h/30', y: 'h*0.78', boxBorder: 16 },
@@ -65,25 +94,37 @@ const TITLE_CUES = [
 // one dissolve before the end of what has been built so far.
 function timeline() {
   const offsets = []
-  const starts = new Map([[SHOTS[0].id, 0]])
-  let running = SHOTS[0].seconds
-  for (let i = 1; i < SHOTS.length; i += 1) {
+  const starts = new Map([[CUT[0].id, 0]])
+  let running = CUT[0].seconds
+  for (let i = 1; i < CUT.length; i += 1) {
     const start = Number((running - DISSOLVE).toFixed(4))
     offsets.push(start)
-    starts.set(SHOTS[i].id, start)
-    running = start + SHOTS[i].seconds
+    starts.set(CUT[i].id, start)
+    running = start + CUT[i].seconds
   }
   return { offsets, starts, total: Number(running.toFixed(4)) }
 }
 
 function titleCards(starts, total) {
-  return TITLE_CUES.map((cue) => {
+  // A cue whose shot is not in this cut is dropped, not an error — that is
+  // the expected case for a subset. It IS reported, because a card silently
+  // going missing is how a cut ships without its own title.
+  const dropped = TITLE_CUES.filter((cue) => !starts.has(cue.shot))
+  if (dropped.length) {
+    console.log(
+      `titles:    ${dropped.length} cue(s) dropped, their shots are not in this cut — ` +
+        dropped.map((c) => `"${c.text}"`).join(', '),
+    )
+  }
+  return TITLE_CUES.filter((cue) => starts.has(cue.shot)).map((cue) => {
     const start = starts.get(cue.shot)
-    if (start == null) throw new Error(`Title cue references missing shot "${cue.shot}".`)
     const at = Number((start + cue.offset).toFixed(4))
     const until = Number((at + cue.seconds).toFixed(4))
     if (until > total) {
-      throw new Error(`Title cue "${cue.text}" ends after the assembled runtime.`)
+      throw new Error(
+        `Title cue "${cue.text}" ends at ${until}s, past the ${total}s runtime of this cut. ` +
+          `Shorten the cue in TITLE_CUES, or include a later shot.`,
+      )
     }
     return { at, until, text: cue.text }
   })
@@ -92,7 +133,7 @@ function titleCards(starts, total) {
 function build() {
   const { offsets, starts, total } = timeline()
 
-  const inputs = SHOTS.flatMap((s) => [
+  const inputs = CUT.flatMap((s) => [
     '-framerate',
     String(FPS),
     '-i',
@@ -104,7 +145,7 @@ function build() {
   // Normalise every input. setsar keeps ffmpeg from inventing a sample
   // aspect ratio, format=yuv420p up front means xfade blends in one pixel
   // format the whole way down the chain.
-  SHOTS.forEach((_, i) => {
+  CUT.forEach((_, i) => {
     parts.push(`[${i}:v]format=yuv420p,setsar=1,fps=${FPS}[v${i}]`)
   })
 
@@ -176,7 +217,7 @@ function build() {
 
 const { args, total } = build()
 
-console.log(`shots:     ${SHOTS.length}`)
+console.log(`shots:     ${CUT.length}${ONLY ? ` of ${SHOTS.length} (--only)` : ''}`)
 console.log(`dissolve:  ${DISSOLVE}s`)
 console.log(`runtime:   ${total}s`)
 console.log(`aspect:    ${ASPECT}`)
