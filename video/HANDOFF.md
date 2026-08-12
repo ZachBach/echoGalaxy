@@ -43,18 +43,54 @@ github.com/ZachBach/echoGalaxy/releases/new     tag: promo-2026-08-11
 > **EDIT: paste the published release URL here once it exists**, so this
 > document resolves to something real instead of describing a plan.
 
-**Send these two. They are current:**
+**Send these. All are cut from the 2026-08-12 renders, so design works from
+one app state rather than compositing across two:**
 
-- `echogalaxy-9x16-astro.mp4` — 32.5 s, the astronomy cut, start here
-- `echogalaxy-9x16-feed.mp4` — 61.4 s, the original fifteen re-rendered
+| File | Aspect | Duration | Size | Status |
+|---|---|---|---|---|
+| `echogalaxy-9x16-feed-v3.mp4` | 1080×1920 | 61.400 s | 64.1 MiB | ✅ probed |
+| `echogalaxy-4x5-feed.mp4` | 1080×1350 | 61.400 s | 65.9 MiB | ✅ probed — **new, no earlier delivery had a 4:5** |
+| `echogalaxy-9x16-astro-v3.mp4` | 1080×1920 | 36.6 s | ~22 MiB | ⏳ waiting on the v3 render |
+| `stills-4x5/` (30 PNG) + `contact-sheet-4x5.png` | — | — | ~33 MB | ✅ built |
 
-**Do not send these. Both are stale and both look plausible:**
+Both 61.4 s figures are exact, not rounded: they probe at `61.400000`, which
+is `sum(seconds) − 0.4 × 14` to the frame.
+
+**Do not send these. All four look plausible and none is current:**
 
 - `echogalaxy-9x16.mp4` (61.3 MiB) — the 2026-08-11 midday cut, rendered
   *before* the Jupiter fix and *before* the sky tripled. Its filename is the
-  least specific of the four, which is exactly how it gets picked by mistake.
+  least specific of the set, which is exactly how it gets picked by mistake.
 - `echogalaxy-9x16-v2.mp4` (96.7 MiB) — correct footage, but 122.7 s: past
   every Reels ceiling. A library reel, not a post.
+- `echogalaxy-9x16-astro.mp4` (19.4 MiB) — the 32.5 s astronomy cut, from the
+  pre-aurora frame set. Superseded by `-astro-v3`.
+- `echogalaxy-9x16-feed.mp4` (64.1 MiB) — near-identical to `-feed-v3` and
+  the same byte size to three figures, which makes it the most dangerous file
+  in this folder. See the determinism note below for exactly how it differs.
+
+### The rig is deterministic, and that is why the diff is readable
+
+The v2 frames (21:27) and the v3 frames (00:13) were rendered three hours and
+two commits apart. Comparing the midpoint frame of every shot the two sets
+share:
+
+```
+identical: 18 shots
+differ:     1 shot  -> 05-system
+```
+
+Eighteen of nineteen are **byte-identical under sha256**. The one that moved
+is `05-system`, and it moved because it is the only shot in that range that
+contains Earth — the body `9e61653` changed when it gave the planet its
+auroral oval. The change landed exactly where it should have and nowhere
+else.
+
+Two things follow. First, the capture rig's determinism is not a claim in a
+README, it is a measurement you can repeat. Second, `echogalaxy-9x16-feed.mp4`
+and `-feed-v3.mp4` differ in **one shot out of fifteen** — which is why the
+old file is a trap rather than an obvious mistake, and why the v3 file is
+still the one to send.
 
 ---
 
