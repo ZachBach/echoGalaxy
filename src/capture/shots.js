@@ -21,12 +21,35 @@
 // mid-move on both sides of a dissolve (keeps momentum reading continuous
 // across the cut).
 
+// follow: names a top-level orbit id ('sol-saturn'). The shot's from/via/to
+// then read as OFFSETS from that body instead of absolute world positions,
+// and the camera aims at the body rather than at `target`. Use it for any
+// close pass on a Solar System world — at those distances a planet's own
+// orbital motion walks it out of a fixed frame inside a couple of seconds.
+// Kepler positions come from System's orbitPosition on the capture clock,
+// so the camera and the drawn rails agree by construction.
+//
+// sky: overrides the real-sky mode for this shot alone — off | stars |
+// zodiac | all. Everything unset renders the shipping default (zodiac).
+
 // Reference: the rung camera defaults and distance clamps from App.jsx.
 //   planet  [0, 0.8, 5.6]   min 2.6   max 12
-//   system  [0, 4.5, 11]    min 3     max 24
+//   system  [0, 5.2, 14]    min 3     max 28
 //   nebula  [0, 0.2, 4.6]   min 2.6   max 9
 //   galaxy  [0, 6, 12]      min 4     max 28
 //   group   [0, 16, 40]     min 12    max 90
+//   cluster [0, 3.5, 14]    min 6     max 34
+//
+// The rig drives the camera directly and disables OrbitControls, so a shot
+// path is NOT clamped by the rung's min/max. Those numbers describe what a
+// user can reach, not what a shot may.
+//
+// Framing arithmetic used throughout, at BASE_H_FOV 45.2:
+//   fovLock 'h'  visible half-width  = 0.416 * d, at every aspect
+//   fovLock 'v'  visible half-height = 0.521 * d; half-width = that * aspect
+// so a subject of radius R needs d >= R / 0.416 with 'h'. The Solar System
+// numbers below are all derived that way against the real orbit radii in
+// systemData.js — Mercury 2.2 out to Neptune 12.55.
 
 // Base horizontal field of view, derived from the app's vertical fov of 55
 // at the 4:5 master aspect. See fovFor() in CaptureRig.jsx.
@@ -90,18 +113,30 @@ export const SHOTS = [
     to: { pos: [0, 1.4, 6.8], target: [0, 0, 0] },
   },
   {
-    // Star system. This one needs real dwell. The whole payload is that the
-    // inner molten world laps the outer ice world, and that only reads if
-    // the shot is long enough to watch it happen. Do not trim this below
-    // about seven seconds without checking the orbit periods first.
+    // The Solar System. Re-authored 2026-08-11: this rung used to hold a
+    // generic four-body system and now holds the real eight-planet one, so
+    // the old path (d 9.0 -> 15.0, half-width 6.2) framed as far as Jupiter
+    // and cropped everything beyond it. Neptune orbits at 12.55.
+    //
+    // The move is the reveal. It opens low and close, where only the inner
+    // four fit and Mercury is visibly racing, then climbs and pulls back to
+    // 33 units — half-width 13.8, the whole family with margin. Kepler does
+    // the rest: by the end the inner worlds have swept real arc while the
+    // outer ones have barely moved, which is the lesson stated as motion
+    // rather than as a caption. Mercury laps in 24.5 s, so eight seconds is
+    // a third of its year; do not trim this without redoing that sum.
+    //
+    // Rising from 11 degrees above the plane to 25 also opens the orbit
+    // rails from near-edge-on into ellipses, which is what makes the disc
+    // read as a disc.
     id: '05-system',
     scale: 'system',
-    seconds: 7.0,
+    seconds: 8.0,
     ease: 'inout',
     fovLock: 'h',
-    from: { pos: [0, 2.2, 9.0], target: [0, 0, 0] },
-    via: { pos: [0, 5.0, 11.4] },
-    to: { pos: [0, 8.5, 15.0], target: [0, 0, 0] },
+    from: { pos: [0, 2.6, 13.0], target: [0, 0, 0] },
+    via: { pos: [0, 8.0, 22.0] },
+    to: { pos: [0, 14.0, 30.0], target: [0, 0, 0] },
   },
   {
     // The Eagle Nebula is the visual and conceptual bridge between a single
@@ -389,6 +424,142 @@ export const SHOTS = [
     fovLock: 'v',
     from: { pos: [0.9, 0.5, 3.3], target: [0, 0, 0] },
     to: { pos: [-1.1, 1.2, 3.7], target: [0, 0, 0] },
+  },
+
+  // ——— The astronomy layer (2026-08-11). The real sky, the real Solar
+  // System, and its real tilts all landed after the last capture session,
+  // so nothing on disk shows any of it. These six shots are that content.
+  //
+  // The four `follow` shots are close passes on worlds that are moving:
+  // Earth laps its orbit in 60 s and Saturn in 184 s, which at these
+  // distances walks either of them clean out of a fixed frame. The rig
+  // rides them instead — see the `follow` note at the top of this file.
+
+  {
+    // The plane, stated once. Nearly edge-on (2.5 degrees above it), which
+    // collapses two different things onto the same line across the frame:
+    // the orange ecliptic ring — the Sun's annual path, drawn on a shell 57
+    // units out — and the orbital rails of the planets a few units away.
+    // They coincide because they are the same plane, and the only way a
+    // camera can make that argument is to look along it until the two
+    // become one line. The lateral drift keeps parallax alive so the frame
+    // still reads as depth rather than as a flat diagram.
+    // Contact sheet 2026-08-11: the first pass ran at d 15.7 and swung
+    // within 3.3 units of Neptune, which filled a third of the frame and
+    // cropped on the edge. Pulled back to d ~19 — still 3 degrees above the
+    // plane, so the line still reads as a line — which puts Neptune 7 units
+    // out and turns it from an obstruction into a foreground marker sitting
+    // on the very line the shot is about.
+    id: '23-ecliptic',
+    scale: 'system',
+    seconds: 5.5,
+    ease: 'inout',
+    fovLock: 'h',
+    from: { pos: [9.0, 1.0, 17.0], target: [0, 0, 0] },
+    via: { pos: [0, 0.6, 19.5] },
+    to: { pos: [-9.0, 1.4, 16.5], target: [0, 0, 0] },
+  },
+  {
+    // All 88 figures, swept. The zodiac shot's payload is a measured claim
+    // from SKY_INFO — zodiac figure stars sit a median 6.1 degrees off the
+    // ecliptic against 39.6 for every other constellation — so the frame
+    // has to hold both the ecliptic line and enough sky either side of it
+    // for the crowding to be visible. A 65-degree azimuth sweep at low
+    // elevation does that, and the stars are real: 8,355 Bright Star
+    // Catalogue entries at true position and true colour.
+    id: '24-zodiac',
+    scale: 'system',
+    sky: 'all',
+    seconds: 5.0,
+    ease: 'inout',
+    fovLock: 'h',
+    from: { pos: [13.0, 2.2, 18.0], target: [0, 0, 0] },
+    to: { pos: [-13.0, 2.2, 18.0], target: [0, 0, 0] },
+  },
+  {
+    // Saturn, at its real 26.7-degree obliquity, with the rings riding the
+    // equator because the data derives both from one obliquity call. Same
+    // move as 17-ringed — start near the ring plane and climb so the disc
+    // opens — but on the real body this time, and following it.
+    //
+    // Distance ~4.3 gives half-width 1.79 against a ring outer edge of
+    // 2.27 * 0.54 = 1.23, so the rings fill about seventy percent of the
+    // half-frame and Enceladus (1.4) and Rhea (1.72) drift through the
+    // corners. Titan at 2.1 stays just outside, which is the price of
+    // having the rings read at all.
+    id: '25-saturn-real',
+    scale: 'system',
+    follow: 'sol-saturn',
+    seconds: 5.5,
+    ease: 'inout',
+    fovLock: 'h',
+    from: { pos: [3.0, 0.3, 3.0] },
+    via: { pos: [1.8, 1.5, 3.6] },
+    to: { pos: [-1.2, 2.5, 3.4] },
+  },
+  {
+    // Earth and its Moon: the 23.44-degree tilt that makes seasons, and the
+    // one companion in the scene that is tidally locked, so the same face
+    // holds through the whole move.
+    //
+    // NOT an aurora shot, despite Aurora.jsx and spaceWeather.js existing.
+    // System.jsx mounts the auroral oval under `orbit.aurora`, and no orbit
+    // in systemData.js defines that key — so nothing auroral renders today.
+    // If that data lands later this is the shot to re-frame for it: the oval
+    // is a polar feature and would want the night-side pole, which means
+    // climbing further and coming round toward the terminator.
+    //
+    // Widened after the contact sheet: at d 2.7 the Moon reached the frame
+    // edge and collided with Saturn passing behind. d ~3.2 gives half-width
+    // 1.33 against the Moon's 0.85 orbit, so the pair hold together with
+    // room to spare.
+    id: '26-earth-real',
+    scale: 'system',
+    follow: 'sol-earth',
+    seconds: 5.5,
+    ease: 'inout',
+    fovLock: 'h',
+    from: { pos: [2.2, 0.6, 2.2] },
+    via: { pos: [1.2, 1.1, 2.9] },
+    to: { pos: [-1.9, 1.3, 2.6] },
+  },
+  {
+    // Uranus on its side. There are no rings and no moons in the data for
+    // this world, so the 97.77-degree obliquity has to be carried by the
+    // banding alone — and it is, completely: the ice-giant recipe's eight
+    // bands run with the equator, and the equator here is vertical. A
+    // banded world whose stripes are the wrong way round is the entire
+    // shot, and it needs no annotation to land.
+    // Contact sheet 2026-08-11: d 2.0 cropped the disc on both edges — the
+    // atmosphere shell and its glow add roughly fifteen percent past the
+    // 0.43 body radius, which the first estimate did not carry. d ~2.6 sits
+    // the whole globe inside the frame, and the banding then reads as what
+    // it is: concentric rings around a pole pointed at the camera, rather
+    // than the horizontal stripes every other banded world in the cut has.
+    id: '27-uranus-tilt',
+    scale: 'system',
+    follow: 'sol-uranus',
+    seconds: 4.5,
+    ease: 'inout',
+    fovLock: 'v',
+    from: { pos: [1.9, 0.45, 1.75] },
+    to: { pos: [-1.45, 0.95, 1.95] },
+  },
+  {
+    // Jupiter and the four moons Galileo saw. Distance ~5.15 gives
+    // half-width 2.14, which just holds Callisto's 1.95 orbit — the whole
+    // Galilean set inside one frame, with Io at 1.0 sweeping fastest.
+    // Jupiter's own obliquity is 3.13 degrees, almost upright, and that
+    // near-absence is worth having next to Uranus in the cut.
+    id: '28-jupiter-moons',
+    scale: 'system',
+    follow: 'sol-jupiter',
+    seconds: 5.0,
+    ease: 'inout',
+    fovLock: 'h',
+    from: { pos: [3.6, 0.6, 3.6] },
+    via: { pos: [2.0, 1.6, 4.6] },
+    to: { pos: [-2.4, 2.0, 4.2] },
   },
 ]
 

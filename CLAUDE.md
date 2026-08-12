@@ -74,9 +74,18 @@ npm run build           # production bundle
 npm run check:tsl       # vendor gate only (no sync)
 npm run sync:tsl        # sync from ../tsl-lib + gate + build
 npm run check:content   # astronomy content gate (ids, facts ladder, the 88)
+npm run check:planet    # planet materials on every obliquity + ring geometry
+npm run check:shots     # capture list: follow ids, sky modes, title cues
+npm run check:all       # all four gates, in order
 npm run capture:social  # render social-video frame sets (see video/HANDOFF.md)
 npm run backlog:csv     # export BACKLOG.md tasks to CSV for a tracker
 ```
+
+Run `check:all` before a capture session. A session costs a browser, a
+folder picker and minutes of real-time rendering per shot, so every error
+caught statically is one not discovered after the frames are on disk —
+or, as happened with 05-system's framing, not discovered at all until
+someone watched the motion.
 
 Deploying to the Aurelius site is a manual copy of `dist/` into the
 parent repo's `galaxy/` directory — `vite.config.js` sets `base: './'`

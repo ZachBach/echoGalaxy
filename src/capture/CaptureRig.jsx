@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { BASE_H_FOV } from './shots'
+import { orbitPosition } from '../System'
+import { SYSTEMS } from '../systemData'
 
 // Deterministic offline frame capture for echoGalaxy.
 //
@@ -69,6 +71,26 @@ function buildCurve(shot) {
   }
 }
 
+// A shot may ride an orbiting body instead of a fixed point in space.
+// `follow` names a top-level orbit id ('sol-saturn'); the shot's from/via/to
+// then read as OFFSETS from that body rather than absolute world positions,
+// and the camera aims at the body itself.
+//
+// This exists because the Solar System's showpieces are the tilts, and a
+// tilt only reads from close in — where a planet's own orbital motion walks
+// it out of a fixed frame. Earth laps its 60 s orbit in ten shot-seconds.
+//
+// Positions come from System's orbitPosition on the rig's own clock, which
+// is the same function and the same time source the drawn rails use, so a
+// followed camera cannot drift out of agreement with the body it is aimed at.
+function findOrbit(id) {
+  for (const system of SYSTEMS) {
+    const orbit = system.orbits?.find((o) => o.id === id)
+    if (orbit) return orbit
+  }
+  return null
+}
+
 async function pickDirectory() {
   if (!window.showDirectoryPicker) {
     throw new Error(
@@ -130,6 +152,15 @@ export default function CaptureRig({
     () => new THREE.Vector3(...(shot.to.target ?? shot.from.target ?? [0, 0, 0])),
     [shot],
   )
+  // Resolved once per shot. A `follow` that names nothing is a fatal authoring
+  // error, not a fallback: silently ignoring it yields a shot whose stills look
+  // fine and whose motion frames the wrong point in space, which is precisely
+  // the class of bug that survived a framing review here once already.
+  const follow = useMemo(() => {
+    if (!shot.follow) return null
+    const orbit = findOrbit(shot.follow)
+    return orbit ?? { missing: shot.follow }
+  }, [shot])
 
   // OrbitControls will fight the rig for the camera every frame it updates.
   useEffect(() => {
@@ -193,8 +224,27 @@ export default function CaptureRig({
     // time source the rig advances.
     const clockBox = (window.__captureClock ??= { t: 0 })
 
+    // Reused every frame; `place` resolves the shot's path at curve
+    // parameter `t` and clock time `seconds` into a camera pose.
+    const followPos = new THREE.Vector3()
+    const place = (t, seconds) => {
+      if (follow) {
+        orbitPosition(follow, seconds, followPos)
+        camera.position.copy(followPos).add(curve.at(t))
+        camera.lookAt(followPos)
+      } else {
+        camera.position.copy(curve.at(t))
+        camera.lookAt(target)
+      }
+    }
+
     const run = async () => {
       try {
+        if (follow?.missing) {
+          throw new Error(
+            `shot ${shot.id} follows "${follow.missing}", which is not an orbit id in any system`,
+          )
+        }
         let dir
         if (sink) {
           // Validate early so a bad automation URL never consumes a shot.
@@ -235,8 +285,7 @@ export default function CaptureRig({
         for (let i = 0; i < 4; i += 1) {
           clockBox.t = i * step * 1000
           captureElapsed = i * step
-          camera.position.copy(curve.at(0))
-          camera.lookAt(target)
+          place(0, captureElapsed)
           advance(clockBox.t)
           // eslint-disable-next-line no-await-in-loop
           await new Promise((r) => requestAnimationFrame(r))
@@ -246,12 +295,13 @@ export default function CaptureRig({
           const raw = totalFrames === 1 ? 0 : f / (totalFrames - 1)
           const t = shot.ease === 'linear' ? raw : easeInOut(raw)
 
-          camera.position.copy(curve.at(t))
-          camera.lookAt(target)
-          camera.updateMatrixWorld()
-
           clockBox.t = (4 + f) * step * 1000
           captureElapsed = (4 + f) * step
+          // Pose before advancing, on this frame's own clock reading, so a
+          // followed camera and the body it aims at are placed from the same
+          // instant rather than one frame apart.
+          place(t, captureElapsed)
+          camera.updateMatrixWorld()
           advance(clockBox.t)
 
           // Grab in the same task as the render. On the WebGL2 backend the
@@ -294,6 +344,7 @@ export default function CaptureRig({
     camera,
     curve,
     target,
+    follow,
     sink,
     onStart,
     onProgress,

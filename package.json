@@ -12,6 +12,9 @@
     "sync:tsl": "node scripts/sync-tsl-lib.mjs && npm run check:tsl && npm run build",
     "check:tsl": "node scripts/check-tsl-lib.mjs && node scripts/smoke-tsl-lib.mjs",
     "check:content": "node scripts/check-astronomy-content.mjs",
+    "check:shots": "node scripts/check-shots.mjs",
+    "check:planet": "node scripts/smoke-planet.mjs",
+    "check:all": "npm run check:tsl && npm run check:content && npm run check:planet && npm run check:shots",
     "backlog:csv": "node scripts/backlog-to-csv.mjs"
   },
   "dependencies": {

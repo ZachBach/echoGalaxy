@@ -36,7 +36,11 @@ const FROZEN = import.meta.env.DEV && params.has('freeze')
 // 'all' draws all 88; 'stars' drops the figures and keeps the catalogue;
 // 'off' returns to the procedural skybox alone. Not dev-gated — this is a
 // shipping feature, and the link is worth sharing.
-const SKY_MODE = params.get('sky') ?? 'zodiac'
+//
+// A capture shot may pin its own mode, which is how the sky shots ask for
+// all 88 figures while every other shot keeps the shipping zodiac default.
+// Declared below CAPTURE so the shot can win; see the const just after it.
+const SKY_PARAM = params.get('sky')
 
 // MB-01: input modality, read once at boot (device class doesn't change
 // mid-session). Drives hint copy, the compact HUD, and the perf policy.
@@ -50,6 +54,9 @@ const CAPTURE = import.meta.env.DEV ? shotById(params.get('capture')) : null
 const CAPTURE_FPS = Number(params.get('fps')) || 60
 const CAPTURE_SIZE = ASPECTS[params.get('aspect') ?? '4x5'] ?? ASPECTS['4x5']
 const CAPTURE_SINK = CAPTURE ? params.get('captureSink') : null
+
+// The shot's own sky mode outranks the URL, which outranks the default.
+const SKY_MODE = CAPTURE?.sky ?? SKY_PARAM ?? 'zodiac'
 
 if (CAPTURE) {
   window.__echoGalaxyCapture = { id: CAPTURE.id, state: 'arming' }
