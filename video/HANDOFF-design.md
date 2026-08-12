@@ -1,28 +1,76 @@
-> **⚠ 2026-08-11, evening — read [`HANDOFF.md`](HANDOFF.md) §1 before this
-> file.** Everything below describes the 2026-08-03 delivery. The app has
-> since grown a real Solar System, a real star catalogue, and constellation
-> figures, so the frame sets this file hands over no longer match what the
-> app looks like. §4 below (the clock-bug advisory) is doubly moot. The new
-> shots' beats are at the **bottom of this file**, under "The astronomy cut".
+> **⚠ 2026-08-12 — start at §0, "The delivery".** That section is current and
+> describes files that exist and have been probed. §1 and §4 below are the
+> **2026-08-03 delivery** and are kept for history only: §1's frame sets have
+> been superseded by a complete thirty-shot re-render, and §4's clock-bug
+> advisory is moot twice over — the bug was fixed on 2026-08-03 and every
+> frame in this delivery post-dates it. Per-shot beats for the astronomy
+> layer are in §7; the title-card gaps are in §8.
 
 ## ⚠ If you arrived here from the repo link, the video is not in the repo
 
 Cloning this repository gets you the source, the shot list, and these two
 handoff documents — **and no footage at all.** `.gitignore` excludes every
-frame, master and screencast on purpose: the frame sets run to 4.4 GB, and a
-public repository is the wrong place for them. Only `video/*.md` is tracked.
-
-So every path in these documents (`video/echogalaxy-9x16-astro.mp4`,
-`video/frames-9x16-v2/`, `video/promo/`) describes a file on the shipyard
-machine, not one in your checkout. **Ask for the media separately** — the two
-finished masters are 19.4 MB and 64.1 MB and travel fine over any file link.
+frame, master and screencast on purpose: the frame sets run to **7.2 GB across
+three sets (6,650 PNGs)**, and a public repository is the wrong place for them.
+Only `video/*.md` is tracked. The media arrives as a **GitHub Release**, whose
+assets sit outside git history — same link, no clone weight.
 
 What the repo alone *is* good for: reading the beats below, reading
 `HANDOFF.md` for what exists and what to run, checking `src/capture/shots.js`
 as the source of truth for shot ids and durations, and — if you want to
 re-render rather than wait — running the app yourself. `npm install`, then
-`npm run dev`, and `HANDOFF.md` §4 has the capture command. Budget ~1h45m
-for all 29 shots and 4.4 GB of disk.
+`npm run dev`, and `HANDOFF.md` §4 has the capture command. Budget ~2h and
+7 GB of disk for a full thirty-shot pass.
+
+## 0. The delivery — what is in the release, 2026-08-12
+
+**Every asset below comes from one app state**, rendered after the last
+content commit of 2026-08-11. That is the point of re-rendering rather than
+patching: you are not compositing a cut from two different versions of the
+app, which is what the previous delivery would have forced.
+
+### Cuts
+
+| File | Aspect | Duration | Size | What it is |
+|---|---|---|---|---|
+| `echogalaxy-9x16-feed-v3.mp4` | 1080×1920 | 61.400 s | 64.1 MiB | the fifteen-shot montage — Reels / Shorts |
+| `echogalaxy-4x5-feed.mp4` | 1080×1350 | 61.400 s | 65.9 MiB | **new** — same cut, feed aspect. LinkedIn and the Instagram feed. This did not exist in any earlier delivery. |
+| `echogalaxy-9x16-astro-v3.mp4` | 1080×1920 | 36.6 s | ~22 MiB | the astronomy cut, **now closing on `29-aurora`** |
+
+All h264 / yuv420p, 30 fps, `moov` ahead of `mdat` so they stream without a
+full download. The two 61.4 s figures are not rounded — both probe at
+`61.400000`, which is `sum(seconds) − 0.4 × 14` exactly.
+
+### Stills
+
+- **`stills-4x5/`** — 30 PNGs, 1080×1350, ~30 MB. **The midpoint frame of
+  every shot**, midpoint rather than first because most shots open mid-move
+  and the opening frame is the least characteristic thing in them. Named by
+  shot id, so `stills-4x5/23-ecliptic.png` is the thesis shot's key frame.
+- **`contact-sheet-4x5.png`** — 1666×1730, all thirty in one image, six
+  across, in authored order. Start here; it is the fastest way to see the
+  whole piece.
+
+### Do not use — these are on the shipyard machine and all look plausible
+
+- `echogalaxy-9x16.mp4` — the 2026-08-11 midday cut, rendered before the
+  Jupiter ring fix and before the sky tripled. **Its filename is the least
+  specific of the set, which is exactly how it gets picked by mistake.**
+- `echogalaxy-9x16-v2.mp4` — correct footage, but 122.7 s: past every Reels
+  ceiling. A library reel, not a post.
+- `echogalaxy-9x16-astro.mp4` / `echogalaxy-9x16-feed.mp4` — the 22:xx cuts.
+  Correct, but drawn from the pre-aurora frame set, so the astronomy one ends
+  on `28-jupiter-moons` and the pair straddles two renders.
+
+### Two things to look at with your own eyes
+
+1. **The aurora is subtle.** `29-aurora` renders the oval as a green arc
+   across the upper disc, but it sits against the bright hazy limb rather
+   than the night side, and at thumbnail scale it very nearly disappears.
+   It is doing what it was built to do; whether it reads at feed size is a
+   judgement, and if it needs to be stronger that is a shader parameter, not
+   a re-shoot.
+2. **Two cuts end on cardless footage.** See §8.
 
 # echoGalaxy → design claude: capture handoff (2026-08-03)
 
@@ -160,8 +208,11 @@ lower thirds; `05-system` is busiest at the bottom.
   body. Titan sits below frame-centre, the Sun rakes in from frame left.
   Reads well in a 1:1 or 16:9 centre-crop.
 - **`26-earth-real` (5.5 s).** Earth and the Moon held together for the whole
-  move, Sun from frame right. **Not an aurora shot** — see `HANDOFF.md` §3;
-  the oval does not currently render anywhere in the app.
+  move, Sun from frame right. Still **not** an aurora shot — the oval is not
+  what this one is about — but the sentence that used to follow here ("the
+  oval does not currently render anywhere in the app") **is no longer true.**
+  It landed at 22:31 on 2026-08-11 in `9e61653`, after this file's last
+  revision. See `29-aurora` below.
 - **`27-uranus-tilt` (4.5 s).** Uranus pole-on, so its bands read as
   concentric rings. **Cut this directly against `28-jupiter-moons`** — the
   contrast between concentric and horizontal banding is the entire point, and
@@ -172,19 +223,44 @@ lower thirds; `05-system` is busiest at the bottom.
   Saturn copy when this shot was first framed; it now uses a dust profile and
   reads as a faint translucent band, so the shot is safe to caption and safe
   to cut against Saturn without the two looking like the same planet.
+- **`29-aurora` (4.5 s) — new, and it did not exist when you last read this
+  file.** Earth's auroral oval, on its own shot with a camera close enough to
+  resolve it, rather than as a re-frame of `26-earth-real`. The gas giants are
+  deliberately excluded: their aurorae are a planet-wide glow rather than an
+  oval, and drawing one on them would be drawing it wrong. Last in authored
+  order, so it closes any cut containing it. Read §0's note on how faintly it
+  currently reads before you build a beat on it.
 
 Cut as their own piece, they run `01-hook` (wide cold open) → `05-system` (the
 reveal) → `23-ecliptic` (the plane) → `24-zodiac` (the sky) → `25-saturn-real`
-→ `27-uranus-tilt` → `28-jupiter-moons`. 32.5 s; the exact `--only` command is
-in `HANDOFF.md` §4.
+→ `27-uranus-tilt` → `28-jupiter-moons` → `29-aurora`. **36.6 s** — the figure
+was 32.5 s before the aurora existed. The `--only` command is in
+`ZACHTODOS.md` §0.5, cut B.
 
 Note that `assemble.mjs --only` always emits shots in **authored** order and
 ignores the order you type, so this arc is the one the shot list already
 encodes. A closing wide pull-back would mean adding `10-group`, which the
 authored order would place third rather than last — that needs a change to
-`shots.js`, not a change to the command line. Ending on `28-jupiter-moons`
-avoids the problem, and pairing it directly after `27-uranus-tilt` is the
-strongest beat in the piece anyway.
+`shots.js`, not a change to the command line.
+
+## 8. Two title cards that are not there
+
+`TITLE_CUES` in `scripts/assemble.mjs` covers eleven shots. A cue whose shot
+is absent from the cut is **dropped rather than raised as an error** — that is
+deliberate, it is what lets `--only` subsets work at all — and the only notice
+you get is a `titles: N cue(s) dropped` line on stdout. Consequences you
+should know before cutting:
+
+1. **The astronomy cut closes on 9.5 s of cardless footage.** Neither
+   `28-jupiter-moons` nor `29-aurora` has a cue, so the last two shots run
+   with nothing on screen. The feed cut closes title-free on `14-coma` by
+   design; this is the same gesture at twice the length. It may read as a
+   breath before the end card, or as an ending that forgot to say anything —
+   that call is yours, and adding a cue is a two-line change.
+2. **A worlds-only cut (`15-lava`…`22-ice-giant`) has no cards at all.** None
+   of those eight appear in `TITLE_CUES`, so `--titles` is silently a no-op
+   there. If you want that set as its own piece, the copy has to be written
+   first.
 
 ## 6. On request from the shipyard
 
