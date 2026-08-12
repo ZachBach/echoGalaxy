@@ -59,6 +59,71 @@ read one section, read this one.**
 > - [x] Decided — **C: both aspects re-rendered complete.** Superset of B,
 >       and it also delivers the 4:5 that A and B both left missing.
 
+### 0.5 — the re-cut commands, paste-ready
+
+Every duration below is **computed, not guessed**: `sum(seconds) − 0.4 ×
+(shots − 1)`, the same formula `assemble.mjs` uses. `DISSOLVE` is `0.4`
+(`src/capture/shots.js:598`).
+
+> **You do not have to wait for the whole render.** `--only` builds the cut
+> list *before* ffmpeg is invoked and there is no upfront existence check, so
+> a subset whose shots are already on disk assembles out of a folder that is
+> still filling. Shots 01–14 land roughly **70 minutes** before the astronomy
+> block does. Cut the feed reel early; it costs the render some disk I/O and
+> nothing else.
+
+**A — the feed reel · 61.4 s · needs 01–14 only**
+
+```bash
+node scripts/assemble.mjs --frames ./video/frames-9x16-v3 \
+  --out video/echogalaxy-9x16-feed-v3.mp4 --aspect 9x16 --fps 30 --titles \
+  --only 01-hook,02-rocky,03-gas,04-star,05-system,05b-pillars,06-spiral,07-barred,08-elliptical,09-irregular,10-group,11-blackhole,12-godshands,13-crab,14-coma
+```
+
+**B — the astronomy reel · 36.6 s · needs the full render** (`29-aurora` is
+the last shot rendered, so this one genuinely waits)
+
+```bash
+node scripts/assemble.mjs --frames ./video/frames-9x16-v3 \
+  --out video/echogalaxy-9x16-astro-v3.mp4 --aspect 9x16 --fps 30 --titles \
+  --only 01-hook,05-system,23-ecliptic,24-zodiac,25-saturn-real,27-uranus-tilt,28-jupiter-moons,29-aurora
+```
+
+**C — the 4:5 feed cut · 61.4 s · frames already complete, run it any time**
+
+```bash
+node scripts/assemble.mjs --frames ./video/frames-4x5-v2 \
+  --out video/echogalaxy-4x5-feed.mp4 --aspect 4x5 --fps 30 --titles \
+  --only 01-hook,02-rocky,03-gas,04-star,05-system,05b-pillars,06-spiral,07-barred,08-elliptical,09-irregular,10-group,11-blackhole,12-godshands,13-crab,14-coma
+```
+
+**D — the worlds reel · 33.1 s · optional**, the eight planet-rung bodies the
+original montage never showed:
+
+```bash
+node scripts/assemble.mjs --frames ./video/frames-9x16-v3 \
+  --out video/echogalaxy-9x16-worlds.mp4 --aspect 9x16 --fps 30 --titles \
+  --only 15-lava,16-ice,17-ringed,18-rings,19-desert,20-ocean,21-cloud,22-ice-giant
+```
+
+#### ⚠ Two title-card gaps, both silent
+
+`TITLE_CUES` covers eleven shots. Cards whose shot is absent are **dropped,
+not an error** — deliberately, so subsets work — and `assemble.mjs` prints a
+`titles: N cue(s) dropped` line. Read that line; it is the only warning you get.
+
+1. **Cut D has no cards at all.** None of `15-lava`…`22-ice-giant` appear in
+   `TITLE_CUES`, so `--titles` is a no-op there: 33 seconds of silent
+   autoplay with no copy on screen. Write cues before posting it, or treat it
+   as B-roll rather than a post.
+2. **Cut B closes on 9.5 s of nothing.** `28-jupiter-moons` and `29-aurora`
+   both lack cues, so the astronomy reel's last two shots run cardless. The
+   feed cut closes title-free on `14-coma` by design — this is the same
+   effect at twice the length, and on the newest footage. Decide whether it
+   reads as a breath or as an ending that forgot to say anything.
+
+- [ ] Cut A (9:16 feed)  · [ ] Cut B (9:16 astro)  · [ ] Cut C (4:5 feed)
+
 ### 1. Watch both videos, start to finish
 
 ```
