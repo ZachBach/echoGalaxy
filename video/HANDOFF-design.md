@@ -31,15 +31,29 @@ app, which is what the previous delivery would have forced.
 
 ### Cuts
 
+Four files are finished and probed. One more is still rendering; it is listed
+last so nobody waits on a file that is not there yet.
+
 | File | Aspect | Duration | Size | What it is |
 |---|---|---|---|---|
 | `echogalaxy-9x16-feed-v3.mp4` | 1080×1920 | 61.400 s | 64.1 MiB | the fifteen-shot montage — Reels / Shorts |
 | `echogalaxy-4x5-feed.mp4` | 1080×1350 | 61.400 s | 65.9 MiB | **new** — same cut, feed aspect. LinkedIn and the Instagram feed. This did not exist in any earlier delivery. |
-| `echogalaxy-9x16-astro-v3.mp4` | 1080×1920 | 36.6 s | ~22 MiB | the astronomy cut, **now closing on `29-aurora`** |
+| `echogalaxy-4x5-astro.mp4` | 1080×1350 | 36.600 s | 17.6 MiB | **the astronomy cut, and the only delivered file containing `29-aurora`.** Read the aurora note below before you build around it. |
 
 All h264 / yuv420p, 30 fps, `moov` ahead of `mdat` so they stream without a
-full download. The two 61.4 s figures are not rounded — both probe at
-`61.400000`, which is `sum(seconds) − 0.4 × 14` exactly.
+full download. Durations are not rounded — they probe at `61.400000` and
+`36.600000`, which are `sum(seconds) − 0.4 × (shots − 1)` exactly.
+
+**Still rendering — not in this delivery:**
+
+| File | Why it is missing |
+|---|---|
+| `echogalaxy-9x16-astro-v3.mp4` | The 9:16 pass is 25 of 30 shots in, and `29-aurora` is the **last** shot in the list, so this cut genuinely has to wait for the end of the render. The 4:5 astronomy cut above is the same edit in the other aspect and is finished — use it for timing, beats and approval, and swap the 9:16 in when it lands. |
+
+The 4:5 frame set is complete and verified: 30 shots, 4,152 frames, every
+shot exactly `seconds × 30`, zero mismatches. That is why the 4:5 cuts are
+the ones that exist first — the aspect that was missing entirely a day ago is
+now the aspect that is furthest ahead.
 
 ### Stills
 
@@ -51,25 +65,43 @@ full download. The two 61.4 s figures are not rounded — both probe at
   across, in authored order. Start here; it is the fastest way to see the
   whole piece.
 
-### Do not use — these are on the shipyard machine and all look plausible
+### Do not use — still on the shipyard machine, and both look plausible
 
-- `echogalaxy-9x16.mp4` — the 2026-08-11 midday cut, rendered before the
-  Jupiter ring fix and before the sky tripled. **Its filename is the least
-  specific of the set, which is exactly how it gets picked by mistake.**
-- `echogalaxy-9x16-v2.mp4` — correct footage, but 122.7 s: past every Reels
-  ceiling. A library reel, not a post.
-- `echogalaxy-9x16-astro.mp4` / `echogalaxy-9x16-feed.mp4` — the 22:xx cuts.
-  Correct, but drawn from the pre-aurora frame set, so the astronomy one ends
-  on `28-jupiter-moons` and the pair straddles two renders.
+Verified against disk as this was written, so the list is what actually
+exists rather than what once did:
+
+- **`echogalaxy-9x16-astro.mp4`** (19.4 MiB, 32.5 s) and
+  **`echogalaxy-9x16-feed.mp4`** (64.1 MiB, 61.4 s) — the 22:xx cuts. The
+  footage is correct, but it is drawn from the **pre-aurora** frame set, so
+  the astronomy one ends on `28-jupiter-moons` and the pair straddles two
+  different renders. The trap is the naming: `echogalaxy-9x16-feed.mp4` and
+  `echogalaxy-9x16-feed-v3.mp4` differ by three characters and only one of
+  them is in this delivery. **Check for `-v3`.**
+
+The two files earlier drafts warned about — `echogalaxy-9x16.mp4` and
+`echogalaxy-9x16-v2.mp4` — **have been deleted** and can no longer be picked
+by mistake. Nothing to do about them.
 
 ### Two things to look at with your own eyes
 
-1. **The aurora is subtle.** `29-aurora` renders the oval as a green arc
-   across the upper disc, but it sits against the bright hazy limb rather
-   than the night side, and at thumbnail scale it very nearly disappears.
-   It is doing what it was built to do; whether it reads at feed size is a
-   judgement, and if it needs to be stronger that is a shader parameter, not
-   a re-shoot.
+1. **The aurora is subtle, and turning it up will not fix that.** Sampled at
+   34.0 s in `echogalaxy-4x5-astro.mp4`: the oval is a thin green thread on
+   the upper limb, and you have to be told it is there. An earlier draft of
+   this note said brightness was "a shader parameter, not a re-shoot" — that
+   is backwards, and acting on it would waste a render.
+
+   The oval is placed correctly. The problem is what it is placed *against*:
+   it sits on a **blown-out white polar haze** with the Sun blazing in the
+   top-right corner, so a faint green emission has almost no contrast to
+   work with. `strength` is already 3. Pushing it higher yields a brighter
+   thread on a white background, not a readable aurora — an aurora needs the
+   **night side** to glow against, and this frame is nearly all dayside.
+
+   So the real fix is re-aiming the shot at Earth's night side: a keyframe
+   change in `shots.js` plus a 135-frame re-render, minutes rather than
+   hours. **Say the word and it happens; do not budget a shader tweak for
+   it.** As delivered, treat `29-aurora` as a quiet closing beat rather than
+   as the aurora reveal.
 2. **Two cuts end on cardless footage.** See §8.
 
 # echoGalaxy → design claude: capture handoff (2026-08-03)
