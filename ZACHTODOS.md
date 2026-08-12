@@ -11,53 +11,53 @@ eyes, or your accounts. Ordered by dependency.
 Everything below Phase 0 is older and parts of it are stale. **If you only
 read one section, read this one.**
 
-> ### ⚠ Decide this first: the aurora landed after the render
+> ### ✅ Answered by the machine, not by the list: you already chose C
 >
-> Commit `9e61653` ("Earth gets its oval") went in at **22:31**. The frames
-> for `26-earth-real` were written at **21:17**. So **the two finished cuts
-> do not show the auroral oval**, and they never will without another render.
+> **The A-or-B box that used to sit here was obsolete the moment it was
+> written.** It went in at **01:00**. A full thirty-shot 9:16 re-render had
+> been running since **00:13:37** — 47 minutes earlier. The box asked which
+> of two compromises to take while the uncompromised option was already
+> 40% done on disk.
 >
-> It also added a **30th shot, `29-aurora` (4.5 s), which has never been
-> rendered at all.** 29 of 30 shots are on disk.
+> The correction matters beyond this one box: **check `video/frames-*` before
+> trusting any claim in this file about what has and has not been rendered.**
+> The folders are the truth; the prose is a snapshot.
 >
-> Two honest options:
+> #### What is actually on disk
 >
-> **A — Ship what you have now.** Both cuts are correct and complete for the
-> 29 shots they contain; the aurora is simply absent. Design starts today.
-> ~1h45m of machine time is saved. You add the aurora to the *next* cut.
+> | Set | Shots | fps | State |
+> |---|---|---|---|
+> | `video/frames-4x5-v2/` | **all 30**, incl. `29-aurora` | 30 | **complete**, finished 00:13 — never assembled |
+> | `video/frames-9x16-v3/` | all 30 when it lands | 30 | **rendering now**, started 00:13:37 |
+> | `video/frames-9x16-v2/` | 29 — no aurora | 30 | superseded by v3 |
 >
-> **B — Render the one missing shot, then re-cut.** `capture-social` takes
-> `--shots`, so this is **4.5 s of footage, not another full pass**: 135
-> frames, a couple of minutes. Three commands, from the repo root:
+> So `29-aurora` **has** been rendered — in 4:5, at 00:09–00:13, 135 frames
+> (4.5 s × 30). The old claim that it "has never been rendered at all" was
+> true only of the 9:16 set, and is now not true of that either.
 >
-> ```bash
-> # 1. render just the new shot — a separate folder, because the script
-> #    refuses a non-empty output directory (that guard is what stops
-> #    frame sets getting mixed)
-> npm run capture:social -- --aspect 9x16 --fps 30 --shots 29-aurora --out video/frames-aurora
+> #### Two consequences you get for free
 >
-> # 2. move its 135 frames in beside the other 29 shots
-> cp video/frames-aurora/29-aurora.*.png video/frames-9x16-v2/
+> 1. **The aurora needs no special handling.** v3 was launched with no
+>    `--shots` filter, so it sweeps all thirty. No `cp` step, no patching a
+>    shot into someone else's folder.
+> 2. **The 4:5 cut is no longer blocked** — the thing this file calls "your
+>    LinkedIn and Instagram-feed placement, which you currently do not have."
+>    The frames are sitting there complete. It is one `assemble.mjs` away and
+>    it does not have to wait for v3.
 >
-> # 3. re-cut the astronomy reel with the aurora on the end
-> node scripts/assemble.mjs --frames ./video/frames-9x16-v2 \
->   --out video/echogalaxy-9x16-astro.mp4 --aspect 9x16 --fps 30 --titles \
->   --only 01-hook,05-system,23-ecliptic,24-zodiac,25-saturn-real,27-uranus-tilt,28-jupiter-moons,29-aurora
-> ```
+> #### The one trap that survives
 >
-> That takes the astronomy cut from 32.5 s to **36.6 s**. The feed cut does
-> not contain `29-aurora` and does not need re-cutting at all.
+> A full thirty-shot cut is **~138 s** (4,152 frames ÷ 30). That is past
+> every Reels ceiling — Facebook enforces 90 s. **`--only` is mandatory**,
+> not stylistic. Assembling the whole folder produces a file no platform
+> will take.
 >
-> **`--fps 30` and `--aspect 9x16` are not optional** — the defaults are 60
-> and 4x5, and mixing frame rates inside one folder ruins the assembly
-> silently. It encodes fine and plays wrong.
+> And the old warning still stands: **`--fps 30` and `--aspect` are not
+> optional.** The defaults are 60 and 4x5. Wrong fps encodes fine, plays
+> wrong, and says nothing while it does it.
 >
-> **I would take B.** The cost is minutes, not hours, and the aurora is the
-> last content gap from the whole roadmap — shipping the promo without it,
-> a day after fixing it, is the kind of thing you notice later. But A is
-> genuinely fine and nothing about it is wrong.
->
-> - [ ] Decided: A or B
+> - [x] Decided — **C: both aspects re-rendered complete.** Superset of B,
+>       and it also delivers the 4:5 that A and B both left missing.
 
 ### 1. Watch both videos, start to finish
 
@@ -131,10 +131,13 @@ same plane.
   Earth now carries the `aurora` key and `29-aurora` was written as its own
   shot rather than a re-frame of `26-earth-real`. The giants are deliberately
   left off — their aurorae are a planet-wide glow, not an oval, and drawing
-  one would be drawing it wrong. See the decision box in Phase 0: this landed
-  *after* the render, so it is not in the delivered cuts.
-- **The 4:5 cut** — no longer blocked, see §5 below. That is your LinkedIn
-  and Instagram-feed placement, which you currently do not have.
+  one would be drawing it wrong. It landed *after* the delivered cuts were
+  assembled, so it is absent from those two files — but it **is** rendered in
+  `frames-4x5-v2/` and is included in the 9:16 v3 pass. See Phase 0.
+- ~~**The 4:5 cut** — no longer blocked.~~ **Frames complete 2026-08-12 00:13**
+  — all 30 shots at 30 fps in `video/frames-4x5-v2/`, aurora included. Your
+  LinkedIn and Instagram-feed placement is now one `assemble.mjs` away, and it
+  does not have to wait for the 9:16 v3 render to finish.
 - **A fresh signing keystore** — the burned one is verifiably gone from disk
   *and* from git history, but `android/keystore.properties` has never been
   created, so a Play Store build cannot sign. You said Play Store is later;
