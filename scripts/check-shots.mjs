@@ -113,19 +113,38 @@ console.log('\n[6] assemble title cues reference real shots')
 // A title card is a factual claim burned into the footage. This one shipped
 // saying 8,355 while the sky held 25,199, because the catalogue grew and the
 // copy did not. Numbers in cards are checked against their source.
-console.log('\n[7] title copy agrees with the data')
+console.log('\n[7] copy agrees with the data')
 {
   const { STARS } = await import('../src/skyCatalog.js')
-  const claim = [...assembleSrc.matchAll(/text:\s*'([\d,]+) real stars'/g)].map((m) => m[1])
-  if (!claim.length) {
-    ok('no star-count claim in any title card')
-  } else {
-    for (const c of claim) {
-      const n = Number(c.replace(/,/g, ''))
-      if (n === STARS.length) ok(`"${c} real stars" matches skyCatalog (${STARS.length})`)
-      else fail(`a title card claims ${c} stars, but skyCatalog holds ${STARS.length}`)
+  // Sky.jsx is a component, so it is read as text — node cannot import JSX.
+  const skySrc = readFileSync(new URL('../src/Sky.jsx', import.meta.url), 'utf8')
+
+  // Any "N real stars" / "N,NNN stars" claim, wherever it is written. This has
+  // drifted twice: once in a burned-in title card, once in the HUD's own
+  // educational copy, both times because the catalogue grew and the prose did
+  // not. Both surfaces are checked against the same single source of truth.
+  const sources = [
+    ['assemble.mjs title card', assembleSrc],
+    ['Sky.jsx SKY_INFO', skySrc],
+  ]
+  let claims = 0
+  for (const [where, src] of sources) {
+    for (const m of src.matchAll(/([\d]{1,3}(?:,[\d]{3})+)\s+real stars/g)) {
+      claims += 1
+      const n = Number(m[1].replace(/,/g, ''))
+      if (n === STARS.length) ok(`${where}: "${m[1]} real stars" matches skyCatalog`)
+      else fail(`${where} claims ${m[1]} stars, but skyCatalog holds ${STARS.length}`)
     }
   }
+  if (!claims) ok('no star-count claim anywhere in copy')
+
+  // The figures default and the prose that describes it must agree. Saying
+  // "the zodiac" while drawing all 88 is the same failure in a different key.
+  const drawsAll = /figures\s*=\s*'all'/.test(skySrc)
+  const saysAll = /all 88/i.test(skySrc)
+  if (drawsAll && !saysAll) fail('Sky.jsx draws all 88 figures but its copy does not say so')
+  else if (!drawsAll && saysAll) fail('Sky.jsx copy claims all 88 figures but does not draw them')
+  else ok(`figures default and its description agree (${drawsAll ? 'all 88' : 'zodiac'})`)
 }
 
 console.log('\n[8] runtime')

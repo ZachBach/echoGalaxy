@@ -11,8 +11,9 @@ import { buildStarField, buildFigures, buildEcliptic } from './skyMaterial'
 //             node. The Bright Star Catalogue supplies everything to the
 //             naked-eye limit of 6.5; the faint band from 6.5 to 7.5 comes
 //             from Hipparcos, which is what took this from 8,355.
-//   figures   the constellation stick figures. Defaults to the zodiac,
-//             because those are the thirteen the ecliptic actually crosses.
+//   figures   the constellation stick figures. Defaults to all 88, softened
+//             so they read as texture; the zodiac is still the thirteen the
+//             ecliptic crosses, and it stands out because it hugs the plane.
 //   ecliptic  the Sun's annual path. In this scene it is the circle y = 0,
 //             which is also the plane every planet orbits in — the two are
 //             the same plane, and that identity is the lesson.
@@ -73,12 +74,13 @@ export default function Sky({
 export const SKY_INFO = {
   id: 'real-sky',
   name: 'The Real Sky',
-  label: 'Bright Star Catalogue · the zodiac',
+  label: '25,199 real stars · all 88 constellations',
   description:
     'Every star here is a real one, at its real position, in its real colour. ' +
-    'The figures are the thirteen constellations the Sun actually passes ' +
-    'through — the zodiac — and they ring this scene because they ring the ' +
-    'plane the planets orbit in. Those are the same plane.',
+    'All 88 constellations are drawn — but watch the ones that ring this ' +
+    'scene. Those are the zodiac, the thirteen the Sun actually passes ' +
+    'through, and they ring it because they ring the plane the planets orbit ' +
+    'in. Those are the same plane.',
   factsKids: [
     'These are real stars in their real places. If you went outside tonight, you would see this same pattern.',
     'Star colours are temperatures. Red stars are the coolest, blue-white ones the hottest — the opposite of hot and cold taps.',
@@ -87,7 +89,7 @@ export const SKY_INFO = {
     'There are thirteen constellations on that ring, not twelve. Ophiuchus is on it too — it just never got a horoscope.',
   ],
   factsAdvanced: [
-    'Positions come from the Yale Bright Star Catalogue (Hoffleit+ 1991), complete to visual magnitude 6.5 — the naked-eye limit.',
+    'Positions come from the Yale Bright Star Catalogue (Hoffleit+ 1991) down to visual magnitude 6.5 — the naked-eye limit, and that catalogue’s own completeness limit. The faint band from 6.5 to 7.5 is added from Hipparcos, for 25,199 stars in all: everything you could see from a dark site, and then some.',
     'Colour is not chosen. Each star’s B−V colour index converts to an effective temperature by Ballesteros’ formula, and that temperature drives the same Planckian-locus ramp the galaxy rung uses.',
     'Magnitude is logarithmic and inverted: each step of 1 is a factor of about 2.512 in flux, so Sirius at −1.46 is roughly 1,500 times brighter than the faintest star drawn here.',
     'The catalogue was converted from equatorial to ecliptic coordinates, so the ecliptic lies at y = 0 — the same plane as the orbital rails. The zodiac hugging that plane is a measured result, not a layout choice: zodiac figure stars sit at a median 6.1° from it, against 39.6° for every other constellation.',
