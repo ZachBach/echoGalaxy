@@ -1,10 +1,11 @@
 import { trigLattice } from './tsl-lib/noise/trigLattice.js'
 import { fbm } from './tsl-lib/noise/fbm.js'
 import { warp } from './tsl-lib/noise/warp.js'
-import { worleyF1F2 } from './tsl-lib/noise/worley.js'
+import { worleyF1, worleyF1F2 } from './tsl-lib/noise/worley.js'
 import { ramp } from './tsl-lib/ramp/ramp.js'
 import { fireRamp } from './tsl-lib/ramp/fireRamp.js'
 import { remap } from './tsl-lib/ramp/remap.js'
+import { posterize } from './tsl-lib/ramp/posterize.js'
 import { dissolve } from './tsl-lib/pattern/dissolve.js'
 import { bandedFlow } from './tsl-lib/pattern/bandedFlow.js'
 import { fresnel } from './tsl-lib/fresnel/fresnel.js'
@@ -103,11 +104,20 @@ export function ice(TSL, { spunDir, sun }) {
   const w = worleyF1F2(TSL, spunDir.mul(2.8), { impl: 'fallback' })
   const cracks = TSL.smoothstep(0.07, 0.0, w.y.sub(w.x))
   const depth = fbm(TSL, spunDir.mul(1.4), { octaves: 3 }).mul(0.5).add(0.5)
+  // Plate facets, the crystal material's posterize trick re-expressed over the
+  // body frame. Flattening the cell interiors into steps turns the same worley
+  // field the cracks already use into rafts with flat faces, so the shell reads
+  // as a fractured ice sheet rather than a smooth ball — Europa's chaos terrain
+  // is the reference. It costs nothing extra: `w` is sampled once and both the
+  // seams and the facets come out of it. Kept to 5 steps at a 0.13 tint so it
+  // reads as plate relief, not as posterisation banding.
+  const facets = posterize(TSL, w.x.mul(1.6).clamp(0, 1), { steps: 5 })
   // Tighter and weaker than the ocean's: polished ice is a sharper mirror than
   // water but covers less of the disc, and the crack network breaks it up.
   const glint = sunGlint(TSL, sun, { power: 140 }).mul(cracks.oneMinus())
   return {
     surface: TSL.mix(TSL.color(0xdff0f7), TSL.color(0x2b6cf6).mul(0.55), depth.mul(0.6))
+      .mul(facets.mul(0.13).add(0.94))
       .mul(cracks.mul(-0.55).add(1))
       .add(TSL.color(0xbfe9ff).mul(fresnel(TSL, { power: 2 }).mul(0.5)))
       .add(TSL.color(0xffffff).mul(glint.mul(0.55))),
@@ -181,8 +191,19 @@ export function desert(TSL, { spunDir, clock }) {
     [0.78, 0xd99a60],
     [1.0, 0xead1a1],
   ])
+  // A transverse dune train, the sandDunes material re-expressed over the body
+  // frame. The pow() skews the crest profile so the slip face is steep and the
+  // windward slope long, and that asymmetry is the whole reason it reads as a
+  // dune field rather than as a sine wave. Ergs collect in the low ground, so
+  // the train is masked out of the highlands — a sand sea, not a global
+  // corduroy — and the polar caps below cover whatever survives at the poles.
+  const q = warp(TSL, spunDir.mul(3.4), { amp: 0.5, octaves: 2 })
+  const crest = TSL.sin(q.x.mul(19).add(q.z.mul(4.4))).mul(0.5).add(0.5)
+  const dunes = crest.pow(1.6).mul(TSL.smoothstep(0.70, 0.26, terrain))
   const caps = TSL.smoothstep(0.78, 0.93, spunDir.y.abs())
-  return { surface: TSL.mix(base, TSL.color(0xddeaf0), caps.mul(0.7)) }
+  return {
+    surface: TSL.mix(base.mul(dunes.mul(0.30).add(0.88)), TSL.color(0xddeaf0), caps.mul(0.7)),
+  }
 }
 
 // A water-rich world. Islands deliberately stay sparse so it reads as an
@@ -208,8 +229,23 @@ export function ocean(TSL, { spunDir, sun, clock }) {
   // liquid. It needs no day-side mask: the caller multiplies surface by the
   // terminator's shade, so it goes out on its own at the evening line.
   const glint = sunGlint(TSL, sun).mul(land.oneMinus())
+  // Shallow-water caustics, the caustics material's two-drifting-worley trick
+  // re-expressed over the body frame: where both fields sit near a cell edge at
+  // once their sum spikes, and that intersection is the web light draws on a
+  // sunlit bottom. Gated on `depth`, the same field that drives the water ramp
+  // above — its pale end is the shallows — rather than on distance to land.
+  // That is both the better physics and the better mask: caustics need a lit
+  // floor, which is a property of depth, and shoals far from any island have
+  // one while an abyssal trench hugging a coast does not. Rides the same
+  // terminator shade as the glint, so it too goes dark at dusk.
+  const shoals = TSL.smoothstep(0.55, 0.9, depth).mul(land.oneMinus())
+  const ca = worleyF1(TSL, spunDir.mul(9).add(TSL.vec3(clock.mul(0.07), 0, 0)), { impl: 'fallback' })
+  const cb = worleyF1(TSL, spunDir.mul(11).sub(TSL.vec3(0, clock.mul(0.05), 0)), { impl: 'fallback' })
+  const web = TSL.smoothstep(0.5, 0.95, ca.add(cb).mul(0.5)).pow(2).mul(shoals)
   return {
-    surface: TSL.mix(water, islands, land).add(TSL.color(0xfff4d6).mul(glint.mul(0.9))),
+    surface: TSL.mix(water, islands, land)
+      .add(TSL.color(0xbdf3ee).mul(web.mul(1.15)))
+      .add(TSL.color(0xfff4d6).mul(glint.mul(0.9))),
   }
 }
 
