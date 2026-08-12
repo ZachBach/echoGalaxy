@@ -133,11 +133,9 @@ node scripts/assemble.mjs --frames ./video/frames-9x16-v2 \
   --out video/echogalaxy-9x16-v2.mp4 --aspect 9x16 --fps 30 --titles
 ```
 
-At 122.7 s the full 29-shot cut is **longer than a Reels slot wants**. Two
-sensible cuts out of the same frames:
-
-`assemble.mjs --only` cuts a subset directly from the full frame folder — no
-copying, and shots keep their authored order however you list them:
+At 122.7 s the full 29-shot cut is **longer than a Reels slot wants**.
+`assemble.mjs --only` cuts a subset straight out of the full frame folder —
+no copying, no second render:
 
 ```bash
 # Feed cut (61.4 s) — the original fifteen, with 05-system now correct
@@ -195,7 +193,10 @@ Every one produces a file that encodes fine and looks wrong.
 2. **`--aspect` defaults to `4x5`** and selects the title-card layout.
 3. **The path is `./video/frames-…`, not `./frames-…`.**
 
-**ffmpeg is installed (8.1.2 via winget) but is not on PATH:**
+**ffmpeg 8.1.2 is installed and now resolves on PATH** — verified this session
+with `Get-Command ffmpeg`. Earlier notes in this file said it did not; that is
+no longer true, and `assemble.mjs` (which shells out to a bare `ffmpeg`) runs
+without any path juggling. If it ever stops resolving, it lives at:
 
 ```
 %LOCALAPPDATA%\Microsoft\WinGet\Packages\Gyan.FFmpeg_*\ffmpeg-8.1.2-full_build\bin
