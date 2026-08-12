@@ -8,7 +8,53 @@ Companion document: [`HANDOFF-design.md`](HANDOFF-design.md) carries the
 per-shot beats and timing cues — read it for **how to cut**, this for **what
 exists and what to run**.
 
-Media is gitignored by design — it travels by hand, not by git.
+---
+
+## 0. Where the media actually is
+
+**None of it is in this repository, and it cannot be.** `.gitignore` excludes
+every frame, master and screencast deliberately — only `video/*.md` is
+tracked. The numbers are the reason:
+
+| What | Size | Why it stays out |
+|---|---|---|
+| `video/frames-*` (3 sets) | **7.2 GB**, 6,650 PNGs | GitHub's repo soft limit is ~5 GB, 1 GB recommended. This alone would break the repo. |
+| `video/promo/` | 173 MB | 15 screencasts; weight most readers never need. |
+| `echogalaxy-9x16-v2.mp4` | 96.7 MiB | Clears GitHub's 100 MiB hard limit by 3.3 MiB — but only just, and one longer cut would not. See the unit note below. |
+| the two delivery masters | 19.4 + 64.1 MiB | Would fit, but committed files live in history forever: every future clone pays for them, and next week's re-render adds another 84 MiB that cannot be taken back out. |
+
+> **Mind the unit.** That file is *101 MB* decimal and *96.7 MiB* binary, and
+> GitHub's ceiling is 100 **MiB** (104,857,600 bytes). Read the decimal figure
+> against the binary limit and you would conclude the push is rejected when it
+> is not — or, more dangerously, the reverse on a slightly larger file. `ls -l`
+> gives bytes; compare those.
+
+So the repo link carries the *instructions*; the footage travels beside it.
+
+**→ Delivery channel: GitHub Releases.** Release assets live outside git
+history, so clones stay small and nothing is permanent, while design still
+gets everything from one URL. Limit is 2 GB per asset, which comfortably
+covers the masters and `promo/` if wanted.
+
+```
+github.com/ZachBach/echoGalaxy/releases/new     tag: promo-2026-08-11
+```
+
+> **EDIT: paste the published release URL here once it exists**, so this
+> document resolves to something real instead of describing a plan.
+
+**Send these two. They are current:**
+
+- `echogalaxy-9x16-astro.mp4` — 32.5 s, the astronomy cut, start here
+- `echogalaxy-9x16-feed.mp4` — 61.4 s, the original fifteen re-rendered
+
+**Do not send these. Both are stale and both look plausible:**
+
+- `echogalaxy-9x16.mp4` (61.3 MiB) — the 2026-08-11 midday cut, rendered
+  *before* the Jupiter fix and *before* the sky tripled. Its filename is the
+  least specific of the four, which is exactly how it gets picked by mistake.
+- `echogalaxy-9x16-v2.mp4` (96.7 MiB) — correct footage, but 122.7 s: past
+  every Reels ceiling. A library reel, not a post.
 
 ---
 
@@ -94,8 +140,11 @@ which states Kepler's third law as motion instead of as a caption.
   cannot disagree. A `follow` naming an unknown id fails the capture loudly
   rather than silently mis-framing.
 - **`sky: 'off' | 'stars' | 'zodiac' | 'all'`** — per-shot override of the
-  real-sky mode. Only `24-zodiac` uses it (`all`); everything else renders the
-  shipping default.
+  real-sky mode. `24-zodiac` pins `all`, which was meaningful when the shipping
+  default was the thirteen zodiac figures. **The default became `all` before
+  this render**, so that override is now redundant and every shot in the
+  delivery carries all 88 — the override remains only so the shot keeps its
+  intent if the default ever moves back.
 
 ### Found — two content gaps, one fixed and one still open
 
@@ -134,9 +183,9 @@ ahead of `mdat` so they stream without a full download:
 
 | File | Runtime | Frames | Size | What it is |
 |---|---|---|---|---|
-| `echogalaxy-9x16-astro.mp4` | 32.5 s | 975 | 20 MB | **The astronomy cut — start here.** 7 shots: the additions, with `23-ecliptic` as the thesis. Comfortably inside every Reels limit. |
-| `echogalaxy-9x16-feed.mp4` | 61.4 s | 1,842 | 67 MB | The original fifteen, re-rendered, `05-system` now correct. Closest to the master you knew. |
-| `echogalaxy-9x16-v2.mp4` | 122.7 s | 3,681 | 101 MB | Everything. Longer than a Reels slot wants — a library reel, not a post. |
+| `echogalaxy-9x16-astro.mp4` | 32.5 s | 975 | 19.4 MiB | **The astronomy cut — start here.** 7 shots: the additions, with `23-ecliptic` as the thesis. Comfortably inside every Reels limit. |
+| `echogalaxy-9x16-feed.mp4` | 61.4 s | 1,842 | 64.1 MiB | The original fifteen, re-rendered, `05-system` now correct. Closest to the master you knew. |
+| `echogalaxy-9x16-v2.mp4` | 122.7 s | 3,681 | 96.7 MiB | Everything. Longer than a Reels slot wants — a library reel, not a post. |
 
 Frame arithmetic checks end to end on all three: 4,017 − (28 dissolves × 12
 frames) = 3,681 = 122.7 s exactly, and the two subsets likewise.
@@ -316,7 +365,7 @@ Link the deployed app in every post.
 | `video/frames-9x16-v2/` | 4.4 GB | The delivered set. Keep until the three cuts have been watched end to end, then it is reproducible in ~2.5 h. |
 | `video/frames-9x16/` | 2.3 GB | **Stale** — pre-additions, superseded. Safe to delete. |
 | `video/frames-4x5-new/` | 486 MB | **Stale** — four shots, pre-additions. Its "only 4:5 footage left" status no longer matters now that 4:5 is one unattended command. |
-| `video/echogalaxy-9x16.mp4` | 64 MB | **Stale master** — the one §1 warns about. Delete it, or rename it so nobody ships it by reflex. |
+| `video/echogalaxy-9x16.mp4` | 61.3 MiB | **Stale master** — the one §1 warns about. Delete it, or rename it so nobody ships it by reflex. |
 | `video/promo/` | 172 MB | Keep — the mp4s are the deliverable, though the Solar-System clips are pre-additions (§6). |
 
 82 GB free, so nothing needs deleting to proceed. The stale three above are
