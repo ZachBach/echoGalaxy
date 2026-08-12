@@ -82,11 +82,20 @@ if (!TITLE_LAYOUT) {
 // adding or trimming a shot never makes the copy drift off its visual.
 const TITLE_CUES = [
   { shot: '01-hook', offset: 0.2, seconds: 2.4, text: 'echoGalaxy' },
-  { shot: '02-rocky', offset: 2.4, seconds: 3.8, text: 'Five shader worlds' },
+  // Was "Five shader worlds" — written when the montage showed four of the
+  // planet rung's twelve bodies. Shots 15 through 22 render the other eight,
+  // so a full cut now shows all twelve and the old number undersold it.
+  { shot: '02-rocky', offset: 2.4, seconds: 3.8, text: 'Twelve shader worlds' },
   { shot: '05-system', offset: 0.8, seconds: 4.0, text: 'Real Kepler orbits' },
   { shot: '05b-pillars', offset: 0.4, seconds: 3.5, text: 'Pillars of Creation' },
   { shot: '06-spiral', offset: 0.6, seconds: 4.2, text: 'Four Hubble classes. GPU-built.' },
   { shot: '10-group', offset: 0.8, seconds: 4.2, text: 'The Local Group. Free + open.' },
+  // The astronomy layer. Cards are dropped automatically when their shot is
+  // not in the cut, so these cost nothing to a cut that omits them.
+  { shot: '23-ecliptic', offset: 0.5, seconds: 3.6, text: 'One plane. Every world.' },
+  { shot: '24-zodiac', offset: 0.4, seconds: 3.4, text: '8,355 real stars' },
+  { shot: '25-saturn-real', offset: 0.5, seconds: 3.6, text: 'Real tilts. Real rings.' },
+  { shot: '27-uranus-tilt', offset: 0.4, seconds: 3.2, text: 'Uranus lies on its side' },
 ]
 
 // Cumulative xfade offsets. After merging clips 0..n the running length is
