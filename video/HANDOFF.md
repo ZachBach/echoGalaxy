@@ -41,7 +41,8 @@ So the cut you hold shows an app that no longer exists. Concretely:
 - Shader-driven rungs — galaxies, Pillars, Crab, Coma, Local Group — are
   **unaffected**. Those shots are still accurate.
 
-**Do not ship the existing 9:16 master.** A re-render is in progress; see §4.
+**Do not ship the existing `echogalaxy-9x16.mp4`.** It has been superseded —
+§4 lists the three cuts that replace it, all rendered against current source.
 
 ---
 
@@ -121,22 +122,38 @@ which states Kepler's third law as motion instead of as a caption.
 
 ---
 
-## 4. The re-render, and what to do when it lands
+## 4. ✅ The re-render landed — three cuts are on disk
 
-Running now, unattended:
+`video/frames-9x16-v2/` holds all **4,017 frames across 29 shots**, every shot
+verified exact and contiguous (first and last index present, count equal to
+`seconds × 30`). Rendered from the post-Jupiter-fix source, so the whole set is
+internally consistent.
+
+Three masters are encoded and ready, all 1080×1920 h264/yuv420p with `moov`
+ahead of `mdat` so they stream without a full download:
+
+| File | Runtime | Frames | Size | What it is |
+|---|---|---|---|---|
+| `echogalaxy-9x16-astro.mp4` | 32.5 s | 975 | 20 MB | **The astronomy cut — start here.** 7 shots: the additions, with `23-ecliptic` as the thesis. Comfortably inside every Reels limit. |
+| `echogalaxy-9x16-feed.mp4` | 61.4 s | 1,842 | 67 MB | The original fifteen, re-rendered, `05-system` now correct. Closest to the master you knew. |
+| `echogalaxy-9x16-v2.mp4` | 122.7 s | 3,681 | 101 MB | Everything. Longer than a Reels slot wants — a library reel, not a post. |
+
+Frame arithmetic checks end to end on all three: 4,017 − (28 dissolves × 12
+frames) = 3,681 = 122.7 s exactly, and the two subsets likewise.
+
+Spot-checked by eye, not just by arithmetic: at 16.2 s the astronomy cut shows
+the all-88 sky sweep under "8,355 real stars", and at 30.5 s Jupiter carries
+the corrected faint dust ring — so the §3 fix survived into the delivered
+encode.
+
+To re-cut a different subset, see `--only` below; to re-render from scratch:
 
 ```bash
 npm run capture:social -- --aspect 9x16 --fps 30 --out video/frames-9x16-v2
 ```
 
-29 shots, 4,017 frames. Measured steady-state rate on this machine is about
-**1,960 frames/hour**, so roughly **2.5 hours** including the per-shot browser
-launch. Output is `video/frames-9x16-v2/`, about 4.8 GB. Then assemble:
-
-```bash
-node scripts/assemble.mjs --frames ./video/frames-9x16-v2 \
-  --out video/echogalaxy-9x16-v2.mp4 --aspect 9x16 --fps 30 --titles
-```
+Measured rate on this machine is about **1,960 frames/hour** — roughly 2.5
+hours for the full 29.
 
 At 122.7 s the full 29-shot cut is **longer than a Reels slot wants**.
 `assemble.mjs --only` cuts a subset straight out of the full frame folder —
@@ -288,12 +305,14 @@ Link the deployed app in every post.
 
 | Folder | Size | Keep? |
 |---|---|---|
-| `video/frames-9x16/` | 2.3 GB | **Stale** — superseded by `-v2`. Safe to delete once `-v2` is assembled and watched. |
+| `video/frames-9x16-v2/` | 4.4 GB | The delivered set. Keep until the three cuts have been watched end to end, then it is reproducible in ~2.5 h. |
+| `video/frames-9x16/` | 2.3 GB | **Stale** — pre-additions, superseded. Safe to delete. |
 | `video/frames-4x5-new/` | 486 MB | **Stale** — four shots, pre-additions. Its "only 4:5 footage left" status no longer matters now that 4:5 is one unattended command. |
-| `video/frames-9x16-v2/` | ~4.8 GB | The new set. |
-| `video/promo/` | 172 MB | Keep — the mp4s are the deliverable. |
+| `video/echogalaxy-9x16.mp4` | 64 MB | **Stale master** — the one §1 warns about. Delete it, or rename it so nobody ships it by reflex. |
+| `video/promo/` | 172 MB | Keep — the mp4s are the deliverable, though the Solar-System clips are pre-additions (§6). |
 
-86 GB free at the start of this session, so nothing needs deleting to proceed.
+82 GB free, so nothing needs deleting to proceed. The stale three above are
+3.2 GB if you want it back.
 
 ---
 
