@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # echoGalaxy — project conventions
 
 Vite + React 19 + @react-three/fiber + three's `WebGPURenderer` (WebGL2
@@ -41,6 +45,19 @@ npm run check:tsl   # gate only, no sync: static checks + runtime smoke
 If a task needs a new or changed TSL node, that work happens in the
 upstream `tsl-lib` repo, not here.
 
+The library has **two rosters**, and they are not interchangeable:
+
+- `gallery.js` — the curated NODE visualizers (28). What `smoke-tsl-lib`
+  has always walked.
+- `materialsGallery.js` — the full MATERIAL roster (43), derived from the
+  modules so it cannot drift from the directory.
+
+Materials are authored against `positionLocal` on a lab knot. A body in
+this app must **re-express** the material over the body frame (`spunDir`)
+rather than call its `apply()` — otherwise the pattern sits still while
+the planet turns under it. `magma`, `ice`, `caustics`, `sandDunes` and
+`crystal` are all in the tree as worked examples of that translation.
+
 ## Conventions worth knowing before you touch code
 
 - TSL nodes are dependency-injected: they take the `three/tsl`
@@ -65,6 +82,42 @@ upstream `tsl-lib` repo, not here.
   to the central body being orbited — moons use a different tempo
   constant than planets orbiting the star for exactly this reason.
   Don't unify them without checking the physics.
+- Surface recipes in `planetRecipes.js` are on one contract:
+  `(TSL, ctx) => { surface, nightLights?, emissive? }`. Patterns sample
+  `ctx.spunDir` so they ride the spinning body frame; view-dependent
+  terms (a fresnel glaze, a specular glint) deliberately do not. Colors
+  are echoGalaxy's own educational palette, **not** the library brand set
+  — that rule inverts the upstream one, where hex literals are banned.
+- `<Planet>` memoizes its material on **cfg identity**, so anything passed
+  as `cfg` or `atmosphere` must be a stable reference (module constant or
+  `useMemo`). A fresh object literal per render rebuilds the whole TSL
+  node graph every frame, for every planet — that was a real bug (G1-08),
+  and `EMPTY_CFG` at the top of `Planet.jsx` is the fix for the default.
+
+## Inspecting one rung in isolation — the dev-only routes
+
+`main.jsx` lazy-routes a query flag to a standalone scene instead of
+`App`. All are stripped from the production bundle (`import.meta.env.DEV`
+folds to false, so the chunks are eliminated), which is why adding to them
+costs the shipped app nothing. They are checked in a fixed priority order,
+so passing two means the first one listed wins:
+
+```
+?lab=1       tsl-lib portability lab — all 71 entries (28 nodes + 43 materials)
+?planet=1    planet recipes         (&type=<recipe> pins one, &spin=0 freezes)
+?system=1    the orbital scene
+?group=1     Local Group
+?pillars=1   the Pillars volume
+?cluster=1   Coma
+?crab=1      the Crab remnant
+```
+
+Debug flags that work anywhere: `?backend=webgl` (force the WebGL2
+backend), `?simulate-no-webgpu` (hide `navigator.gpu` so the real fallback
+path runs in a capable browser), `?freeze` (stop the spin — determinism
+checks depend on it), `?scale=`/`?system=`/`?sky=`. Dev hooks a harness
+can read: `window.__gl` (the renderer, from `renderer.js`) and
+`window.__r3f` (R3F state, set in every scene's `onCreated`).
 
 ## Commands
 
@@ -89,6 +142,29 @@ folder picker and minutes of real-time rendering per shot, so every error
 caught statically is one not discovered after the frames are on disk —
 or, as happened with 05-system's framing, not discovered at all until
 someone watched the motion.
+
+## Headless verification — the trap that prints a green pass
+
+Harnesses here drive system Chrome over the DevTools Protocol using Node's
+built-in WebSocket, adding no dependency (`scripts/shoot.mjs`,
+`scripts/smoke-lab-shaders.mjs` are the two patterns to copy).
+
+**Never pass `--use-angle=swiftshader` to a run that claims WebGPU.** It
+leaves `navigator.gpu` in place but makes `requestAdapter()` return null,
+so three falls back and the run reports WebGL2 while printing a full green
+pass — the same suite twice, proving nothing about WebGPU. Measured on
+Chrome 151: with the flag `adapter=null`, without it `adapter=OK`.
+`shoot.mjs` still carries the flag and has this blind spot. Always assert
+the backend you asked for actually arrived by reading `.backend-badge`,
+the way `smoke-lab-shaders.mjs` does.
+
+Two smaller ones: `navigator.gpu` is undefined on `about:blank` (not a
+secure context), so probe on a real localhost origin and wait for the
+navigation to land before evaluating. And a live WebGPU/WebGL canvas reads
+back blank through `drawImage` without `preserveDrawingBuffer` — take a
+CDP screenshot and hand the PNG back into the page if you need pixels.
+
+## Deploying
 
 Deploying to the Aurelius site is a manual copy of `dist/` into the
 parent repo's `galaxy/` directory — `vite.config.js` sets `base: './'`
