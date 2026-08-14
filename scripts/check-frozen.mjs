@@ -22,7 +22,14 @@
  *   node scripts/check-frozen.mjs --rungs galaxy,cluster --backend webgpu
  */
 
-import { startVite, openBrowser, renderRung, shoot, diff, parseArgs, RUNGS } from './harness-cdp.mjs'
+import { startVite, openBrowser, renderRung, shoot, diff, contentStats, parseArgs, RUNGS } from './harness-cdp.mjs'
+
+// A blank frame equals another blank frame. Without a content floor, a rung
+// that regressed to black would report a perfect 0/255 and read as the
+// strongest possible pass. These are deliberately loose — they catch "nothing
+// rendered", not "rendered differently".
+const MIN_LUM = 1.0
+const MIN_DISTINCT = 24
 
 const { rungs, backend: only, frames } = parseArgs(process.argv.slice(2))
 const backends = only ? [only] : ['webgpu', 'webgl']
@@ -59,19 +66,22 @@ try {
 
       // Diff in a throwaway page so neither render's context is involved.
       const judge = await openBrowser({ port: 9829, profile: 'frozen-judge' })
-      let d
+      let d, stats
       try {
         d = await diff(judge, shots[0], shots[1])
+        stats = await contentStats(judge, shots[0])
       } finally {
         judge.close()
       }
 
-      const ok = d.max === 0
+      const blank = stats.meanLum < MIN_LUM || stats.distinct < MIN_DISTINCT
+      const ok = d.max === 0 && !blank
       if (!ok) failures++
-      rows.push({ rung, backend, badge, ...d, ok })
+      rows.push({ rung, backend, badge, ...d, ...stats, ok, blank })
       console.log(
         `  ${ok ? '✓' : '✗'} ${rung.padEnd(8)} ${String(badge).padEnd(7)} ` +
-        `max=${String(d.max).padStart(3)}/255  mean=${d.mean}  differing=${d.differing}/${d.pixels}`,
+        `max=${String(d.max).padStart(3)}/255  mean=${d.mean}  differing=${d.differing}/${d.pixels}` +
+        `  lum=${stats.meanLum} colors=${stats.distinct}${blank ? '  ← BLANK, identical proves nothing' : ''}`,
       )
     }
   }

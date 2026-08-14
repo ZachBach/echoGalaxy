@@ -182,6 +182,24 @@ const READY = `(() => {
   return 'ready';
 })()`
 
+// Hide every overlay so a comparison measures the RENDER and nothing else.
+// The HUD sits as siblings of the canvas inside .app, and it is opaque text
+// across a third of the frame on some rungs. Leaving it in does two bad
+// things: it makes a determinism gate partly a test of React and CSS, and it
+// makes a PARITY gate flatter than the truth, because text pixels are
+// identical on both backends by construction and drag the mean toward zero.
+// Written generically — anything that is not the canvas goes — so a new HUD
+// element cannot silently re-enter the measurement.
+const HIDE_CHROME = `(() => {
+  const canvas = document.querySelector('canvas');
+  const root = document.querySelector('.app') || document.body;
+  let hidden = 0;
+  for (const el of root.children) {
+    if (!el.contains(canvas)) { el.style.setProperty('display', 'none', 'important'); hidden++; }
+  }
+  return hidden;
+})()`
+
 /**
  * Navigate to a rung and settle on a fixed VIRTUAL frame. Waiting on the frame
  * counter rather than on a wall-clock sleep is the whole point: a slow boot
@@ -192,19 +210,29 @@ export async function renderRung(page, baseUrl, { rung, backend, frames = 120, t
   if (backend === 'webgl') q.push('backend=webgl')
   await page.send('Page.navigate', { url: `${baseUrl}?${q.join('&')}` })
 
-  const deadline = Date.now() + timeoutMs
+  // Separate budgets, deliberately. Sharing one deadline between "did it boot"
+  // and "has it reached frame N" means a slow boot silently eats the frame
+  // budget and the run screenshots at frame 12 instead of 120 — with no error,
+  // and two runs then compare different instants. Each phase gets its own, and
+  // missing the frame target is a hard failure rather than a shrug.
+  const bootBy = Date.now() + timeoutMs
   let state = 'booting'
-  while (Date.now() < deadline) {
+  while (Date.now() < bootBy) {
     await sleep(250)
     state = await page.ev(READY)
     if (state === 'ready') break
   }
   if (state !== 'ready') throw new Error(`${rung}/${backend}: never became ready (${state})`)
 
-  while (Date.now() < deadline) {
-    const n = await page.ev('window.__harnessFrames || 0')
+  const framesBy = Date.now() + timeoutMs
+  let n = 0
+  while (Date.now() < framesBy) {
+    n = await page.ev('window.__harnessFrames || 0')
     if (n >= frames) break
     await sleep(120)
+  }
+  if (n < frames) {
+    throw new Error(`${rung}/${backend}: only reached frame ${n}/${frames} — comparisons would be of different instants`)
   }
 
   const badge = await page.ev("document.querySelector('.backend-badge')?.textContent || 'n/a'")
@@ -212,7 +240,35 @@ export async function renderRung(page, baseUrl, { rung, backend, frames = 120, t
   if (badge !== wanted) {
     throw new Error(`${rung}: asked for ${wanted}, got ${badge} — the run would prove nothing about ${wanted}`)
   }
+
+  // Badge is read first, then the chrome goes, so the screenshot is pure render.
+  await page.ev(HIDE_CHROME)
+  await sleep(120)
   return badge
+}
+
+/**
+ * Is there actually anything on screen? A blank frame is byte-identical to
+ * another blank frame, so without this a rung that regressed to black would
+ * sail through the determinism gate reporting 0/255.
+ */
+export async function contentStats(page, b64) {
+  return page.ev(`(async () => {
+    const img = new Image();
+    img.src = 'data:image/png;base64,' + ${JSON.stringify(b64)};
+    await img.decode();
+    const c = document.createElement('canvas');
+    c.width = img.width; c.height = img.height;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.drawImage(img, 0, 0);
+    const d = g.getImageData(0, 0, img.width, img.height).data;
+    let sum = 0; const seen = new Set();
+    for (let i = 0; i < d.length; i += 4) {
+      sum += 0.2126*d[i] + 0.7152*d[i+1] + 0.0722*d[i+2];
+      if (seen.size < 4096) seen.add((d[i] << 16) | (d[i+1] << 8) | d[i+2]);
+    }
+    return { meanLum: +(sum / (d.length / 4)).toFixed(2), distinct: seen.size };
+  })()`)
 }
 
 /** Centre crop of the viewport, as base64 PNG. Bounded so the in-page diff stays cheap. */
