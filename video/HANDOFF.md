@@ -16,18 +16,20 @@ exists and what to run**.
 every frame, master and screencast deliberately — only `video/*.md` is
 tracked. The numbers are the reason:
 
+Measured on disk 2026-08-13, after the prune:
+
 | What | Size | Why it stays out |
 |---|---|---|
-| `video/frames-*` (3 sets) | **7.2 GB**, 6,650 PNGs | GitHub's repo soft limit is ~5 GB, 1 GB recommended. This alone would break the repo. |
+| `video/frames-*` (2 sets) | **8.22 GB**, 8,304 PNGs | GitHub's repo soft limit is ~5 GB, 1 GB recommended. This alone would break the repo. |
 | `video/promo/` | 173 MB | 15 screencasts; weight most readers never need. |
-| `echogalaxy-9x16-v2.mp4` | 96.7 MiB | Clears GitHub's 100 MiB hard limit by 3.3 MiB — but only just, and one longer cut would not. See the unit note below. |
-| the two delivery masters | 19.4 + 64.1 MiB | Would fit, but committed files live in history forever: every future clone pays for them, and next week's re-render adds another 84 MiB that cannot be taken back out. |
+| the four delivery masters | 170 MB total | Would fit individually, but committed files live in history forever: every future clone pays for them, and next week's re-render adds another 170 MB that cannot be taken back out. |
 
-> **Mind the unit.** That file is *101 MB* decimal and *96.7 MiB* binary, and
-> GitHub's ceiling is 100 **MiB** (104,857,600 bytes). Read the decimal figure
-> against the binary limit and you would conclude the push is rejected when it
-> is not — or, more dangerously, the reverse on a slightly larger file. `ls -l`
-> gives bytes; compare those.
+> **Mind the unit.** The now-deleted `echogalaxy-9x16-v2.mp4` was *101 MB*
+> decimal and *96.7 MiB* binary, and GitHub's ceiling is 100 **MiB**
+> (104,857,600 bytes) — it cleared the hard limit by 3.3 MiB, and a slightly
+> longer cut would not have. Read the decimal figure against the binary limit
+> and you would conclude a push is rejected when it is not, or, more
+> dangerously, the reverse. `ls -l` gives bytes; compare those.
 
 So the repo link carries the *instructions*; the footage travels beside it.
 
@@ -43,31 +45,47 @@ github.com/ZachBach/echoGalaxy/releases/new     tag: promo-2026-08-11
 > **EDIT: paste the published release URL here once it exists**, so this
 > document resolves to something real instead of describing a plan.
 
-**Send these. All are cut from the 2026-08-12 renders, so design works from
-one app state rather than compositing across two:**
+**Send these — all four, and they are the only mp4s left in the folder.** All
+are cut from the 2026-08-12 frame sets, so design works from one app state
+rather than compositing across two. Every figure below was probed on
+2026-08-13, after the astronomy cuts were re-encoded:
 
-| File | Aspect | Duration | Size | Status |
-|---|---|---|---|---|
-| `echogalaxy-9x16-feed-v3.mp4` | 1080×1920 | 61.400 s | 64.1 MiB | ✅ probed |
-| `echogalaxy-4x5-feed.mp4` | 1080×1350 | 61.400 s | 65.9 MiB | ✅ probed — **new, no earlier delivery had a 4:5** |
-| `echogalaxy-9x16-astro-v3.mp4` | 1080×1920 | 36.6 s | ~22 MiB | ⏳ waiting on the v3 render |
-| `stills-4x5/` (30 PNG) + `contact-sheet-4x5.png` | — | — | ~33 MB | ✅ built |
+| File | Aspect | Duration | Frames | Size | Status |
+|---|---|---|---|---|---|
+| `echogalaxy-9x16-feed-v3.mp4` | 1080×1920 | 61.400000 s | 1842 | 64.1 MiB | ✅ probed |
+| `echogalaxy-4x5-feed.mp4` | 1080×1350 | 61.400000 s | 1842 | 65.9 MiB | ✅ probed — **no earlier delivery had a 4:5** |
+| `echogalaxy-9x16-astro-v3.mp4` | 1080×1920 | 36.600000 s | 1098 | 22.1 MiB | ✅ probed |
+| `echogalaxy-4x5-astro.mp4` | 1080×1350 | 36.600000 s | 1098 | 17.6 MiB | ✅ probed |
+| `stills-4x5/` (30 PNG) + `contact-sheet-4x5.png` | — | — | — | ~33 MB | ✅ built |
+
+Both astronomy cuts carry `29-aurora`. Both aspects now exist for both cuts,
+which is the first delivery where that is true.
 
 Both 61.4 s figures are exact, not rounded: they probe at `61.400000`, which
 is `sum(seconds) − 0.4 × 14` to the frame.
 
-**Do not send these. All four look plausible and none is current:**
+**The do-not-send list is now empty, because the files are gone** (pruned
+2026-08-13). Every mp4 in this folder is current and safe to hand over —
+the four superseded cuts this section used to warn about have been deleted
+from disk, so the delivery can no longer be got wrong by picking the wrong
+filename. Recorded here rather than dropped, because the reasoning is the
+useful part if any of them is ever re-encoded:
 
-- `echogalaxy-9x16.mp4` (61.3 MiB) — the 2026-08-11 midday cut, rendered
-  *before* the Jupiter fix and *before* the sky tripled. Its filename is the
-  least specific of the set, which is exactly how it gets picked by mistake.
-- `echogalaxy-9x16-v2.mp4` (96.7 MiB) — correct footage, but 122.7 s: past
-  every Reels ceiling. A library reel, not a post.
-- `echogalaxy-9x16-astro.mp4` (19.4 MiB) — the 32.5 s astronomy cut, from the
+- `echogalaxy-9x16.mp4` — the 2026-08-11 midday cut, rendered *before* the
+  Jupiter fix and *before* the sky tripled. Its filename was the least
+  specific of the set, which is exactly how it kept getting picked.
+- `echogalaxy-9x16-v2.mp4` — correct footage, but 122.7 s: past every Reels
+  ceiling. A library reel, not a post.
+- `echogalaxy-9x16-astro.mp4` — the 32.5 s astronomy cut, from the
   pre-aurora frame set. Superseded by `-astro-v3`.
-- `echogalaxy-9x16-feed.mp4` (64.1 MiB) — near-identical to `-feed-v3` and
-  the same byte size to three figures, which makes it the most dangerous file
-  in this folder. See the determinism note below for exactly how it differs.
+- `echogalaxy-9x16-feed.mp4` — near-identical to `-feed-v3`, same byte size
+  to three figures, differing in exactly one shot of fifteen. It was the
+  most dangerous file in this folder for precisely that reason. See the
+  determinism note below for how it differed.
+
+**Never re-encode a superseded cut back into this folder under a name that
+differs from a current one by a suffix.** That collision is what made the
+list necessary in the first place.
 
 ### The rig is deterministic, and that is why the diff is readable
 
@@ -94,10 +112,16 @@ still the one to send.
 
 ---
 
-## 1. ⚠ Read this first: the finished 9:16 master is stale
+## 1. ✅ Resolved — the stale 9:16 master is gone
+
+> **Nothing to act on here.** `echogalaxy-9x16.mp4`, its frame set
+> `video/frames-9x16/`, and `video/frames-4x5-new/` were all deleted on
+> 2026-08-13; §0's delivery list is current. Kept because the *mechanism* is
+> the lesson, and it will recur: a master goes stale not because anything
+> broke but because the app keeps growing underneath it.
 
 The morning version of this file said `echogalaxy-9x16.mp4` was ready to ship
-today. **It is not, and the reason is not a bug — it is that the app grew.**
+that day. **It was not, and the reason was not a bug — it is that the app grew.**
 
 Every frame in `video/frames-9x16/` and `video/frames-4x5-new/` was rendered on
 **2026-08-03**. The master was assembled at **12:39 on 2026-08-11**. The
@@ -207,24 +231,27 @@ which states Kepler's third law as motion instead of as a caption.
 
 ---
 
-## 4. ✅ The re-render landed — three cuts are on disk
+## 4. ✅ The re-render landed — four cuts are on disk
 
-`video/frames-9x16-v2/` holds all **4,017 frames across 29 shots**, every shot
-verified exact and contiguous (first and last index present, count equal to
-`seconds × 30`). Rendered from the post-Jupiter-fix source, so the whole set is
-internally consistent.
+**Superseded 2026-08-13.** This section used to describe the v2 era: three
+masters cut from `frames-9x16-v2/`. All three of those mp4s and that frame set
+have been pruned. What follows is the current state; the delivery list in §0
+is the authority.
 
-Three masters are encoded and ready, all 1080×1920 h264/yuv420p with `moov`
-ahead of `mdat` so they stream without a full download:
+Two complete frame sets remain, both **4,152 frames across all 30 shots**,
+every shot verified exact and contiguous (first and last index present, count
+equal to `seconds × 30`):
 
-| File | Runtime | Frames | Size | What it is |
-|---|---|---|---|---|
-| `echogalaxy-9x16-astro.mp4` | 32.5 s | 975 | 19.4 MiB | **The astronomy cut — start here.** 7 shots: the additions, with `23-ecliptic` as the thesis. Comfortably inside every Reels limit. |
-| `echogalaxy-9x16-feed.mp4` | 61.4 s | 1,842 | 64.1 MiB | The original fifteen, re-rendered, `05-system` now correct. Closest to the master you knew. |
-| `echogalaxy-9x16-v2.mp4` | 122.7 s | 3,681 | 96.7 MiB | Everything. Longer than a Reels slot wants — a library reel, not a post. |
+| Set | Aspect | Size |
+|---|---|---|
+| `video/frames-9x16-v3/` | 1080×1920 | 4.48 GB |
+| `video/frames-4x5-v2/` | 1080×1350 | 3.74 GB |
 
-Frame arithmetic checks end to end on all three: 4,017 − (28 dissolves × 12
-frames) = 3,681 = 122.7 s exactly, and the two subsets likewise.
+Four masters are encoded, h264/yuv420p with `moov` ahead of `mdat` so they
+stream without a full download — see §0 for the probed table. Frame arithmetic
+checks end to end: a full 30-shot cut is 4,152 − (29 dissolves × 12 frames) =
+3,804 = **126.8 s**, which is past every Reels ceiling and is why no full-set
+master exists. `--only` subsets are the deliverable, not a convenience.
 
 Spot-checked by eye, not just by arithmetic: at 15.5 s the astronomy cut shows
 the all-88 sky sweep under "25,199 real stars", at 11.0 s `23-ecliptic` puts
@@ -242,27 +269,43 @@ contradicts is worse than no card at all.
 To re-cut a different subset, see `--only` below; to re-render from scratch:
 
 ```bash
-npm run capture:social -- --aspect 9x16 --fps 30 --out video/frames-9x16-v2
+npm run capture:social -- --aspect 9x16 --fps 30 --out video/frames-9x16-v3
+npm run capture:social -- --aspect 4x5  --fps 30 --out video/frames-4x5-v2
 ```
 
-Measured rate on this machine is about **1,960 frames/hour** — roughly 2.5
-hours for the full 29.
+Measured rate on this machine is about **1,960 frames/hour** — roughly 2.1
+hours per 30-shot set.
 
-At 122.7 s the full 29-shot cut is **longer than a Reels slot wants**.
-`assemble.mjs --only` cuts a subset straight out of the full frame folder —
-no copying, no second render:
+`assemble.mjs --only` cuts a subset straight out of a full frame folder — no
+copying, no second render. These four commands reproduce exactly the four
+masters in §0:
 
 ```bash
-# Feed cut (61.4 s) — the original fifteen, with 05-system now correct
-node scripts/assemble.mjs --frames ./video/frames-9x16-v2 \
-  --out video/echogalaxy-9x16-feed.mp4 --aspect 9x16 --fps 30 --titles \
+# Feed cut, 9:16 — 61.400 s, fifteen shots
+node scripts/assemble.mjs --frames ./video/frames-9x16-v3 \
+  --out video/echogalaxy-9x16-feed-v3.mp4 --aspect 9x16 --fps 30 --titles \
   --only 01-hook,02-rocky,03-gas,04-star,05-system,05b-pillars,06-spiral,07-barred,08-elliptical,09-irregular,10-group,11-blackhole,12-godshands,13-crab,14-coma
 
-# Astronomy cut (32.5 s) — what shipped today. 23-ecliptic is the thesis frame.
-node scripts/assemble.mjs --frames ./video/frames-9x16-v2 \
-  --out video/echogalaxy-9x16-astro.mp4 --aspect 9x16 --fps 30 --titles \
-  --only 01-hook,05-system,23-ecliptic,24-zodiac,25-saturn-real,27-uranus-tilt,28-jupiter-moons
+# Feed cut, 4:5 — same fifteen, same 61.400 s
+node scripts/assemble.mjs --frames ./video/frames-4x5-v2 \
+  --out video/echogalaxy-4x5-feed.mp4 --aspect 4x5 --fps 30 --titles \
+  --only 01-hook,02-rocky,03-gas,04-star,05-system,05b-pillars,06-spiral,07-barred,08-elliptical,09-irregular,10-group,11-blackhole,12-godshands,13-crab,14-coma
+
+# Astronomy cut, 9:16 — 36.600 s, eight shots, closes on 29-aurora
+node scripts/assemble.mjs --frames ./video/frames-9x16-v3 \
+  --out video/echogalaxy-9x16-astro-v3.mp4 --aspect 9x16 --fps 30 --titles \
+  --only 01-hook,05-system,23-ecliptic,24-zodiac,25-saturn-real,27-uranus-tilt,28-jupiter-moons,29-aurora
+
+# Astronomy cut, 4:5
+node scripts/assemble.mjs --frames ./video/frames-4x5-v2 \
+  --out video/echogalaxy-4x5-astro.mp4 --aspect 4x5 --fps 30 --titles \
+  --only 01-hook,05-system,23-ecliptic,24-zodiac,25-saturn-real,27-uranus-tilt,28-jupiter-moons,29-aurora
 ```
+
+**`--fps 30` and `--aspect` are not optional.** The defaults are 60 and `4x5`.
+Wrong fps encodes without complaint and plays at half the intended duration
+while the dissolve offsets stay computed from `seconds`; wrong aspect selects
+the other title-card layout. Neither fails loudly.
 
 **`--only` does not let you reorder.** Shots always run in the order they are
 authored in `shots.js`, whatever order you list them on the command line —
@@ -398,14 +441,24 @@ Link the deployed app in every post.
 
 | Folder | Size | Keep? |
 |---|---|---|
-| `video/frames-9x16-v2/` | 4.4 GB | The delivered set. Keep until the three cuts have been watched end to end, then it is reproducible in ~2.5 h. |
-| `video/frames-9x16/` | 2.3 GB | **Stale** — pre-additions, superseded. Safe to delete. |
-| `video/frames-4x5-new/` | 486 MB | **Stale** — four shots, pre-additions. Its "only 4:5 footage left" status no longer matters now that 4:5 is one unattended command. |
-| `video/echogalaxy-9x16.mp4` | 61.3 MiB | **Stale master** — the one §1 warns about. Delete it, or rename it so nobody ships it by reflex. |
-| `video/promo/` | 172 MB | Keep — the mp4s are the deliverable, though the Solar-System clips are pre-additions (§6). |
+| `video/frames-9x16-v3/` | 4.48 GB | The delivered 9:16 set, all 30 shots. **Keep until design has signed off** — every `--only` re-cut comes out of here in seconds, and without it a different shot selection costs a ~2.1 h re-render. |
+| `video/frames-4x5-v2/` | 3.74 GB | The delivered 4:5 set, all 30 shots. Same reasoning. |
+| the four masters | 170 MB | The deliverable. |
+| `video/stills-4x5/`, `video/stills-9x16/` | 33 MB each | 30 stills per aspect + contact sheet, so design can see every shot without pulling 8 GB. |
+| `video/promo/` | 173 MB | Keep — though the Solar-System clips are pre-additions (§6). |
 
-82 GB free, so nothing needs deleting to proceed. The stale three above are
-3.2 GB if you want it back.
+**Pruned 2026-08-13, 7.11 GB reclaimed** (`video/` went 15.73 → 8.62 GB):
+`frames-9x16-v2/` (4.33 GB, superseded by v3 — 29 shots, no aurora),
+`frames-9x16/` (2.23 GB, pre-additions), `frames-4x5-new/` (0.47 GB, four
+shots), and the two stale masters `echogalaxy-9x16-feed.mp4` and
+`echogalaxy-9x16-astro.mp4`. Together with the two deleted earlier, that
+clears the entire do-not-send list from disk.
+
+The two surviving frame sets are deliberately **not** pruned. ZACHTODOS says
+to delete frame folders once the masters are encoded, and that is right in
+general — but design has not received the delivery yet, and until they have,
+these 8.22 GB are the difference between a re-cut taking seconds and taking an
+afternoon.
 
 ---
 
