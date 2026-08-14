@@ -100,6 +100,18 @@ const TITLE_CUES = [
   { shot: '24-zodiac', offset: 0.4, seconds: 3.4, text: '25,199 real stars' },
   { shot: '25-saturn-real', offset: 0.5, seconds: 3.6, text: 'Real tilts. Real rings.' },
   { shot: '27-uranus-tilt', offset: 0.4, seconds: 3.2, text: 'Uranus lies on its side' },
+  // The astronomy cut used to close on 9.5s of cardless footage. This card
+  // fixes half of that deliberately, not all of it: 28-jupiter-moons stays
+  // bare because it is the PAYOFF of the Uranus card — the whole beat is
+  // concentric banding cut against horizontal, and it reads without being
+  // told. Annotating the second half would explain a joke that lands.
+  //
+  // 29-aurora is the opposite case. The oval is a faint additive shell over
+  // a lit limb, and a viewer who does not know to look for it will not find
+  // it at feed size. Naming it is what makes it visible — cheaper and more
+  // honest than pushing `strength` in spaceWeather.js, which would brighten
+  // Earth past Jupiter and invert an ordering that is currently correct.
+  { shot: '29-aurora', offset: 0.4, seconds: 3.6, text: 'The solar wind, made visible' },
 ]
 
 // Cumulative xfade offsets. After merging clips 0..n the running length is

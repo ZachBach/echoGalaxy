@@ -275,24 +275,33 @@ encodes. A closing wide pull-back would mean adding `10-group`, which the
 authored order would place third rather than last — that needs a change to
 `shots.js`, not a change to the command line.
 
-## 8. Two title cards that are not there
+## 8. The title cards, and the two that are deliberately absent
 
-`TITLE_CUES` in `scripts/assemble.mjs` covers eleven shots. A cue whose shot
-is absent from the cut is **dropped rather than raised as an error** — that is
-deliberate, it is what lets `--only` subsets work at all — and the only notice
-you get is a `titles: N cue(s) dropped` line on stdout. Consequences you
-should know before cutting:
+`TITLE_CUES` in `scripts/assemble.mjs` now covers twelve shots. A cue whose
+shot is absent from the cut is **dropped rather than raised as an error** —
+that is deliberate, it is what lets `--only` subsets work at all — and the
+only notice you get is a `titles: N cue(s) dropped` line on stdout. Read that
+line; it is the whole warning system.
 
-1. **The astronomy cut closes on 9.5 s of cardless footage.** Neither
-   `28-jupiter-moons` nor `29-aurora` has a cue, so the last two shots run
-   with nothing on screen. The feed cut closes title-free on `14-coma` by
-   design; this is the same gesture at twice the length. It may read as a
-   breath before the end card, or as an ending that forgot to say anything —
-   that call is yours, and adding a cue is a two-line change.
-2. **A worlds-only cut (`15-lava`…`22-ice-giant`) has no cards at all.** None
-   of those eight appear in `TITLE_CUES`, so `--titles` is silently a no-op
-   there. If you want that set as its own piece, the copy has to be written
-   first.
+**Resolved 2026-08-13: the astronomy cut's cardless close.** It used to run
+9.5 s with nothing on screen. It now runs 5.0 s, and the remaining silence is
+a decision rather than an oversight:
+
+- **`29-aurora` gained a card — "The solar wind, made visible".** The oval is
+  a faint additive shell over a lit limb, and a viewer who does not know to
+  look for it will not find it at feed size. Naming it is what makes it
+  visible. The alternative was pushing `strength` in `spaceWeather.js`, which
+  would have brightened Earth past Jupiter and inverted an ordering that is
+  currently correct — Jupiter's aurorae really do dwarf Earth's.
+- **`28-jupiter-moons` stays bare on purpose.** It is the *payoff* of the
+  Uranus card, not an unannotated shot: the beat is concentric banding cut
+  against horizontal, and §7 above is right that it lands with no annotation.
+  Captioning the second half would explain a joke that works.
+
+**Still open — a worlds-only cut (`15-lava`…`22-ice-giant`) has no cards at
+all.** None of those eight appear in `TITLE_CUES`, so `--titles` is silently
+a no-op there. If you want that set as its own piece, the copy has to be
+written first.
 
 ## 6. On request from the shipyard
 

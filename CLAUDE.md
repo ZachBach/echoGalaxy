@@ -133,6 +133,9 @@ npm run check:all       # all four gates, in order
 npm run check:shaders   # browser gate: every tsl-lib node AND material
                         # compiles and draws on BOTH backends (~3 min, two
                         # Chrome launches — deliberately not in check:all)
+npm run check:frozen    # browser gate: each rung renders byte-identically
+                        # across two INDEPENDENT browsers (--rungs a,b and
+                        # --backend to narrow; full run is 24 launches)
 npm run capture:social  # render social-video frame sets (see video/HANDOFF.md)
 npm run backlog:csv     # export BACKLOG.md tasks to CSV for a tracker
 ```
@@ -146,8 +149,24 @@ someone watched the motion.
 ## Headless verification — the trap that prints a green pass
 
 Harnesses here drive system Chrome over the DevTools Protocol using Node's
-built-in WebSocket, adding no dependency (`scripts/shoot.mjs`,
-`scripts/smoke-lab-shaders.mjs` are the two patterns to copy).
+built-in WebSocket, adding no dependency. `scripts/harness-cdp.mjs` is the
+shared rig — Vite boot, browser launch, rung render, screenshot, per-pixel
+diff — and new browser gates should import it rather than re-derive it.
+(`smoke-lab-shaders.mjs` and `shoot.mjs` predate it and still carry their
+own copies.) Harnesses belong in `scripts/`, committed: they used to be
+rebuilt in a scratch directory every session and thrown away with it,
+which is how "the rig is deterministic" stayed an assertion in a commit
+message rather than a command anyone could re-run.
+
+**`?freeze` alone is not determinism.** It pins spin, orbits and camera
+drift, but three's Timer reads `performance.now()` on every node-frame
+update, so `TSL.time` keeps running on wall clock — twinkle, corona,
+plasma and the veil bake all move. `harness-cdp.mjs` therefore also pins
+the clock from OUTSIDE the app, injecting a virtual timeline that advances
+a fixed step per animation frame before any page script runs. That is what
+CaptureRig does internally, done without editing `App.jsx`. Gates then wait
+on a frame COUNT, not a wall-clock sleep: a slow boot shifts when frame 120
+happens, never which instant frame 120 depicts.
 
 **Never pass `--use-angle=swiftshader` to a run that claims WebGPU.** It
 leaves `navigator.gpu` in place but makes `requestAdapter()` return null,
@@ -162,7 +181,16 @@ Two smaller ones: `navigator.gpu` is undefined on `about:blank` (not a
 secure context), so probe on a real localhost origin and wait for the
 navigation to land before evaluating. And a live WebGPU/WebGL canvas reads
 back blank through `drawImage` without `preserveDrawingBuffer` — take a
-CDP screenshot and hand the PNG back into the page if you need pixels.
+CDP screenshot and hand the PNG back into the page if you need pixels,
+which is also how `harness-cdp.mjs` diffs without a PNG library.
+
+**What is and isn't covered.** `check:frozen` compares a backend against
+*itself* across two runs; measured 0/255 on planet and galaxy, both
+backends. Cross-backend **parity has no gate yet** — the WebGPU-vs-WebGL2
+comparison the playbook calls `run_parity` is still unwritten, and there
+are no recorded bars on disk. Don't read a green `check:frozen` as
+evidence the two backends agree with each other. They are different
+questions and only one of them is currently asked.
 
 ## Deploying
 
