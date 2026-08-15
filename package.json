@@ -16,6 +16,7 @@
     "check:planet": "node scripts/smoke-planet.mjs",
     "check:shaders": "node scripts/smoke-lab-shaders.mjs",
     "check:frozen": "node scripts/check-frozen.mjs",
+    "check:parity": "node scripts/check-parity.mjs",
     "check:all": "npm run check:tsl && npm run check:content && npm run check:planet && npm run check:shots",
     "backlog:csv": "node scripts/backlog-to-csv.mjs"
   },

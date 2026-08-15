@@ -135,7 +135,10 @@ npm run check:shaders   # browser gate: every tsl-lib node AND material
                         # Chrome launches — deliberately not in check:all)
 npm run check:frozen    # browser gate: each rung renders byte-identically
                         # across two INDEPENDENT browsers (--rungs a,b and
-                        # --backend to narrow; full run is 24 launches)
+                        # --backend to narrow; full run is 36 launches)
+npm run check:parity    # browser gate: WebGPU vs WebGL2 per rung, against
+                        # the recorded bars in docs/parity-bars.json
+                        # (--record to re-record; bars are hardware-specific)
 npm run capture:social  # render social-video frame sets (see video/HANDOFF.md)
 npm run backlog:csv     # export BACKLOG.md tasks to CSV for a tracker
 ```
@@ -184,13 +187,20 @@ back blank through `drawImage` without `preserveDrawingBuffer` — take a
 CDP screenshot and hand the PNG back into the page if you need pixels,
 which is also how `harness-cdp.mjs` diffs without a PNG library.
 
-**What is and isn't covered.** `check:frozen` compares a backend against
-*itself* across two runs; measured 0/255 on planet and galaxy, both
-backends. Cross-backend **parity has no gate yet** — the WebGPU-vs-WebGL2
-comparison the playbook calls `run_parity` is still unwritten, and there
-are no recorded bars on disk. Don't read a green `check:frozen` as
-evidence the two backends agree with each other. They are different
-questions and only one of them is currently asked.
+**Two different questions, two gates.** `check:frozen` compares a backend
+against *itself* across two independent browsers — 12/12 rung-backend
+pairs at 0/255. `check:parity` compares WebGPU against WebGL2 — six rungs
+inside their bars, worst is `system` at 0.46/255 against a 1.5 ceiling. A
+green `check:frozen` is not evidence the backends agree with each other,
+and vice versa; keep them straight.
+
+Both measure the **render only** — the HUD is hidden before the screenshot,
+because overlay text is identical on both backends by construction and
+would flatter a parity mean toward zero. And both guard against passing
+vacuously: `check:frozen` has a content floor, since a blank frame is
+byte-identical to another blank frame. `docs/parity-bars.json` records the
+GPU and driver alongside the numbers — the bars are hardware-specific and
+a different adapter will need `--record`.
 
 ## Deploying
 
