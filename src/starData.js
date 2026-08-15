@@ -803,6 +803,111 @@ export const STELLAR_EXTREMES = [
       'Distance remains awkward: its extended, convecting photosphere degrades parallax, and published values scatter across several hundred light-years.',
     ],
   },
+
+  // ORION'S BELT — Alnitak, Alnilam, Mintaka, west to east as they are
+  // lettered but listed here left to right as a northern observer sees them.
+  // Orion already promised them: constellationData lists "Orion's Belt" under
+  // notable and its advanced facts call them Orion OB1 members, with no
+  // profiles behind the claim.
+  //
+  // Sources: SIMBAD TAP (basic + allfluxes + mesPlx + mesDistance), fetched
+  // 2026-08-14. V and spectral types are SIMBAD's for the queried identifier.
+  //
+  // DISTANCE IS DELIBERATELY THE SAME 1,200 ly ON ALL THREE, and that is a
+  // judgement, not a copy-paste. Individual parallaxes to these stars are bad
+  // and disagree with each other — two reductions of the SAME Hipparcos data
+  // give del Ori 4.71 ± 0.58 mas (692 ly, 2007A&A...474..653V) against
+  // 3.56 ± 0.83 (916 ly, 1997A&A...323L..49P); eps Ori 1.65 ± 0.45 (1,977 ly)
+  // against 2.43 ± 0.91 (1,342 ly); zet Ori 4.43 ± 0.64 (736 ly) against
+  // 3.99 ± 0.79 (817 ly), plus a ground-based 23.9 ± 15.0 mas (136 ly,
+  // 1995GCTP..C......0V) that is simply noise. Gaia does not rescue this —
+  // all three saturate it. Taking each parallax at face value would scatter
+  // the Belt from 692 to 1,977 ly and quietly contradict this repo's own
+  // claim that they are a physical association rather than a chance
+  // alignment. The association distance is the better-determined quantity,
+  // and it is corroborated independently: interstellar Ca II H&K absorption
+  // toward eps Ori gives 366 ± 70 pc = 1,194 ± 228 ly
+  // (2009A&A...507..833M), which is Orion OB1b. So: one distance, flagged
+  // uncertain, with the spread explained in factsAdvanced rather than hidden
+  // behind three false precisions.
+  {
+    id: 'alnitak',
+    name: 'Alnitak',
+    designation: 'ζ Orionis',
+    constellation: 'Orion',
+    spectral: 'O9.7Ib + B0III',
+    distance: 1200,
+    distanceUncertain: true,
+    mag: 1.77,
+    description:
+      'The easternmost star of Orion\'s Belt, and the brightest O-type star in ' +
+      'the night sky — the hottest and rarest spectral class there is. Its ' +
+      'ultraviolet output is what makes the Horsehead visible at all.',
+    factsKids: [
+      'Alnitak is the left-hand star of Orion\'s Belt as you look at it from the northern half of the world.',
+      'It looks like one star but it is at least three, orbiting each other.',
+      'It is the brightest example in the whole sky of the hottest kind of star, class O — stars so rare that only a tiny fraction of one percent of stars are one.',
+      'The famous Horsehead Nebula sits right next to it. Alnitak is the lamp; the horse\'s head is the shadow.',
+    ],
+    factsAdvanced: [
+      'A multiple system: an O9.7 Ib supergiant with a B0 III companion, roughly 33 M☉ for the primary. At V 1.77 it is the brightest O-class star in the sky.',
+      'Its ultraviolet flux ionises IC 434, the emission ridge behind the Horsehead (Barnard 33) — the nebula is a dark dust column seen in silhouette, so it exists visually only because Alnitak lights the screen behind it. The Flame Nebula, NGC 2024, is also excited by it.',
+      'The name is from Arabic an-niṭāq, "the girdle".',
+      'Massive enough to end in core collapse, as all three Belt stars will.',
+    ],
+  },
+  {
+    id: 'alnilam',
+    name: 'Alnilam',
+    designation: 'ε Orionis',
+    constellation: 'Orion',
+    spectral: 'B0Ia',
+    distance: 1200,
+    distanceUncertain: true,
+    mag: 1.69,
+    description:
+      'The middle star of the Belt, and the only one of the three that is a ' +
+      'single star rather than a knot of several. A blue supergiant among the ' +
+      'most luminous stars the naked eye can reach.',
+    factsKids: [
+      'Alnilam is the middle star of Orion\'s Belt, and the brightest of the three.',
+      'Its name means "string of pearls" — which is what the Belt looks like.',
+      'It is one of the brightest stars you can see without a telescope, giving out hundreds of thousands of times more light than the Sun.',
+      'Unlike the stars either side of it, Alnilam really is just one star.',
+    ],
+    factsAdvanced: [
+      'B0 Ia, a blue supergiant of several hundred thousand L☉ — one of the most intrinsically luminous stars visible to the unaided eye.',
+      'Single, where Alnitak and Mintaka are both multiples. That makes it the cleanest of the three to model, and it is a standard reference for the B0 supergiant class.',
+      'It is losing mass rapidly through a strong radiatively driven wind, and is the most evolved of the Belt trio.',
+      'Its distance is the best-constrained of the three by a method other than parallax: interstellar Ca II H&K absorption gives 366 ± 70 pc, about 1,194 ± 228 ly (Megier et al. 2009), consistent with Orion OB1b.',
+    ],
+  },
+  {
+    id: 'mintaka',
+    name: 'Mintaka',
+    designation: 'δ Orionis',
+    constellation: 'Orion',
+    spectral: 'O9.5II + B1V + B0IV',
+    distance: 1200,
+    distanceUncertain: true,
+    mag: 2.41,
+    description:
+      'The westernmost Belt star, and the one that sits almost exactly on the ' +
+      'celestial equator — so it rises due east and sets due west for everyone ' +
+      'on Earth. Faintest of the three, and the most crowded.',
+    factsKids: [
+      'Mintaka is the right-hand star of Orion\'s Belt from the northern half of the world.',
+      'It sits almost exactly above Earth\'s equator, so it rises due east and sets due west no matter where you are standing.',
+      'That also means it is the one Belt star that can be seen from both the North and South Poles.',
+      'Its name simply means "the belt".',
+    ],
+    factsAdvanced: [
+      'Declination roughly −0°18′, less than a third of a degree off the celestial equator. An object there rises due east and sets due west from every latitude, and is theoretically visible from both poles.',
+      'A multiple system: the close pair δ Ori Aa1 (O9.5 II) and Aa2 (B1 V) eclipse each other on a 5.7-day orbit, with further components Ab and B. The eclipses are shallow.',
+      'Faintest of the Belt at V 2.41, which is why the three do not look evenly matched even though the line looks straight.',
+      'Its parallax is the least consistent of the three: the 1997 and 2007 reductions of the same Hipparcos data differ by a third, which is why the association distance is used here instead.',
+    ],
+  },
   {
     id: 'mu-cephei',
     name: 'Mu Cephei',
