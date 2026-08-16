@@ -82,31 +82,138 @@ body:has(.app[style*='width']) {
   pointer-events: none;
 }
 
+/* The HUD is three anchored regions, not one bottom-left stack: the scale
+   ladder on top behind a hamburger, the facts in a right-hand drawer, and the
+   per-rung navigation along the bottom. Splitting them hands the middle of the
+   frame back to the sky, which is what people came for.
+
+   The container is a full-frame overlay that never takes a pointer event —
+   each region opts back in. Anything that does not opt in lets a drag through
+   to the canvas underneath. */
 .hud {
   position: absolute;
-  left: 24px;
-  bottom: 24px;
-  max-width: 360px;
+  inset: 0;
   pointer-events: none;
+}
+
+/* ── TOP — brand, current subject, and the scale ladder ──────────────── */
+
+.hud-top {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top));
+  left: max(14px, env(safe-area-inset-left));
+  right: max(14px, env(safe-area-inset-right));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.hud .top-bar {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+/* 44px square: the tap-target floor check:mobile enforces. The button reads
+   much smaller than it measures — the bars are 16px inside it — so the frame
+   stays light while the hit area stays honest on a phone. */
+.hud .burger {
+  pointer-events: auto;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #2a3350;
+  border-radius: 9px;
+  background: rgba(4, 6, 14, 0.62);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.hud .burger:hover,
+.hud .burger.open {
+  border-color: #4a7dff;
+}
+
+/* Three bars from one element: the middle is the box, the outer two are
+   pseudo-elements. On open they cross into an X, which is the affordance
+   doing the explaining rather than a label. */
+.hud .burger .bars,
+.hud .burger .bars::before,
+.hud .burger .bars::after {
+  display: block;
+  width: 16px;
+  height: 1.5px;
+  background: #b9c4e0;
+  border-radius: 2px;
+  transition: transform 0.18s ease, opacity 0.14s ease;
+}
+
+.hud .burger .bars {
+  position: relative;
+}
+
+.hud .burger .bars::before,
+.hud .burger .bars::after {
+  content: "";
+  position: absolute;
+  left: 0;
+}
+
+.hud .burger .bars::before { top: -5px; }
+.hud .burger .bars::after  { top: 5px; }
+
+.hud .burger.open .bars { background: transparent; }
+.hud .burger.open .bars::before { transform: translateY(5px) rotate(45deg); }
+.hud .burger.open .bars::after  { transform: translateY(-5px) rotate(-45deg); }
+
+.hud .top-id {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.hud .top-id .brand {
+  font-family: ui-monospace, "SFMono-Regular", monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6b779b;
+}
+
+/* The subject name lives up here rather than in the drawer, so collapsing
+   the facts never costs you the answer to "what am I looking at". */
+.hud .top-id .subject {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #e8ecf5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hud .views {
   display: flex;
-  flex-wrap: wrap; /* five rungs since PC — the ladder may take two rows */
-  gap: 6px;
-  margin-bottom: 12px;
+  flex-wrap: wrap; /* six rungs — the ladder may take two rows when narrow */
+  gap: 5px;
   pointer-events: auto;
 }
 
 .hud .views button {
-  background: transparent;
+  background: rgba(4, 6, 14, 0.62);
   border: 1px solid #2a3350;
   color: #7d8bb0;
-  padding: 5px 12px;
+  padding: 4px 10px;
   border-radius: 6px;
   font-family: ui-monospace, "SFMono-Regular", monospace;
-  font-size: 10px;
-  letter-spacing: 0.12em;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
@@ -126,8 +233,10 @@ body:has(.app[style*='width']) {
   margin-bottom: 10px;
 }
 
+/* Inside the drawer now, not a page title — sized to lead the panel rather
+   than to compete with the subject name in the top bar. */
 .hud h1 {
-  font-size: 26px;
+  font-size: 19px;
   font-weight: 600;
   letter-spacing: 0.01em;
   line-height: 1.1;
@@ -135,9 +244,9 @@ body:has(.app[style*='width']) {
 
 .hud .cls {
   font-family: ui-monospace, "SFMono-Regular", monospace;
-  font-size: 11px;
+  font-size: 10.5px;
   color: #8fa1d6;
-  margin: 3px 0 12px;
+  margin: 3px 0 11px;
 }
 
 .hud p {
@@ -170,21 +279,97 @@ body:has(.app[style*='width']) {
   font-size: 8px;
 }
 
+/* ── SIDE — the facts drawer ─────────────────────────────────────────
+   Anchored right and vertically centred, so it never fights the bottom nav
+   for a corner. Collapsed it is a single tab; open it is a panel that scrolls
+   inside its own height rather than growing past the viewport. */
+
+.hud-side {
+  position: absolute;
+  top: 50%;
+  right: max(14px, env(safe-area-inset-right));
+  transform: translateY(-50%);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: min(340px, calc(100vw - 28px));
+  pointer-events: none;
+}
+
+/* The tab stays put whether the panel is open or shut, so the control does
+   not move out from under the cursor that just used it. */
+.hud .facts-tab {
+  pointer-events: auto;
+  flex: 0 0 auto;
+  align-self: center;
+  min-height: 44px;
+  padding: 10px 9px;
+  border: 1px solid #2a3350;
+  border-radius: 9px;
+  background: rgba(4, 6, 14, 0.72);
+  color: #9aa6c6;
+  font-family: ui-monospace, "SFMono-Regular", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.hud .facts-tab:hover,
+.hud-side.open .facts-tab {
+  border-color: #4a7dff;
+  color: #e8ecf5;
+}
+
+.hud-side .facts {
+  pointer-events: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-height: min(72dvh, calc(100dvh - 190px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  background: rgba(4, 6, 14, 0.86);
+  border: 1px solid #2a3350;
+  border-radius: 10px;
+  padding: 14px 15px;
+}
+
+/* ── BOTTOM — everything that moves you through the current rung ─────── */
+
+.hud-bottom {
+  position: absolute;
+  left: max(14px, env(safe-area-inset-left));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  /* Stop short of the drawer tab so a wide nav row never slides under it. */
+  right: max(74px, calc(env(safe-area-inset-right) + 74px));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+}
+
 .hud .nav {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 10px;
   pointer-events: auto;
 }
 
+/* Slightly tighter than before. min-height keeps the tap floor while the
+   padding comes down, so "smaller" is a visual change and not a reachability
+   regression — check:mobile enforces the 44px. */
 .hud button {
-  background: transparent;
+  background: rgba(4, 6, 14, 0.62);
   border: 1px solid #2a3350;
   color: #cdd6ee;
-  padding: 7px 13px;
+  min-height: 44px;
+  padding: 6px 12px;
   border-radius: 7px;
-  font-size: 12px;
+  font-size: 11.5px;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
 }
@@ -218,49 +403,24 @@ body:has(.app[style*='width']) {
   color: #5c6889;
 }
 
-/* MB-05 — the compact HUD for touch devices: the full panel covered
-   60% of a portrait screen and its button rows intercepted sky
-   touches. Compact keeps name + ladder + nav; the facts collapse
-   behind a toggle and scroll in their own sheet when open. */
-.hud.compact {
-  left: max(12px, env(safe-area-inset-left));
-  right: max(12px, env(safe-area-inset-right));
-  bottom: max(10px, env(safe-area-inset-bottom));
-  max-width: none;
+/* MB-05 — compact layout. The three regions stay where they are; what
+   changes is that a phone cannot afford a 340px drawer beside the scene, so
+   the facts become a bottom sheet instead of a side panel, and the ladder
+   tightens.
 
-  /* Cap the PANEL, not just the facts pane inside it. The HUD is anchored to
-     the bottom and grows upward, and with no ceiling a tall one runs off the
-     TOP of the screen, taking the scale ladder with it: measured at 740x360,
-     the HUD stood 358px in a 360px viewport and six controls were unreachable
-     above the top edge. A flex column with the facts as the only flexible
-     child means the facts absorb the squeeze and the ladder, the nav and the
-     hint are always on screen. */
-  display: flex;
-  flex-direction: column;
-  /* Two ceilings, and the smaller wins. The calc() is the hard one that stops
-     the panel running off the top. The 68dvh is the one that matters in
-     practice: capping overflow alone let the facts pane expand to fill the
-     whole cap, which measured 97% of an iPhone SE — legal, and useless, since
-     the sky is the thing people came for. */
-  max-height: min(
-    68dvh,
-    calc(100dvh - max(10px, env(safe-area-inset-bottom)) - max(10px, env(safe-area-inset-top)))
-  );
-}
+   The original lesson still applies and is why the caps below exist: an
+   uncapped panel measured 97% of an iPhone SE, which is legal and useless,
+   since the sky is the thing people came for. */
 
-/* Flex stretches children to the cross axis by default, which turned the
-   facts toggle into a full-width empty slab. Containers still stretch. */
-.hud.compact > button {
-  align-self: flex-start;
-}
-
-/* Everything except the facts keeps its natural height... */
-.hud.compact > * {
-  flex: 0 0 auto;
+.hud.compact .hud-top {
+  top: max(10px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+  right: max(10px, env(safe-area-inset-right));
+  gap: 6px;
 }
 
 .hud.compact .views {
-  margin-bottom: 8px;
+  gap: 4px;
 }
 
 .hud.compact .views button {
@@ -268,34 +428,74 @@ body:has(.app[style*='width']) {
   font-size: 9px;
 }
 
-.hud.compact .kicker {
-  display: none;
+.hud.compact .top-id .subject {
+  font-size: 14px;
 }
 
-.hud.compact h1 {
-  font-size: 20px;
+/* The drawer becomes a sheet: full width, anchored to the bottom, above the
+   nav rather than beside it. Vertical centring and a fixed width are both
+   wrong on a phone — the first hides the subject, the second leaves a
+   200px-wide column of text. */
+.hud.compact .hud-side {
+  top: auto;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  left: max(10px, env(safe-area-inset-left));
+  right: max(10px, env(safe-area-inset-right));
+  transform: none;
+  max-width: none;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: 6px;
 }
 
-.hud.compact .cls {
-  margin: 2px 0 8px;
+/* Horizontal again — a vertical tab in a horizontal sheet reads as a mistake.
+   Still 44px tall for the tap-target floor. */
+.hud.compact .facts-tab {
+  writing-mode: horizontal-tb;
+  align-self: flex-start;
+  padding: 12px 14px;
+  letter-spacing: 0.1em;
 }
 
-/* ...and the facts take whatever is left, scrolling inside it. min-height:0
-   is load-bearing: a flex child will not shrink below its content without it,
-   which is exactly how the panel used to overflow. */
-.hud.compact .facts {
-  pointer-events: auto;
-  flex: 1 1 auto;
-  min-height: 0;
-  max-height: none;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  background: rgba(4, 6, 14, 0.85);
-  border: 1px solid #2a3350;
-  border-radius: 8px;
+/* The smallest phones and short landscape windows. A 320x568 screen has ~150
+   fewer vertical pixels than an iPhone SE, and the fixed parts of the HUD —
+   a 44px bar, a 44px nav row — do not shrink with it, so the sheet has to
+   give up the difference or the HUD swallows the sky. */
+@media (max-width: 340px), (max-height: 600px) {
+  .hud.compact .hud-side .facts {
+    max-height: 32dvh;
+  }
+  .hud.compact:has(.hud-side.open) .hud-bottom {
+    bottom: calc(32dvh + max(10px, env(safe-area-inset-bottom)) + 54px);
+  }
+  .hud.compact .hint {
+    display: none; /* the gesture hint is the most expendable line here */
+  }
+}
+
+.hud.compact .hud-side .facts {
+  width: 100%;
+  /* 36dvh, not 46: with the top bar and the nav also on screen, a taller
+     sheet pushed the HUD's total coverage over the 72% cap on a 320px phone.
+     It scrolls, so height costs legibility of the sky, not of the facts. */
+  max-height: 36dvh;
   padding: 10px 12px;
-  margin-bottom: 8px;
+}
+
+/* With the sheet occupying the bottom, the nav sits above it and keeps the
+   full width — nothing is beside it to avoid any more. */
+.hud.compact .hud-bottom {
+  right: max(10px, env(safe-area-inset-right));
+  bottom: max(10px, env(safe-area-inset-bottom));
+  gap: 6px;
+}
+
+/* When the sheet is open it owns the bottom, so the nav lifts clear of it
+   rather than stacking underneath and running off-screen. */
+.hud.compact:has(.hud-side.open) .hud-bottom {
+  /* Sit directly on top of the sheet, not floating above it. A gap between
+     the two counts as extra covered screen once their spans are unioned. */
+  bottom: calc(36dvh + max(10px, env(safe-area-inset-bottom)) + 54px);
 }
 
 /* A dedication on a catalogue entry. Deliberately understated: smaller than
@@ -309,14 +509,6 @@ body:has(.app[style*='width']) {
   font-style: italic;
   letter-spacing: 0.04em;
   color: #8792ad;
-}
-
-.hud .facts-toggle {
-  pointer-events: auto;
-  font-family: ui-monospace, "SFMono-Regular", monospace;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  margin-bottom: 8px;
 }
 
 /* The facts ladder switch. Only rendered for entries carrying both rungs

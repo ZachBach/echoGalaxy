@@ -77,7 +77,24 @@ const MEASURE = `(() => {
   const de = document.documentElement, vw = innerWidth, vh = innerHeight;
   const hud = document.querySelector('.hud');
   if (!hud) return { error: 'no hud' };
-  const r = hud.getBoundingClientRect();
+  // The HUD is three anchored regions inside a transparent full-frame
+  // container, so measuring .hud itself now reports 100% on every device and
+  // means nothing. What the cap is actually about is how much of the screen
+  // the OPAQUE panels eat, so union the regions' vertical spans — the same
+  // quantity the old single-panel height measured, computed for a split HUD.
+  const regions = [...document.querySelectorAll('.hud-top, .hud-side, .hud-bottom')]
+    .map((e) => e.getBoundingClientRect())
+    .filter((q) => q.width > 0 && q.height > 0)
+    .map((q) => [Math.max(0, q.top), Math.min(vh, q.bottom)])
+    .filter(([a, b]) => b > a)
+    .sort((a, b) => a[0] - b[0]);
+  let covered = 0, curA = null, curB = null;
+  for (const [a, b] of regions) {
+    if (curA === null) { curA = a; curB = b; continue }
+    if (a <= curB) { curB = Math.max(curB, b) } else { covered += curB - curA; curA = a; curB = b }
+  }
+  if (curA !== null) covered += curB - curA;
+  const r = { height: covered };
   const btns = [...document.querySelectorAll('.hud button')];
   const off = btns.filter((b) => { const q = b.getBoundingClientRect();
     return q.width > 0 && (q.right > vw + 0.5 || q.bottom > vh + 0.5 || q.left < -0.5 || q.top < -0.5); });
@@ -134,7 +151,10 @@ try {
         }
         await sleep(900)
 
-        await page.ev(`(() => { const t = document.querySelector('.facts-toggle');
+        // Open the facts drawer. The control is .facts-tab since the HUD split;
+        // the old .facts-toggle selector silently matched nothing, which meant
+        // this gate was measuring a CLOSED panel while reporting "facts open".
+        await page.ev(`(() => { const t = document.querySelector('.facts-tab');
           if (t && !document.querySelector('.hud .facts')) { t.click(); return true } return false })()`)
         await sleep(500)
 

@@ -394,6 +394,13 @@ export default function App() {
   // a portrait screen and its button rows intercepted sky touches.
   const [factsOpen, setFactsOpen] = useState(!COARSE)
   const compactLayout = useCompactLayout()
+  // The rung menu behind the hamburger. Open by default where there is room
+  // and closed where there is not, then it is the reader's to control —
+  // deliberately NOT re-synced to the media query afterwards, because having
+  // a menu you opened shut itself on a rotate is worse than either default.
+  const [rungsOpen, setRungsOpen] = useState(
+    () => !(typeof matchMedia === 'function' && matchMedia(COMPACT_QUERY).matches),
+  )
   // The facts ladder's read rung. Entries from the astronomy content layer
   // carry factsKids + factsAdvanced; the older catalogues carry a flat
   // `facts` that factsFor() falls back to, so this state changes nothing
@@ -685,97 +692,129 @@ export default function App() {
 
       {!CAPTURE && (
       <div className={'hud' + (compactLayout ? ' compact' : '')}>
-        <div className="views">
-          {SCALES.map((s, i) => (
+        {/* TOP — the scale ladder, behind a hamburger. The rungs are the
+            app's primary navigation, so they sit where navigation sits;
+            collapsing them hands the sky back its whole upper edge. */}
+        <div className="hud-top">
+          <div className="top-bar">
             <button
-              key={s.id}
-              className={i === scale ? 'active' : ''}
-              onClick={() => shiftScale(i)}
+              className={'burger' + (rungsOpen ? ' open' : '')}
+              onClick={() => setRungsOpen((o) => !o)}
+              aria-expanded={rungsOpen}
+              aria-controls="rung-menu"
+              aria-label={rungsOpen ? 'Hide scales' : 'Show scales'}
             >
-              {s.label}
+              <span className="bars" aria-hidden="true" />
             </button>
-          ))}
-        </div>
-        <div className="kicker">echoGalaxy · a free tool for exploring the universe</div>
-        <h1>{info.name}</h1>
-        <div className="cls">{info.label ?? info.hubble}</div>
-        {factsOpen && (
-          <div className="facts">
-            <p>{info.description}</p>
-            {hasLadder(info) && (
-              <div className="ladder">
-                {AUDIENCES.map((a) => (
-                  <button
-                    key={a}
-                    className={a === audience ? 'active' : ''}
-                    aria-pressed={a === audience}
-                    onClick={() => setAudience(a)}
-                  >
-                    {AUDIENCE_LABELS[a]}
-                  </button>
-                ))}
-              </div>
-            )}
-            <ul>
-              {factsFor(info, audience).map((f, i) => (
-                <li key={`${audience}-${i}`}>{f}</li>
+            <div className="top-id">
+              <span className="brand">echoGalaxy</span>
+              <span className="subject">{info.name}</span>
+            </div>
+          </div>
+          {rungsOpen && (
+            <div className="views" id="rung-menu">
+              {SCALES.map((s, i) => (
+                <button
+                  key={s.id}
+                  className={i === scale ? 'active' : ''}
+                  aria-current={i === scale ? 'true' : undefined}
+                  onClick={() => shiftScale(i)}
+                >
+                  {s.label}
+                </button>
               ))}
-            </ul>
-            {/* An entry may carry a dedication. Rendered quietly, after the
-                facts rather than above them — the astronomy is still the
-                point, and a memorial does not want to be a banner. */}
-            {info.dedication && <p className="dedication">{info.dedication}</p>}
-          </div>
-        )}
-        {COARSE && (
+            </div>
+          )}
+        </div>
+
+        {/* SIDE — the facts drawer. Anchored right so it never fights the
+            bottom nav for the same corner, and collapsed to a tab so the
+            scene keeps the middle of the frame. */}
+        <aside className={'hud-side' + (factsOpen ? ' open' : '')}>
           <button
-            className="facts-toggle"
+            className="facts-tab"
             onClick={() => setFactsOpen((o) => !o)}
+            aria-expanded={factsOpen}
+            aria-controls="facts-panel"
           >
-            {factsOpen ? 'hide the facts ▾' : 'read the facts ▸'}
+            {factsOpen ? 'Hide ›' : '‹ Facts'}
           </button>
-        )}
-        {godPanel && <CannonballDial />}
-        {rung.id === 'system' && !godPanel && (
-          <div className="nav system-switcher">
-            <button onClick={() => shiftSystem(-1)} aria-label="Previous star system">‹ System</button>
-            <span>
-              {systemIndex + 1} / {SYSTEMS.length} · {system.info.name}
-            </span>
-            <button onClick={() => shiftSystem(1)} aria-label="Next star system">System ›</button>
+          {factsOpen && (
+            <div className="facts" id="facts-panel">
+              <h1>{info.name}</h1>
+              <div className="cls">{info.label ?? info.hubble}</div>
+              <p>{info.description}</p>
+              {hasLadder(info) && (
+                <div className="ladder">
+                  {AUDIENCES.map((a) => (
+                    <button
+                      key={a}
+                      className={a === audience ? 'active' : ''}
+                      aria-pressed={a === audience}
+                      onClick={() => setAudience(a)}
+                    >
+                      {AUDIENCE_LABELS[a]}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <ul>
+                {factsFor(info, audience).map((f, i) => (
+                  <li key={`${audience}-${i}`}>{f}</li>
+                ))}
+              </ul>
+              {/* An entry may carry a dedication. Rendered quietly, after the
+                  facts rather than above them — the astronomy is still the
+                  point, and a memorial does not want to be a banner. */}
+              {info.dedication && <p className="dedication">{info.dedication}</p>}
+            </div>
+          )}
+        </aside>
+
+        {/* BOTTOM — everything that moves you through the current rung. */}
+        <div className="hud-bottom">
+          {godPanel && <CannonballDial />}
+          {rung.id === 'system' && !godPanel && (
+            <div className="nav system-switcher">
+              <button onClick={() => shiftSystem(-1)} aria-label="Previous star system">‹ System</button>
+              <span>
+                {systemIndex + 1} / {SYSTEMS.length} · {system.info.name}
+              </span>
+              <button onClick={() => shiftSystem(1)} aria-label="Next star system">System ›</button>
+            </div>
+          )}
+          {!godPanel && list && (
+            <div className="nav">
+              <button onClick={() => go(-1)} aria-label="Previous">‹ Prev</button>
+              <span>
+                {index + 1} / {list.length}
+              </span>
+              <button onClick={() => go(1)} aria-label="Next">Next ›</button>
+            </div>
+          )}
+          {rung.id === 'system' && god.wild && (
+            <div className="nav">
+              <button onClick={() => setRestoreCount((c) => c + 1)}>
+                ☄ Restore order
+              </button>
+            </div>
+          )}
+          {rung.id === 'cluster' && (
+            <div className="nav">
+              <button onClick={() => setZSpace((z) => !z)}>
+                {zSpace ? '← return to real space' : '⇢ view in redshift space'}
+              </button>
+            </div>
+          )}
+          <div className="hint">
+            {rung.id === 'system' && !FROZEN
+              ? COARSE
+                ? 'grab a planet and fling it · drag to orbit · pinch to zoom'
+                : 'grab a planet and fling it · drag to orbit · scroll to zoom'
+              : COARSE
+                ? 'drag to orbit · pinch to zoom · pinch past the edge to change scale'
+                : 'drag to orbit · scroll to zoom · zoom past the edge to change scale'}
           </div>
-        )}
-        {!godPanel && list && (
-          <div className="nav">
-            <button onClick={() => go(-1)}>‹ Prev</button>
-            <span>
-              {index + 1} / {list.length}
-            </span>
-            <button onClick={() => go(1)}>Next ›</button>
-          </div>
-        )}
-        {rung.id === 'system' && god.wild && (
-          <div className="nav">
-            <button onClick={() => setRestoreCount((c) => c + 1)}>
-              ☄ Restore order
-            </button>
-          </div>
-        )}
-        {rung.id === 'cluster' && (
-          <div className="nav">
-            <button onClick={() => setZSpace((z) => !z)}>
-              {zSpace ? '← return to real space' : '⇢ view in redshift space'}
-            </button>
-          </div>
-        )}
-        <div className="hint">
-          {rung.id === 'system' && !FROZEN
-            ? COARSE
-              ? 'grab a planet and fling it · drag to orbit · pinch to zoom'
-              : 'grab a planet and fling it · drag to orbit · scroll to zoom'
-            : COARSE
-              ? 'drag to orbit · pinch to zoom · pinch past the edge to change scale'
-              : 'drag to orbit · scroll to zoom · zoom past the edge to change scale'}
         </div>
       </div>
       )}
