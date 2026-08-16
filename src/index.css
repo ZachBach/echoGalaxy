@@ -258,6 +258,19 @@ body:has(.app[style*='width']) {
   margin-bottom: 8px;
 }
 
+/* A dedication on a catalogue entry. Deliberately understated: smaller than
+   the facts, italic, dimmed, set off by a rule rather than a heading. It
+   should read as a line written at the foot of a page, not as a credit. */
+.hud .dedication {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid #2a3350;
+  font-size: 11px;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  color: #8792ad;
+}
+
 .hud .facts-toggle {
   pointer-events: auto;
   font-family: ui-monospace, "SFMono-Regular", monospace;

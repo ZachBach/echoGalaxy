@@ -191,6 +191,32 @@ export const PLANET_TYPES = [
     spinRate: 0.018,
   },
   {
+    id: 'venus',
+    name: 'Venus',
+    label: 'Second orbit · the morning and the evening star',
+    description:
+      'Earth\'s twin in size and mass, and nothing like it in every way that ' +
+      'matters. Venus is the brightest thing in our sky after the Sun and the ' +
+      'Moon — bright enough to find in broad daylight if you know where to ' +
+      'look, and bright because it is wrapped head to foot in cloud that ' +
+      'throws back three quarters of the sunlight reaching it.',
+    facts: [
+      'A day on Venus is longer than its year. It turns once in 243 Earth days and orbits the Sun in 225, so the sunrises do not keep up with the calendar.',
+      'It also turns backwards. On Venus the Sun rises in the west — and, with a day that long, does so about twice a year.',
+      'The clouds move sixty times faster than the planet. The whole deck laps Venus in roughly four days while the ground beneath barely creeps: superrotation, and nobody has fully explained it.',
+      'It is the hottest planet in the Solar System at about 465°C, hotter than Mercury despite being nearly twice as far from the Sun. Carbon dioxide did that, not distance.',
+      'The banded shapes here are ultraviolet. To your eye Venus is an almost featureless cream ball; the dark "Y" only appears in UV, painted by an absorber still not conclusively identified.',
+      'For most of history it was two objects: a morning star and an evening star, named separately by many cultures before anyone realised they were the same world returning.',
+    ],
+    recipe: PLANET_RECIPES.venus,
+    atmosphere: ATMOSPHERES.venus,
+    // Retrograde and very slow. Negative because Venus really does turn the
+    // other way; the cloud deck in the recipe superrotates in the same
+    // direction, only far faster, which is the honest relationship.
+    spinRate: -0.005,
+    dedication: 'For Erne.',
+  },
+  {
     id: 'ice-giant',
     name: 'Ice Giant',
     label: 'Outer giant · methane-blue atmosphere',

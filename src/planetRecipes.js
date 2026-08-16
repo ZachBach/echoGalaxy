@@ -124,6 +124,70 @@ export function ice(TSL, { spunDir, sun }) {
   }
 }
 
+// Venus. The generic `cloud` recipe above is a Venus-LIKE world and stays
+// that way; this one is the planet itself, and the difference is motion.
+//
+// Every other recipe here samples spunDir so the pattern rides the body frame
+// and turns with the planet. Venus is the one world where that is wrong. Its
+// cloud deck laps the planet in about four days while the solid body takes
+// 243 — a superrotation roughly sixty times faster than the ground beneath
+// it, and the single most arresting fact about the place. So the sample point
+// is deliberately spun about the pole on its own, much faster clock: the
+// clouds SLIP the body frame instead of riding it. Same direction as the spin,
+// because Venus's superrotation is retrograde too — it is faster, not opposite.
+//
+// The honest part: in visible light Venus is a nearly featureless cream ball,
+// and every banded image anyone recognises is ultraviolet, where an absorber
+// nobody has conclusively identified paints the dark "Y". Drawing the visible
+// truth would be a blank circle that teaches nothing. So this shows the UV
+// structure in Venus's own cream-and-ochre palette rather than in false
+// colour, and the facts say plainly that the eye would not see it — the same
+// bargain the aurora makes, declared rather than hidden.
+export function venus(TSL, { spunDir, clock }) {
+  const a = clock.mul(-0.42)
+  const ca = TSL.cos(a)
+  const sa = TSL.sin(a)
+  const q = TSL.vec3(
+    spunDir.x.mul(ca).sub(spunDir.z.mul(sa)),
+    spunDir.y,
+    spunDir.x.mul(sa).add(spunDir.z.mul(ca)),
+  )
+  const lat = q.y
+
+  const flow = warp(TSL, q.mul(2.6), { amp: 0.28, octaves: 2 })
+  const cells = fbm(TSL, flow, { octaves: 4 }).mul(0.5).add(0.5)
+
+  // The Y's spine: a dark equatorial band bowed by longitude, which is what
+  // gives the marking its swept shape rather than a straight stripe.
+  const bow = TSL.sin(q.x.mul(2.4).add(clock.mul(0.06))).mul(0.19)
+  const spine = TSL.smoothstep(0.27, 0.02, lat.sub(bow).abs())
+  // and its two arms, trailing back at mid latitude on one side only.
+  const arms = TSL.smoothstep(0.15, 0.0, lat.abs().sub(0.44).abs())
+    .mul(TSL.smoothstep(-0.35, 0.65, q.x))
+
+  // Polar hoods, and the double-eyed vortex turning inside each one.
+  const hood = TSL.smoothstep(0.60, 0.88, lat.abs())
+  const vortex = TSL.sin(lat.abs().mul(17).sub(a.mul(2.2))).mul(hood).mul(0.07)
+
+  const deck = cells
+    .mul(0.55)
+    .add(0.45)
+    .sub(spine.mul(0.30))
+    .sub(arms.mul(0.15))
+    .add(hood.mul(0.09))
+    .add(vortex)
+
+  return {
+    surface: ramp(TSL, deck, [
+      [0.0, 0x6b4a22],
+      [0.34, 0xa8763a],
+      [0.60, 0xd9ab63],
+      [0.82, 0xf2dca4],
+      [1.0, 0xfdf1d2],
+    ]),
+  }
+}
+
 // G1-15 — gas giant: bandedFlow (born here as a prototype, promoted
 // upstream in G1-23..25 — parity 0%, class ③ — and consumed vendored)
 // through a tan/cream ramp, darkened poles.
@@ -386,6 +450,11 @@ export const ATMOSPHERES = {
   desert: { inner: 0x7b351f, outer: 0xe5a464, strength: 0.25, power: 4 },
   ocean: { inner: 0x0b65a8, outer: 0x79e5e1, strength: 0.6, power: 3 },
   cloud: { inner: 0xa56b2a, outer: 0xffdc8d, strength: 0.78, power: 2.3 },
+  // Denser and brighter than the generic cloud world: Venus reflects about
+  // three quarters of the light that reaches it, the highest albedo of any
+  // planet, which is exactly why it is the brightest thing in our sky after
+  // the Sun and Moon.
+  venus: { inner: 0xb9832f, outer: 0xfff0c4, strength: 0.88, power: 2.1 },
   iceGiant: { inner: 0x1266a3, outer: 0x9ae8ef, strength: 0.55, power: 3 },
 }
 
@@ -412,6 +481,10 @@ export const TERMINATORS = {
   gas: { dawn: [-0.2, 0.45], floor: 0.14 },
   ringed: { dawn: [-0.2, 0.45], floor: 0.14 },
   cloud: { dawn: [-0.3, 0.55], floor: 0.2 },
+  // The thickest terminator here. Venus's atmosphere is ~92 bar at the
+  // surface and scatters light far around the limb, so day does not end at
+  // an edge.
+  venus: { dawn: [-0.34, 0.62], floor: 0.24 },
   titan: { dawn: [-0.34, 0.6], floor: 0.26 },
 }
 
@@ -424,6 +497,7 @@ export const PLANET_RECIPES = {
   desert,
   ocean,
   cloud,
+  venus,
   iceGiant,
   moon,
   mercury,

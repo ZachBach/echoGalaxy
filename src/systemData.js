@@ -119,7 +119,7 @@ const solarSystem = {
       },
     },
     {
-      id: 'sol-venus', recipe: PLANET_RECIPES.cloud, atmo: ATMOSPHERES.cloud, r: 3.05, size: 0.3, phase: 0.62,
+      id: 'sol-venus', recipe: PLANET_RECIPES.venus, atmo: ATMOSPHERES.venus, r: 3.05, size: 0.3, phase: 0.62,
       obliquity: tilt('venus'), // 177.36° — flipped, hence its retrograde spin
       spinRate: spin('venus'),
       info: {

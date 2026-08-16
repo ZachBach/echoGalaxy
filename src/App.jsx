@@ -696,6 +696,10 @@ export default function App() {
                 <li key={`${audience}-${i}`}>{f}</li>
               ))}
             </ul>
+            {/* An entry may carry a dedication. Rendered quietly, after the
+                facts rather than above them — the astronomy is still the
+                point, and a memorial does not want to be a banner. */}
+            {info.dedication && <p className="dedication">{info.dedication}</p>}
           </div>
         )}
         {COARSE && (
