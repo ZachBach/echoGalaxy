@@ -28,7 +28,7 @@
  */
 
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, rmSync } from 'node:fs'
 import { createServer } from 'node:http'
 import path from 'node:path'
 import { dirname, resolve } from 'node:path'
@@ -57,6 +57,23 @@ const PINNED_CLOCK = `(() => {
   window.requestAnimationFrame = (cb) => raf(() => { t += STEP; frames++; cb(t); });
   Object.defineProperty(window, '__harnessFrames', { get: () => frames });
 })();`
+
+// Profile directories created this run, swept on exit. Each browser launch
+// gets a fresh --user-data-dir, and a full check:parity plus check:frozen
+// opens 48 of them at roughly 300-400 MB each — left behind, a few sessions of
+// gate runs quietly put ~9 GB in TEMP, more than the frame sets the video
+// handoff agonises over. Removal cannot happen inside close(): child.kill() is
+// asynchronous and Chrome holds a lock on the directory for a moment after,
+// so an immediate rmSync fails every time (measured — three retries in a row
+// all lost the race). Sweeping at exit gives every browser time to actually
+// die, and by then node is finished with them anyway.
+const PROFILE_DIRS = new Set()
+let sweepArmed = false
+function sweepProfiles() {
+  for (const dir of PROFILE_DIRS) {
+    try { rmSync(dir, { recursive: true, force: true }); PROFILE_DIRS.delete(dir) } catch { /* still locked; leave it */ }
+  }
+}
 
 function unusedPort() {
   return new Promise((res, rej) => {
@@ -101,6 +118,12 @@ export async function startVite() {
  */
 export async function openBrowser({ port, profile, width = 900, height = 700 }) {
   if (!CHROME) throw new Error('no Chrome found')
+  const profileDir = resolve(process.env.TEMP || '/tmp', profile)
+  PROFILE_DIRS.add(profileDir)
+  if (!sweepArmed) {
+    sweepArmed = true
+    process.on('exit', sweepProfiles)
+  }
   const child = spawn(CHROME, [
     '--headless=new',
     `--remote-debugging-port=${port}`,
@@ -111,7 +134,7 @@ export async function openBrowser({ port, profile, width = 900, height = 700 }) 
     '--no-first-run',
     '--no-default-browser-check',
     '--disable-extensions',
-    '--user-data-dir=' + resolve(process.env.TEMP || '/tmp', profile),
+    '--user-data-dir=' + profileDir,
     'about:blank',
   ], { stdio: 'ignore' })
 
@@ -169,7 +192,11 @@ export async function openBrowser({ port, profile, width = 900, height = 700 }) 
     send,
     ev,
     errors,
-    close: () => { try { ws.close() } catch {} ; try { child.kill() } catch {} },
+    // Kill now; the profile directory is swept at exit (see PROFILE_DIRS).
+    close: () => {
+      try { ws.close() } catch {}
+      try { child.kill() } catch {}
+    },
   }
 }
 

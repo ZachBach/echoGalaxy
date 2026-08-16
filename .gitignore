@@ -22,6 +22,20 @@ video/*
 *.jks
 android/keystore.properties
 
+# credentials and environment — nothing here today, and the rule exists so
+# that stays true. Vite exposes any VITE_-prefixed var to the CLIENT bundle,
+# so a committed .env is not merely private-in-a-public-repo, it ships. The
+# store/signing lesson above was learned by nearly losing a keystore to git;
+# this one is written down before the equivalent happens.
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.p8
+google-services.json
+service-account*.json
+
 # capture output — media never enters history
 frames/
 frames-*/

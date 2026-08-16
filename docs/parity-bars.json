@@ -1,6 +1,6 @@
 {
   "note": "Cross-backend parity bars: WebGPU vs WebGL2, mean absolute per-pixel channel delta in x/255. Recorded by scripts/check-parity.mjs --record. Hardware-specific: the tier-2 comparison only applies when environment.gl matches.",
-  "recorded": "2026-08-14T23:57:54.514Z",
+  "recorded": "2026-08-15T02:15:07.749Z",
   "conditions": {
     "url": "?scale=<rung>&freeze[&backend=webgl]",
     "frames": 120,
@@ -24,37 +24,49 @@
       "mean": 0.2543,
       "max": 90,
       "differingPct": 9.57,
-      "control": 100.1625
+      "control": 100.1625,
+      "frames": 120,
+      "gl": "ANGLE (Intel, Intel(R) UHD Graphics 630 (0x00003E9B) Direct3D11 vs_5_0 ps_5_0, D3D11)"
     },
     "system": {
       "mean": 0.46,
       "max": 99,
       "differingPct": 8.91,
-      "control": 52.6082
+      "control": 52.6082,
+      "frames": 120,
+      "gl": "ANGLE (Intel, Intel(R) UHD Graphics 630 (0x00003E9B) Direct3D11 vs_5_0 ps_5_0, D3D11)"
     },
     "nebula": {
       "mean": 0.0266,
       "max": 92,
       "differingPct": 2.23,
-      "control": 75.7546
+      "control": 75.7546,
+      "frames": 120,
+      "gl": "ANGLE (Intel, Intel(R) UHD Graphics 630 (0x00003E9B) Direct3D11 vs_5_0 ps_5_0, D3D11)"
     },
     "galaxy": {
       "mean": 0.0445,
       "max": 28,
       "differingPct": 3.87,
-      "control": 77.9185
+      "control": 77.9185,
+      "frames": 120,
+      "gl": "ANGLE (Intel, Intel(R) UHD Graphics 630 (0x00003E9B) Direct3D11 vs_5_0 ps_5_0, D3D11)"
     },
     "group": {
       "mean": 0.0652,
       "max": 57,
       "differingPct": 5.33,
-      "control": 38.88
+      "control": 38.88,
+      "frames": 120,
+      "gl": "ANGLE (Intel, Intel(R) UHD Graphics 630 (0x00003E9B) Direct3D11 vs_5_0 ps_5_0, D3D11)"
     },
     "cluster": {
       "mean": 0.0011,
       "max": 2,
       "differingPct": 0.11,
-      "control": 94.8203
+      "control": 94.8203,
+      "frames": 120,
+      "gl": "ANGLE (Intel, Intel(R) UHD Graphics 630 (0x00003E9B) Direct3D11 vs_5_0 ps_5_0, D3D11)"
     }
   }
 }
