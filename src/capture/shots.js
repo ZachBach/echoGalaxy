@@ -257,12 +257,28 @@ export const SHOTS = [
     to: { pos: [0, 6.0, 12.5], target: [0, 0, 0] },
   },
   {
+    // Sh 2-80, the middle act: a star throwing itself away. The move swings
+    // from the leading face — where the shell piles up against the gas the
+    // runaway star is ploughing into — round to the wake side. The shape is
+    // lopsided and a static frame reads as a smudge, so the reveal IS the
+    // shot; it is the one nebula here whose silhouette carries the fact.
+    id: '12b-wolfrayet',
+    scale: 'nebula',
+    index: 1, // nebulaList: Pillars(0), Sh 2-80(1), Crab(2)
+    seconds: 4.6,
+    ease: 'inout',
+    fovLock: 'h',
+    from: { pos: [1.1, 0.2, 4.2], target: [0, 0, 0] },
+    via: { pos: [0.2, 0.5, 4.6], target: [0, 0, 0] },
+    to: { pos: [-1.2, 0.75, 4.5], target: [0, 0, 0] },
+  },
+  {
     // The Crab: star death answering the Pillars' star birth. Same gentle
     // lateral drift as 05b so the filament web reads as volume, with enough
     // dwell for ~9 beats of the 2 Hz pulsar heart.
     id: '13-crab',
     scale: 'nebula',
-    index: 1, // nebulaList: Pillars(0), Crab(1)
+    index: 2, // nebulaList: Pillars(0), Sh 2-80(1), Crab(2)
     seconds: 4.6,
     ease: 'inout',
     fovLock: 'h',

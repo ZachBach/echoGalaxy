@@ -159,5 +159,41 @@ console.log('\n[8] runtime')
   ok(`aspects available: ${Object.keys(ASPECTS).join(', ')} at BASE_H_FOV ${BASE_H_FOV}`)
 }
 
+// `index` picks which entry of a rung's cycle the shot captures, and until
+// now nothing checked it. That is the same shape of hazard as `follow`, and
+// quieter: an out-of-range index does not throw, it silently renders a
+// DIFFERENT object, and the frames look perfectly fine until someone who
+// knows the subject watches them. Inserting Sh 2-80 into the middle of the
+// nebula cycle moved the Crab from 1 to 2 and proved the point.
+//
+// App.jsx is read as text for the same reason Sky.jsx is — node cannot
+// import JSX. Only the lists that are literal arrays in App.jsx are
+// reachable this way; the rungs whose cycles are built elsewhere are
+// counted as unknown rather than guessed at, and said so out loud.
+console.log('\n[9] shot index stays inside its rung cycle')
+{
+  const appSrc = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8')
+  const listLen = (name) => {
+    const m = appSrc.match(new RegExp(`${name}\\s*=\\s*useMemo\\(\\(\\)\\s*=>\\s*\\[([^\\]]*)\\]`))
+    if (!m) return null
+    const items = m[1].split(',').map((s) => s.trim()).filter(Boolean)
+    return items.length || null
+  }
+  const lengths = { nebula: listLen('nebulaList') }
+  let checked = 0
+  const unknown = []
+  for (const s of SHOTS) {
+    if (s.index === undefined) continue
+    const n = lengths[s.scale]
+    if (!n) { unknown.push(s.id); continue }
+    checked += 1
+    if (s.index < 0 || s.index >= n)
+      fail(`${s.id}: index ${s.index} is outside the ${s.scale} cycle (0..${n - 1})`)
+  }
+  if (!failed && checked) ok(`${checked} indexed shot(s) inside their cycle (nebula holds ${lengths.nebula})`)
+  if (unknown.length)
+    console.log(`  .. ${unknown.length} indexed shot(s) on rungs whose cycle this gate cannot read: ${unknown.join(', ')}`)
+}
+
 console.log(failed ? `\ncheck-shots FAILED (${failed})` : '\ncheck-shots ok')
 process.exit(failed ? 1 : 0)

@@ -18,6 +18,7 @@ import System, {
 import Pillars, { NEBULA_INFO } from './Pillars'
 import Cluster, { CLUSTER_INFO, REDSHIFT_INFO } from './Cluster'
 import Crab, { CRAB_INFO } from './Crab'
+import WolfRayet, { WR_INFO } from './WolfRayet'
 import LocalGroup, { GROUP_INFO, MEMBERS } from './LocalGroup'
 import Effects from './Effects'
 import { createSkybox, bakeSkybox } from './skybox'
@@ -483,8 +484,12 @@ export default function App() {
     [system],
   )
   const groupList = useMemo(() => [GROUP_INFO, ...MEMBERS.map((m) => m.info)], [])
-  // SN-07: stellar life, bookended — the Pillars (birth), the Crab (death)
-  const nebulaList = useMemo(() => [NEBULA_INFO, CRAB_INFO], [])
+  // SN-07: stellar life in three acts, in order — the Pillars (birth),
+  // Sh 2-80 (a massive star throwing itself away), the Crab (death).
+  // Ordered chronologically rather than appended, because the rung is
+  // read as a sequence; the cost of that choice is that shot 13's index
+  // moved, which shots.js records.
+  const nebulaList = useMemo(() => [NEBULA_INFO, WR_INFO, CRAB_INFO], [])
 
   let info
   let list
@@ -641,12 +646,15 @@ export default function App() {
             choreo={CAPTURE?.choreo ?? null}
           />
         )}
-        {rung.id === 'nebula' &&
-          (nebulaIndex === 0 ? (
-            <Pillars frozen={FROZEN} steps={COARSE ? 14 : 20} />
-          ) : (
-            <Crab frozen={FROZEN} steps={COARSE ? 14 : 20} />
-          ))}
+        {rung.id === 'nebula' && nebulaIndex === 0 && (
+          <Pillars frozen={FROZEN} steps={COARSE ? 14 : 20} />
+        )}
+        {rung.id === 'nebula' && nebulaIndex === 1 && (
+          <WolfRayet frozen={FROZEN} steps={COARSE ? 14 : 20} />
+        )}
+        {rung.id === 'nebula' && nebulaIndex === 2 && (
+          <Crab frozen={FROZEN} steps={COARSE ? 14 : 20} />
+        )}
         {rung.id === 'galaxy' && <Galaxy type={GALAXY_TYPES[galaxyIndex]} />}
         {rung.id === 'group' && <LocalGroup frozen={FROZEN} />}
         {rung.id === 'cluster' && (

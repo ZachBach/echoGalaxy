@@ -880,10 +880,11 @@ export const CONSTELLATIONS = [
     id: 'sagitta', name: 'Sagitta', genitive: 'Sagittae', abbr: 'Sge',
     english: 'The Arrow', hemisphere: 'N', areaRank: 86, origin: 'ancient',
     brightest: 'γ Sagittae',
-    notable: ['M71 — a loose globular cluster'],
+    notable: ['M71 — a loose globular cluster', 'Sh 2-80 (M1-67) — the ring nebula around Wolf-Rayet star WR 124'],
     factsKids: ['Sagitta is the third-smallest constellation, but it genuinely looks like an arrow.'],
     factsAdvanced: [
       'Third-smallest yet one of Ptolemy\'s original 48 — small size did not prevent ancient recognition when the shape is this distinct.',
+      'Sh 2-80 sits here: a six-light-year shell of gas thrown off by WR 124 about 20,000 years ago. The star is a runaway, so the shell is ploughing lopsidedly through the interstellar medium rather than expanding as a clean sphere.',
     ],
   },
   {

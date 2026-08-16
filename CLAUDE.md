@@ -78,6 +78,16 @@ the planet turns under it. `magma`, `ice`, `caustics`, `sandDunes` and
   through `factsFor(entry, audience)` in `factsLadder.js`, which falls
   back to the flat `facts` so the older catalogues keep working.
   `npm run check:content` gates all of it.
+- `volumeAtlas.js` marches in **world space** — `buildMarchMaterial` takes
+  its ray entry from `positionWorld` and computes the exit against
+  world-axis-aligned `bounds`. So putting a `rotation` on the group turns
+  the BOX and leaves the volume inside it exactly where it was, and on
+  non-cubic bounds it breaks the ray-box exit as well. The Crab gets away
+  with a group rotation because it is a smooth near-cubic ellipsoid where
+  neither failure shows. Anything whose orientation carries meaning must
+  bake the direction into the field instead — `WR_RUN` in
+  `wrBubbleField.js` is the worked example, and the reason it exists is
+  that the group-rotation version rendered a perfect circle.
 - Physical/orbital constants (Kepler's constant `K`, μ = 4π²/K²) belong
   to the central body being orbited — moons use a different tempo
   constant than planets orbiting the star for exactly this reason.
@@ -110,6 +120,7 @@ so passing two means the first one listed wins:
 ?pillars=1   the Pillars volume
 ?cluster=1   Coma
 ?crab=1      the Crab remnant
+?wr=1        Sh 2-80, the Wolf-Rayet shell
 ```
 
 Debug flags that work anywhere: `?backend=webgl` (force the WebGL2
@@ -139,6 +150,11 @@ npm run check:frozen    # browser gate: each rung renders byte-identically
 npm run check:parity    # browser gate: WebGPU vs WebGL2 per rung, against
                         # the recorded bars in docs/parity-bars.json
                         # (--record to re-record; bars are hardware-specific)
+npm run check:nebula    # browser gate: all THREE nebula-rung volumes compile
+                        # and draw on both backends. Every other browser gate
+                        # reaches a rung through ?scale=, which only ever
+                        # lands on its default cycle index — so the Crab and
+                        # Sh 2-80 were never rendered by any gate at all
 npm run check:mobile    # browser gate: 9 real phone/tablet viewports, facts
                         # OPEN — every control reachable, every tap target
                         # >=44px, no overflow, HUD within its coverage cap

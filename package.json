@@ -18,6 +18,7 @@
     "check:frozen": "node scripts/check-frozen.mjs",
     "check:parity": "node scripts/check-parity.mjs",
     "check:mobile": "node scripts/check-mobile.mjs",
+    "check:nebula": "node scripts/smoke-nebula.mjs",
     "check:all": "npm run check:tsl && npm run check:content && npm run check:planet && npm run check:shots",
     "backlog:csv": "node scripts/backlog-to-csv.mjs"
   },

@@ -658,6 +658,28 @@ export const STELLAR_EVOLUTION = [
     ],
   },
   {
+    id: 'wolf-rayet',
+    name: 'The Wolf-Rayet Phase',
+    label: 'M ≳ 20 M☉ · the star strips itself',
+    description:
+      'The largest stars do not wait for the explosion to come apart. For a few ' +
+      'hundred thousand years beforehand, the radiation pouring out of the core ' +
+      'is strong enough to lift the star\'s own outer layers off and drive them ' +
+      'into space — so what you finally see is not a surface at all, but a ' +
+      'fusion core with its wrapping torn away.',
+    factsKids: [
+      'Some stars shine so fiercely that their own light blows their outer layers off.',
+      'What is left has its insides showing — the part that is normally buried far below the surface.',
+      'Sh 2-80, on the Nebula rung, is one of these: a shell of a star\'s own discarded gas, six light-years across.',
+    ],
+    factsAdvanced: [
+      'Wolf-Rayet spectra show broad emission lines of helium, nitrogen, carbon, or oxygen and little or no hydrogen. The classification — WN, WC, WO — reads off which fusion layer is currently exposed.',
+      'Mass-loss rates run 10⁻⁵ to 10⁻⁴ M☉ per year at wind speeds of 1,000–2,000 km/s, roughly a billion times the solar wind\'s rate. A star can shed half its mass this way.',
+      'Because the hydrogen envelope is gone before the core collapses, these end as Type Ib and Ic supernovae. The hydrogen lines are missing from the explosion because the hydrogen had already left.',
+      'About 600 are known in the Milky Way. WR 124 — the one this app renders — is near 20 M☉ at 44,700 K and 562,000 L☉, with a few hundred thousand years left to run.',
+    ],
+  },
+  {
     id: 'supernova',
     name: 'Core-Collapse Supernova',
     label: 'M ≳ 8 M☉ · the violent ending',
