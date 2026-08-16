@@ -214,7 +214,7 @@ export const PLANET_TYPES = [
     // other way; the cloud deck in the recipe superrotates in the same
     // direction, only far faster, which is the honest relationship.
     spinRate: -0.005,
-    dedication: 'For Erne.',
+    dedication: 'For Erne, with a nod of approval. — ZNA',
   },
   {
     id: 'ice-giant',
