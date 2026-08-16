@@ -24,6 +24,10 @@ body {
   position: relative;
   width: 100vw;
   height: 100vh;
+  /* dvh tracks the URL bar; 100vh on mobile is the LARGE viewport, so the
+     bottom of the layout sits under the browser chrome until you scroll.
+     The vh line above stays as the fallback for anything without dvh. */
+  height: 100dvh;
 }
 
 /* MB-02: canvas touch-action is set in App onCreated — R3F writes an
@@ -219,11 +223,40 @@ body:has(.app[style*='width']) {
    touches. Compact keeps name + ladder + nav; the facts collapse
    behind a toggle and scroll in their own sheet when open. */
 .hud.compact {
-  left: 12px;
-  right: 12px;
-  bottom: 10px;
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(10px, env(safe-area-inset-bottom));
   max-width: none;
-  padding-bottom: env(safe-area-inset-bottom);
+
+  /* Cap the PANEL, not just the facts pane inside it. The HUD is anchored to
+     the bottom and grows upward, and with no ceiling a tall one runs off the
+     TOP of the screen, taking the scale ladder with it: measured at 740x360,
+     the HUD stood 358px in a 360px viewport and six controls were unreachable
+     above the top edge. A flex column with the facts as the only flexible
+     child means the facts absorb the squeeze and the ladder, the nav and the
+     hint are always on screen. */
+  display: flex;
+  flex-direction: column;
+  /* Two ceilings, and the smaller wins. The calc() is the hard one that stops
+     the panel running off the top. The 68dvh is the one that matters in
+     practice: capping overflow alone let the facts pane expand to fill the
+     whole cap, which measured 97% of an iPhone SE — legal, and useless, since
+     the sky is the thing people came for. */
+  max-height: min(
+    68dvh,
+    calc(100dvh - max(10px, env(safe-area-inset-bottom)) - max(10px, env(safe-area-inset-top)))
+  );
+}
+
+/* Flex stretches children to the cross axis by default, which turned the
+   facts toggle into a full-width empty slab. Containers still stretch. */
+.hud.compact > button {
+  align-self: flex-start;
+}
+
+/* Everything except the facts keeps its natural height... */
+.hud.compact > * {
+  flex: 0 0 auto;
 }
 
 .hud.compact .views {
@@ -247,10 +280,17 @@ body:has(.app[style*='width']) {
   margin: 2px 0 8px;
 }
 
+/* ...and the facts take whatever is left, scrolling inside it. min-height:0
+   is load-bearing: a flex child will not shrink below its content without it,
+   which is exactly how the panel used to overflow. */
 .hud.compact .facts {
   pointer-events: auto;
-  max-height: 42vh;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   background: rgba(4, 6, 14, 0.85);
   border: 1px solid #2a3350;
   border-radius: 8px;
@@ -311,4 +351,137 @@ body:has(.app[style*='width']) {
 
 .hud.compact .hint {
   font-size: 9px;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   RESPONSIVE
+
+   This stylesheet had no media queries at all until now: the only adaptation
+   was the .compact class, switched on matchMedia('(pointer: coarse)') read
+   ONCE at module scope. That conflated three different questions — is this a
+   touch device, how wide is the screen, and how tall — and could answer none
+   of them after load, so rotating a phone changed nothing. Layout below keys
+   off the VIEWPORT; pointer type still decides behaviour and hit sizes.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Touch hit targets. 44px is the Apple HIG floor and ~48dp is Android's; the
+   audit found 11 controls under it on every device tested. The ladder chips
+   are a dense row and take the smaller 40px, which is the usual concession
+   for a segmented control and still nearly double what they were. */
+@media (pointer: coarse) {
+  .hud button {
+    min-height: 44px;
+  }
+
+  .hud .views button {
+    min-height: 44px;
+    padding: 6px 11px;
+  }
+
+  .hud .facts-toggle {
+    min-height: 44px;
+  }
+}
+
+/* Narrow portrait — small phones, and the 320px floor that still ships. */
+@media (max-width: 380px) {
+  .hud.compact h1 {
+    font-size: clamp(16px, 5.4vw, 20px);
+  }
+
+  .hud.compact .views button {
+    font-size: 9px;
+    padding: 6px 9px;
+    letter-spacing: 0.08em;
+  }
+
+  .hud.compact .nav {
+    gap: 8px;
+  }
+
+  /* The ladder deliberately KEEPS wrapping to two rows here. Making it a
+     single scrolling strip, as landscape does, reclaims 44px and was tried:
+     it put one to two chips outside the viewport on every screen under 380px,
+     because six chips do not fit in 320-375px the way they do in landscape's
+     740px. Reachable beats roomy — a control behind an undiscoverable
+     sideways swipe is worse than a facts pane that scrolls. */
+
+  .hud.compact .hint {
+    font-size: 9px;
+    letter-spacing: 0.06em;
+  }
+}
+
+/* Short viewports — landscape phones, the worst case by a distance. The HUD
+   measured 99% of a 740x360 screen, which leaves no sky to look at, and that
+   is the whole point of the app. Two changes: the panel stops spanning the
+   full width and becomes a column down the left, so the scene stays visible
+   beside it; and the ladder stops wrapping to a second row, scrolling
+   sideways instead, because vertical space is the scarce one here. */
+@media (max-height: 480px) and (orientation: landscape) {
+  .hud.compact {
+    right: auto;
+    width: min(56vw, 440px);
+    bottom: max(8px, env(safe-area-inset-bottom));
+    /* A side column may use its full height: the sky stays visible beside it
+       rather than above it, which is not true in portrait. */
+    max-height: calc(100dvh - max(8px, env(safe-area-inset-bottom)) - 8px);
+  }
+
+  .hud.compact .views {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-bottom: 6px;
+    padding-bottom: 2px;
+  }
+
+  .hud.compact .views::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hud.compact .views button {
+    flex: 0 0 auto;
+  }
+
+  .hud.compact h1 {
+    font-size: clamp(15px, 3.4vh, 19px);
+  }
+
+  .hud.compact .cls {
+    margin: 1px 0 6px;
+  }
+
+  .hud.compact .facts {
+    padding: 8px 10px;
+  }
+
+  .hud.compact .hint {
+    display: none; /* the gesture hint is the first thing worth losing */
+  }
+}
+
+/* Tablets and up keep the roomier desktop panel even on touch. */
+@media (pointer: coarse) and (min-width: 760px) {
+  .hud.compact {
+    left: max(20px, env(safe-area-inset-left));
+    right: auto;
+    width: min(52vw, 460px);
+  }
+}
+
+/* Notched phones: the badge sits under the status bar without this. */
+.backend-badge {
+  top: max(16px, env(safe-area-inset-top));
+  right: max(18px, env(safe-area-inset-right));
+}
+
+/* Respect a user who has asked the OS for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  .scale-fade,
+  .hud button,
+  .hud .views button {
+    transition: none;
+  }
 }

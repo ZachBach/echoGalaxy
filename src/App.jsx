@@ -43,9 +43,33 @@ const FROZEN = import.meta.env.DEV && params.has('freeze')
 const SKY_PARAM = params.get('sky')
 
 // MB-01: input modality, read once at boot (device class doesn't change
-// mid-session). Drives hint copy, the compact HUD, and the perf policy.
+// mid-session). Drives hint copy and the perf policy.
 const COARSE =
   typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
+
+// LAYOUT is a different question from INPUT, and conflating them was the bug.
+// COARSE alone decided the compact HUD, which meant a touchscreen laptop got
+// the phone panel, a narrow desktop window did not get it, and — because a
+// module const is read once — rotating a phone re-evaluated nothing at all.
+// Layout now tracks the viewport and updates live. Pointer type keeps the
+// jobs it is actually right for. Capture mode never renders the HUD, so none
+// of this can move a frame.
+const COMPACT_QUERY = '(pointer: coarse), (max-width: 820px), (max-height: 520px)'
+
+function useCompactLayout() {
+  const [on, setOn] = useState(
+    () => typeof matchMedia === 'function' && matchMedia(COMPACT_QUERY).matches,
+  )
+  useEffect(() => {
+    if (typeof matchMedia !== 'function') return undefined
+    const mq = matchMedia(COMPACT_QUERY)
+    const onChange = () => setOn(mq.matches)
+    mq.addEventListener('change', onChange)
+    onChange()
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return on
+}
 
 // Capture mode: ?capture=<shotId>&aspect=4x5&fps=60
 // Dev only. Pins the rung and object index, hands the camera to the rig,
@@ -369,6 +393,7 @@ export default function App() {
   // MB-05: on touch devices the facts collapse — the HUD covered 60% of
   // a portrait screen and its button rows intercepted sky touches.
   const [factsOpen, setFactsOpen] = useState(!COARSE)
+  const compactLayout = useCompactLayout()
   // The facts ladder's read rung. Entries from the astronomy content layer
   // carry factsKids + factsAdvanced; the older catalogues carry a flat
   // `facts` that factsFor() falls back to, so this state changes nothing
@@ -659,7 +684,7 @@ export default function App() {
       )}
 
       {!CAPTURE && (
-      <div className={'hud' + (COARSE ? ' compact' : '')}>
+      <div className={'hud' + (compactLayout ? ' compact' : '')}>
         <div className="views">
           {SCALES.map((s, i) => (
             <button

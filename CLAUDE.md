@@ -139,6 +139,9 @@ npm run check:frozen    # browser gate: each rung renders byte-identically
 npm run check:parity    # browser gate: WebGPU vs WebGL2 per rung, against
                         # the recorded bars in docs/parity-bars.json
                         # (--record to re-record; bars are hardware-specific)
+npm run check:mobile    # browser gate: 9 real phone/tablet viewports, facts
+                        # OPEN — every control reachable, every tap target
+                        # >=44px, no overflow, HUD within its coverage cap
 npm run capture:social  # render social-video frame sets (see video/HANDOFF.md)
 npm run backlog:csv     # export BACKLOG.md tasks to CSV for a tracker
 ```
@@ -201,6 +204,33 @@ vacuously: `check:frozen` has a content floor, since a blank frame is
 byte-identical to another blank frame. `docs/parity-bars.json` records the
 GPU and driver alongside the numbers — the bars are hardware-specific and
 a different adapter will need `--record`.
+
+## Responsive layout — viewport, not pointer
+
+`index.css` had **no media queries at all** until 2026-08-16. The only
+adaptation was a `.compact` class switched on
+`matchMedia('(pointer: coarse)')` read once at module scope, which conflated
+three separate questions — is this touch, how wide, how tall — and could
+answer none of them after load, so rotating a phone changed nothing.
+
+Layout now keys off the **viewport** and updates live (`useCompactLayout` in
+`App.jsx`); **pointer type** keeps only the jobs it is right for — hint copy,
+DPR and raymarch-step budgets, the initial facts-collapsed state.
+
+Two rules worth keeping:
+
+- The compact HUD is a **flex column with a capped height**, and the facts
+  pane is its only flexible child (`flex: 1 1 auto; min-height: 0`). The panel
+  is bottom-anchored and grows upward, so without a cap it runs off the TOP
+  and takes the scale ladder with it. There are two ceilings and the smaller
+  wins: a hard `calc(100dvh - insets)` that prevents overflow, and a `68dvh`
+  that keeps the sky visible — capping overflow alone let the facts expand to
+  97% of an iPhone SE, which is legal and useless.
+- Use `dvh`, not `vh`. `100vh` is the LARGE viewport, so on mobile the bottom
+  of the layout sits under the browser chrome.
+
+`npm run check:mobile` is the gate. The HUD is not rendered in capture mode,
+so none of this can move a frame.
 
 ## Deploying
 
