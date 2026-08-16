@@ -82,7 +82,7 @@ const MEASURE = `(() => {
   // means nothing. What the cap is actually about is how much of the screen
   // the OPAQUE panels eat, so union the regions' vertical spans — the same
   // quantity the old single-panel height measured, computed for a split HUD.
-  const regions = [...document.querySelectorAll('.hud-top, .hud-side, .hud-bottom')]
+  const regions = [...document.querySelectorAll('.hud-top, .hud-side, .hud-left, .hud-bottom')]
     .map((e) => e.getBoundingClientRect())
     .filter((q) => q.width > 0 && q.height > 0)
     .map((q) => [Math.max(0, q.top), Math.min(vh, q.bottom)])
@@ -156,6 +156,11 @@ try {
         // this gate was measuring a CLOSED panel while reporting "facts open".
         await page.ev(`(() => { const t = document.querySelector('.facts-tab');
           if (t && !document.querySelector('.hud .facts')) { t.click(); return true } return false })()`)
+        // ...and the system drawer, so the measurement is of the WORST case
+        // rather than a tidy one. Both open at once is a state a reader can
+        // reach, so it is the state the cap has to hold for.
+        await page.ev(`(() => { const t = document.querySelector('.systems-tab');
+          if (t && !document.querySelector('.hud .systems')) { t.click(); return true } return false })()`)
         await sleep(500)
 
         const m = await page.ev(MEASURE)

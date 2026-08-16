@@ -401,6 +401,14 @@ export default function App() {
   const [rungsOpen, setRungsOpen] = useState(
     () => !(typeof matchMedia === 'function' && matchMedia(COMPACT_QUERY).matches),
   )
+  // The system switcher, in its own drawer on the left. It used to sit in the
+  // bottom stack directly above Prev/Next, which put "‹ System" and "‹ Prev"
+  // one under the other — two buttons leading with the same glyph, reading as
+  // two Previous controls. Separating them by side removes the ambiguity that
+  // no amount of relabelling inside one column would have.
+  const [systemsOpen, setSystemsOpen] = useState(
+    () => !(typeof matchMedia === 'function' && matchMedia(COMPACT_QUERY).matches),
+  )
   // The facts ladder's read rung. Entries from the astronomy content layer
   // carry factsKids + factsAdvanced; the older catalogues carry a flat
   // `facts` that factsFor() falls back to, so this state changes nothing
@@ -771,18 +779,36 @@ export default function App() {
           )}
         </aside>
 
+        {/* LEFT — the system switcher, mirrored opposite the facts drawer.
+            Only the system rung has more than one, so only it gets a tab. */}
+        {rung.id === 'system' && !godPanel && (
+          <aside className={'hud-left' + (systemsOpen ? ' open' : '')}>
+            <button
+              className="systems-tab"
+              onClick={() => setSystemsOpen((o) => !o)}
+              aria-expanded={systemsOpen}
+              aria-controls="systems-panel"
+            >
+              {systemsOpen ? 'Hide ‹' : 'Systems ›'}
+            </button>
+            {systemsOpen && (
+              <div className="systems" id="systems-panel">
+                <div className="systems-name">{system.info.name}</div>
+                <div className="systems-count">
+                  {systemIndex + 1} / {SYSTEMS.length}
+                </div>
+                <div className="systems-step">
+                  <button onClick={() => shiftSystem(-1)} aria-label="Previous star system">‹</button>
+                  <button onClick={() => shiftSystem(1)} aria-label="Next star system">›</button>
+                </div>
+              </div>
+            )}
+          </aside>
+        )}
+
         {/* BOTTOM — everything that moves you through the current rung. */}
         <div className="hud-bottom">
           {godPanel && <CannonballDial />}
-          {rung.id === 'system' && !godPanel && (
-            <div className="nav system-switcher">
-              <button onClick={() => shiftSystem(-1)} aria-label="Previous star system">‹ System</button>
-              <span>
-                {systemIndex + 1} / {SYSTEMS.length} · {system.info.name}
-              </span>
-              <button onClick={() => shiftSystem(1)} aria-label="Next star system">System ›</button>
-            </div>
-          )}
           {!godPanel && list && (
             <div className="nav">
               <button onClick={() => go(-1)} aria-label="Previous">‹ Prev</button>

@@ -302,6 +302,10 @@ body:has(.app[style*='width']) {
   pointer-events: auto;
   flex: 0 0 auto;
   align-self: center;
+  /* Vertical text makes these tall and thin, so the 44px tap floor has to be
+     asserted on WIDTH too — min-height alone satisfied only one axis, and
+     check:mobile measures both. */
+  min-width: 44px;
   min-height: 44px;
   padding: 10px 9px;
   border: 1px solid #2a3350;
@@ -335,6 +339,90 @@ body:has(.app[style*='width']) {
   border: 1px solid #2a3350;
   border-radius: 10px;
   padding: 14px 15px;
+}
+
+/* ── LEFT — the system switcher, mirrored opposite the facts drawer ───
+   It lived in the bottom stack directly above Prev/Next, which stacked
+   "‹ System" on "‹ Prev": two controls leading with the same glyph, one under
+   the other, reading as two Previous buttons. Moving it to the opposite side
+   separates them by position rather than by wording. */
+
+.hud-left {
+  position: absolute;
+  top: 50%;
+  left: max(14px, env(safe-area-inset-left));
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: row-reverse; /* panel at the edge, tab inboard of it */
+  align-items: center;
+  gap: 8px;
+  max-width: min(210px, calc(50vw - 20px));
+  pointer-events: none;
+}
+
+.hud .systems-tab {
+  pointer-events: auto;
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px 9px;
+  border: 1px solid #2a3350;
+  border-radius: 9px;
+  background: rgba(4, 6, 14, 0.72);
+  color: #9aa6c6;
+  font-family: ui-monospace, "SFMono-Regular", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.hud .systems-tab:hover,
+.hud-left.open .systems-tab {
+  border-color: #4a7dff;
+  color: #e8ecf5;
+}
+
+.hud .systems {
+  pointer-events: auto;
+  min-width: 0;
+  background: rgba(4, 6, 14, 0.86);
+  border: 1px solid #2a3350;
+  border-radius: 10px;
+  padding: 11px 12px;
+}
+
+.hud .systems-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e8ecf5;
+  line-height: 1.25;
+}
+
+.hud .systems-count {
+  font-family: ui-monospace, "SFMono-Regular", monospace;
+  font-size: 10px;
+  color: #7d8bb0;
+  margin: 2px 0 9px;
+}
+
+/* Two glyph buttons rather than "‹ System" / "System ›". The panel already
+   says which system you are on, so the arrows do not need to repeat it — and
+   a bare ‹ next to a bare › cannot be mistaken for anything else. */
+.hud .systems-step {
+  display: flex;
+  gap: 6px;
+}
+
+.hud .systems-step button {
+  flex: 1 1 0;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px 0;
+  font-size: 15px;
+  line-height: 1;
 }
 
 /* ── BOTTOM — everything that moves you through the current rung ─────── */
@@ -455,6 +543,25 @@ body:has(.app[style*='width']) {
   align-self: flex-start;
   padding: 12px 14px;
   letter-spacing: 0.1em;
+}
+
+/* On a phone the left drawer keeps its tab but the panel narrows, and it sits
+   above the bottom sheet rather than beside it — there is no beside. */
+.hud.compact .hud-left {
+  left: max(10px, env(safe-area-inset-left));
+  max-width: min(180px, calc(100vw - 90px));
+}
+
+.hud.compact .systems-name {
+  font-size: 12px;
+}
+
+/* The nav starts clear of the left tab. On compact the sheet lifts the nav
+   up the screen and the left drawer is vertically centred, so the two meet:
+   the tab landed on top of "‹ Prev". Scoped with :has so a rung without a
+   system drawer keeps the full width. */
+.hud.compact:has(.hud-left) .hud-bottom {
+  left: calc(max(10px, env(safe-area-inset-left)) + 54px);
 }
 
 /* The smallest phones and short landscape windows. A 320x568 screen has ~150
