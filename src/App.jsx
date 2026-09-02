@@ -391,9 +391,15 @@ export default function App() {
   // restore-order action; the signal counter resets every body to rails.
   const [god, setGod] = useState({ held: false, wild: false })
   const [restoreCount, setRestoreCount] = useState(0)
-  // MB-05: on touch devices the facts collapse — the HUD covered 60% of
-  // a portrait screen and its button rows intercepted sky touches.
-  const [factsOpen, setFactsOpen] = useState(!COARSE)
+  // Open everywhere, including touch. MB-05 collapsed this drawer on a phone
+  // because the HUD covered 60% of the screen and its button rows intercepted
+  // sky touches — but the object pager now lives in the panel's footer, so a
+  // collapsed drawer is an app with no way to reach the next planet. The
+  // coverage half of that objection is answered by the height cap instead
+  // (check:mobile measures 49-65%, against a 72% ceiling); the touch half by
+  // the panel being a capped, mid-height column with sky above, below and
+  // beside it, rather than the full-width sheet that prompted the change.
+  const [factsOpen, setFactsOpen] = useState(true)
   const compactLayout = useCompactLayout()
   // The rung menu behind the hamburger. Open by default where there is room
   // and closed where there is not, then it is the reader's to control —
@@ -765,32 +771,58 @@ export default function App() {
           </button>
           {factsOpen && (
             <div className="facts" id="facts-panel">
-              <h1>{info.name}</h1>
-              <div className="cls">{info.label ?? info.hubble}</div>
-              <p>{info.description}</p>
-              {hasLadder(info) && (
-                <div className="ladder">
-                  {AUDIENCES.map((a) => (
-                    <button
-                      key={a}
-                      className={a === audience ? 'active' : ''}
-                      aria-pressed={a === audience}
-                      onClick={() => setAudience(a)}
-                    >
-                      {AUDIENCE_LABELS[a]}
-                    </button>
+              {/* Masthead, scrolling body, pager footer — three bands, so the
+                  name and the Prev/Next row both stay put while the prose
+                  scrolls between them. Which object you are on and how to
+                  leave it are the two things you should never have to scroll
+                  to find. */}
+              <header className="facts-head">
+                <h1>{info.name}</h1>
+                <div className="cls">{info.label ?? info.hubble}</div>
+              </header>
+              <div className="facts-body">
+                <p>{info.description}</p>
+                {hasLadder(info) && (
+                  <div className="ladder">
+                    {AUDIENCES.map((a) => (
+                      <button
+                        key={a}
+                        className={a === audience ? 'active' : ''}
+                        aria-pressed={a === audience}
+                        onClick={() => setAudience(a)}
+                      >
+                        {AUDIENCE_LABELS[a]}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <ul>
+                  {factsFor(info, audience).map((f, i) => (
+                    <li key={`${audience}-${i}`}>{f}</li>
                   ))}
-                </div>
+                </ul>
+                {/* An entry may carry a dedication. Rendered quietly, after the
+                    facts rather than above them — the astronomy is still the
+                    point, and a memorial does not want to be a banner. */}
+                {info.dedication && <p className="dedication">{info.dedication}</p>}
+              </div>
+              {/* The object pager. It used to float on the bottom of the
+                  screen, where it shared the floor with the drawer tab and a
+                  two-line gesture hint and lost. In the panel's footer it is
+                  attached to the thing it pages through, and the floor is
+                  free. God's Hands suppresses it for the same reason it always
+                  did: the cannonball dial is the control that matters then. */}
+              {!godPanel && list && (
+                <nav className="facts-pager" aria-label="Browse this scale">
+                  <button onClick={() => go(-1)} aria-label="Previous">‹ Prev</button>
+                  <span className="pager-count">
+                    {index + 1}
+                    <i>/</i>
+                    {list.length}
+                  </span>
+                  <button onClick={() => go(1)} aria-label="Next">Next ›</button>
+                </nav>
               )}
-              <ul>
-                {factsFor(info, audience).map((f, i) => (
-                  <li key={`${audience}-${i}`}>{f}</li>
-                ))}
-              </ul>
-              {/* An entry may carry a dedication. Rendered quietly, after the
-                  facts rather than above them — the astronomy is still the
-                  point, and a memorial does not want to be a banner. */}
-              {info.dedication && <p className="dedication">{info.dedication}</p>}
             </div>
           )}
         </aside>
@@ -826,18 +858,13 @@ export default function App() {
           </aside>
         )}
 
-        {/* BOTTOM — everything that moves you through the current rung. */}
+        {/* BOTTOM — the actions that belong to the rung as a whole, not to the
+            object you are on. Paging between objects moved into the facts
+            panel's footer; what is left here is God's Hands, the two rung
+            toggles, and the gesture hint. On most rungs that means this
+            region renders nothing at all and the floor is sky. */}
         <div className="hud-bottom">
           {godPanel && <CannonballDial />}
-          {!godPanel && list && (
-            <div className="nav">
-              <button onClick={() => go(-1)} aria-label="Previous">‹ Prev</button>
-              <span>
-                {index + 1} / {list.length}
-              </span>
-              <button onClick={() => go(1)} aria-label="Next">Next ›</button>
-            </div>
-          )}
           {rung.id === 'system' && god.wild && (
             <div className="nav">
               <button onClick={() => setRestoreCount((c) => c + 1)}>

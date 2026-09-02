@@ -231,22 +231,50 @@ answer none of them after load, so rotating a phone changed nothing.
 
 Layout now keys off the **viewport** and updates live (`useCompactLayout` in
 `App.jsx`); **pointer type** keeps only the jobs it is right for — hint copy,
-DPR and raymarch-step budgets, the initial facts-collapsed state.
+DPR and raymarch-step budgets.
 
-Two rules worth keeping:
+The HUD is **four independently anchored regions** inside a transparent
+full-frame container — `.hud-top`, `.hud-side` (facts), `.hud-left` (the system
+switcher), `.hud-bottom`. Rules worth keeping:
 
-- The compact HUD is a **flex column with a capped height**, and the facts
-  pane is its only flexible child (`flex: 1 1 auto; min-height: 0`). The panel
-  is bottom-anchored and grows upward, so without a cap it runs off the TOP
-  and takes the scale ladder with it. There are two ceilings and the smaller
-  wins: a hard `calc(100dvh - insets)` that prevents overflow, and a `68dvh`
-  that keeps the sky visible — capping overflow alone let the facts expand to
-  97% of an iPhone SE, which is legal and useless.
+- **Size the regions, never the container.** `.hud` is a coordinate space and
+  wants to stay the full frame. Two leftover clamps from the single-panel era
+  (`.hud.compact { width: min(56vw, 440px) }` in landscape, `52vw` on tablets)
+  did real damage once the HUD split: narrowing the container drags every
+  *right*-anchored region inboard, which is how the system-switcher tab ended
+  up floating mid-sky on top of the sun.
+- On compact the two drawers sit on **opposite edges** and open toward each
+  other, so their panels would meet in the middle of anything under ~600px.
+  They take turns — opening one closes the other (`App.jsx`). Only the tabs
+  coexist.
+- The facts panel is a **three-band flex column**: `.facts-head` masthead,
+  `.facts-body` (the only flexible child — `flex: 1 1 auto; min-height: 0`,
+  and the only thing that scrolls), `.facts-pager` footer. The panel carries
+  the object pager, which is why it now defaults **open** on touch as well.
+- Its height has **two ceilings and the smaller wins** — a `dvh` fraction that
+  keeps sky visible plus a `calc(100dvh - Npx)` that keeps a *centred* panel
+  clear of the top bar and the floor. Capping overflow alone once let the
+  facts expand to 97% of an iPhone SE, which is legal and useless.
+- Remember the panel is **centred**: height spends itself in *both* directions
+  from the middle, so a cap has to be read as `centre ± h/2` against whatever
+  else is anchored. That is what the landscape `- 128px` is doing.
 - Use `dvh`, not `vh`. `100vh` is the LARGE viewport, so on mobile the bottom
   of the layout sits under the browser chrome.
 
-`npm run check:mobile` is the gate. The HUD is not rendered in capture mode,
-so none of this can move a frame.
+`npm run check:mobile` is the gate — 9 viewports × the three drawer states,
+including **collapsed**, which is the state a phone starts in. It asserts
+reachability, the 44px tap floor, no overflow, and a coverage cap; overlap is
+measured by **rect intersection between every pair of controls**, because
+hit-testing centres missed "‹ Prev" sitting across a third of "‹ Facts".
+
+Two things it still cannot see, so check them by eye: a **panel** covering a
+control (it compares buttons to buttons — a facts panel four pixels over the
+cluster rung's toggle passed green), and any rung it was not asked about
+(`--rungs` defaults to `system`; the rungs with a floor band, like `cluster`,
+are the binding case for coverage).
+
+The HUD is not rendered in capture mode, and both pixel gates hide it before
+screenshotting, so none of this can move a frame.
 
 ## Deploying
 

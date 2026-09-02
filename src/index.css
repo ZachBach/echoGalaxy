@@ -94,6 +94,35 @@ body:has(.app[style*='width']) {
   position: absolute;
   inset: 0;
   pointer-events: none;
+
+  /* One material for the whole HUD. The old look was hairline borders on a
+     62%-opaque wash — it read as a wireframe laid over the sky rather than as
+     instruments in front of it, and over a bright nebula the text lost.
+     Panels are near-opaque and blurred now, chips have a lit top edge and cast
+     a shadow, and the accent earns its keep by marking state instead of
+     outlining everything. */
+  --ink: #eef1f8;
+  --ink-dim: #a9b3d0;
+  --ink-faint: #7b87ac;
+  --accent: #5a88ff;
+  --accent-soft: rgba(90, 136, 255, 0.16);
+  --line: #303c60;
+  --line-soft: #232c48;
+
+  /* Panels: a top-lit gradient, not a flat fill. The inset hairline is what
+     makes an edge read as catching light from above. */
+  --panel: linear-gradient(180deg, rgba(16, 22, 42, 0.94), rgba(7, 10, 22, 0.96));
+  --panel-shadow: 0 20px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.35);
+  --panel-lip: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+
+  /* Chips: buttons and tabs. Same logic one step brighter, so a control reads
+     as raised off the panel it sits on. */
+  --chip: linear-gradient(180deg, rgba(30, 39, 68, 0.92), rgba(13, 18, 34, 0.92));
+  --chip-hot: linear-gradient(180deg, rgba(44, 58, 100, 0.95), rgba(20, 27, 50, 0.95));
+  --chip-shadow: 0 2px 10px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  /* Type over a live sky needs its own contrast, not the panel's. */
+  --halo: 0 1px 14px rgba(0, 0, 0, 0.95), 0 0 3px rgba(0, 0, 0, 0.8);
 }
 
 /* ── TOP — brand, current subject, and the scale ladder ──────────────── */
@@ -127,16 +156,18 @@ body:has(.app[style*='width']) {
   display: grid;
   place-items: center;
   padding: 0;
-  border: 1px solid #2a3350;
-  border-radius: 9px;
-  background: rgba(4, 6, 14, 0.62);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--chip);
+  box-shadow: var(--chip-shadow);
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
 }
 
 .hud .burger:hover,
 .hud .burger.open {
-  border-color: #4a7dff;
+  background: var(--chip-hot);
+  border-color: var(--accent);
 }
 
 /* Three bars from one element: the middle is the box, the outer two are
@@ -178,21 +209,25 @@ body:has(.app[style*='width']) {
   min-width: 0;
 }
 
+/* The top bar is the one region with no panel behind it — it floats on the
+   sky, so its contrast has to come from the type itself. */
 .hud .top-id .brand {
   font-family: ui-monospace, "SFMono-Regular", monospace;
   font-size: 9px;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #6b779b;
+  color: var(--ink-faint);
+  text-shadow: var(--halo);
 }
 
 /* The subject name lives up here rather than in the drawer, so collapsing
    the facts never costs you the answer to "what am I looking at". */
 .hud .top-id .subject {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: #e8ecf5;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  text-shadow: var(--halo);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -206,22 +241,27 @@ body:has(.app[style*='width']) {
 }
 
 .hud .views button {
-  background: rgba(4, 6, 14, 0.62);
-  border: 1px solid #2a3350;
-  color: #7d8bb0;
-  padding: 4px 10px;
-  border-radius: 6px;
+  background: var(--chip);
+  border: 1px solid var(--line);
+  box-shadow: var(--chip-shadow);
+  color: var(--ink-faint);
+  padding: 5px 11px;
+  border-radius: 8px;
   font-family: ui-monospace, "SFMono-Regular", monospace;
   font-size: 9.5px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
 
+/* The current rung is FILLED, not merely outlined. An accent border alone put
+   it in the same visual class as a hover, which is a poor way to answer "where
+   am I" in a six-rung ladder. */
 .hud .views button.active {
-  border-color: #4a7dff;
-  color: #e8ecf5;
+  background: linear-gradient(180deg, rgba(90, 136, 255, 0.32), rgba(90, 136, 255, 0.14));
+  border-color: var(--accent);
+  color: #fff;
 }
 
 .hud .kicker {
@@ -233,41 +273,55 @@ body:has(.app[style*='width']) {
   margin-bottom: 10px;
 }
 
-/* Inside the drawer now, not a page title — sized to lead the panel rather
-   than to compete with the subject name in the top bar. */
+/* The masthead's name. It leads the panel rather than competing with the
+   subject name in the top bar, but it is the largest type in the app and is
+   allowed to look like it. */
 .hud h1 {
-  font-size: 19px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  line-height: 1.1;
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.12;
+  color: var(--ink);
 }
 
 .hud .cls {
   font-family: ui-monospace, "SFMono-Regular", monospace;
   font-size: 10.5px;
-  color: #8fa1d6;
-  margin: 3px 0 11px;
+  letter-spacing: 0.06em;
+  color: #93a6dd;
+  margin: 4px 0 0;
 }
 
 .hud p {
   font-size: 13.5px;
-  line-height: 1.55;
-  color: #c3cbe0;
-  margin-bottom: 12px;
+  line-height: 1.6;
+  color: #c8d0e6;
+  margin-bottom: 13px;
 }
 
+/* The facts get a ground of their own. A bulleted list on the same background
+   as the prose above it is a list you have to look for; tinted and inset
+   behind a rule, it reads as the reference section it is. */
 .hud ul {
   list-style: none;
-  margin-bottom: 16px;
+  margin-bottom: 4px;
+  padding: 10px 12px 10px 13px;
+  border-radius: 10px;
+  border: 1px solid var(--line-soft);
+  background: rgba(255, 255, 255, 0.028);
 }
 
 .hud li {
-  font-size: 12px;
-  line-height: 1.5;
-  color: #9aa6c6;
-  padding-left: 15px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-dim);
+  padding-left: 17px;
   position: relative;
-  margin-bottom: 3px;
+  margin-bottom: 8px;
+}
+
+.hud li:last-child {
+  margin-bottom: 0;
 }
 
 .hud li::before {
@@ -275,8 +329,8 @@ body:has(.app[style*='width']) {
   position: absolute;
   left: 0;
   top: 3px;
-  color: #4a7dff;
-  font-size: 8px;
+  color: var(--accent);
+  font-size: 8.5px;
 }
 
 /* ── SIDE — the facts drawer ─────────────────────────────────────────
@@ -306,39 +360,143 @@ body:has(.app[style*='width']) {
      asserted on WIDTH too — min-height alone satisfied only one axis, and
      check:mobile measures both. */
   min-width: 44px;
-  min-height: 44px;
-  padding: 10px 9px;
-  border: 1px solid #2a3350;
-  border-radius: 9px;
-  background: rgba(4, 6, 14, 0.72);
-  color: #9aa6c6;
+  min-height: 78px;
+  padding: 12px 9px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--chip);
+  box-shadow: var(--chip-shadow);
+  color: var(--ink-dim);
   font-family: ui-monospace, "SFMono-Regular", monospace;
   font-size: 9.5px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   writing-mode: vertical-rl;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
 
 .hud .facts-tab:hover,
 .hud-side.open .facts-tab {
-  border-color: #4a7dff;
-  color: #e8ecf5;
+  background: var(--chip-hot);
+  border-color: var(--accent);
+  color: var(--ink);
 }
 
+/* Open, the tab is the panel's handle rather than a button beside it: the
+   accent runs down the edge it hinges on. */
+.hud-side.open .facts-tab {
+  box-shadow: var(--chip-shadow), inset -3px 0 0 var(--accent);
+}
+
+/* Three bands: a masthead that names the object, a body that scrolls, and a
+   pager footer. The panel itself no longer scrolls — only the middle does — so
+   the name at the top and Prev/Next at the bottom are always in place. */
 .hud-side .facts {
   pointer-events: auto;
   flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   max-height: min(72dvh, calc(100dvh - 190px));
+  overflow: hidden;
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
+  backdrop-filter: blur(16px) saturate(125%);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--panel-shadow), var(--panel-lip);
+}
+
+/* The masthead. The accent bar down its left edge is the one place the brand
+   blue is allowed to be decorative — it gives the panel a spine to hang the
+   name off, which a centred card otherwise lacks. */
+.hud .facts-head {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 14px 16px 12px 18px;
+  border-bottom: 1px solid var(--line-soft);
+  background: linear-gradient(180deg, var(--accent-soft), rgba(0, 0, 0, 0));
+}
+
+.hud .facts-head::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 15px;
+  bottom: 13px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
+}
+
+.hud .facts-body {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  background: rgba(4, 6, 14, 0.86);
-  border: 1px solid #2a3350;
-  border-radius: 10px;
-  padding: 14px 15px;
+  padding: 13px 16px 14px 18px;
+}
+
+/* Sunk rather than raised: a footer reads as part of the panel's frame, and
+   the darker ground is what separates the two chips from the prose above
+   without needing a second border. */
+.hud .facts-pager {
+  position: relative;
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--line-soft);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* The body is capped well below the length of most entries, so it is almost
+   always mid-scroll — and a hard cut through a sentence, or through the tinted
+   facts box, reads as a clipping bug rather than as "there is more". The fade
+   sits on the FOOTER and hangs above it, because an inset shadow on the
+   scroller itself scrolls with the content in Chrome and would drift away from
+   the edge it is supposed to mark. */
+.hud .facts-pager::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 20px;
+  background: linear-gradient(180deg, rgba(8, 11, 24, 0), rgba(8, 11, 24, 0.94));
+  pointer-events: none;
+}
+
+.hud .facts-pager button {
+  pointer-events: auto;
+  min-width: 44px;
+  padding: 7px 10px;
+}
+
+.hud .facts-pager button:last-of-type {
+  justify-self: end;
+}
+
+.hud .facts-pager button:first-of-type {
+  justify-self: start;
+}
+
+.hud .pager-count {
+  font-family: ui-monospace, "SFMono-Regular", monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
+.hud .pager-count i {
+  font-style: normal;
+  color: var(--ink-faint);
+  margin: 0 5px;
 }
 
 /* ── LEFT — the system switcher, mirrored opposite the facts drawer ───
@@ -364,48 +522,63 @@ body:has(.app[style*='width']) {
   pointer-events: auto;
   flex: 0 0 auto;
   min-width: 44px;
-  min-height: 44px;
-  padding: 10px 9px;
-  border: 1px solid #2a3350;
-  border-radius: 9px;
-  background: rgba(4, 6, 14, 0.72);
-  color: #9aa6c6;
+  min-height: 78px;
+  padding: 12px 9px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--chip);
+  box-shadow: var(--chip-shadow);
+  color: var(--ink-dim);
   font-family: ui-monospace, "SFMono-Regular", monospace;
   font-size: 9.5px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   writing-mode: vertical-rl;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
 
 .hud .systems-tab:hover,
 .hud-left.open .systems-tab {
-  border-color: #4a7dff;
-  color: #e8ecf5;
+  background: var(--chip-hot);
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+/* Mirror of the facts tab: this one hinges on its LEFT edge, in both layouts —
+   inboard of the panel on desktop, against the right rail on compact. */
+.hud-left.open .systems-tab {
+  box-shadow: var(--chip-shadow), inset 3px 0 0 var(--accent);
 }
 
 .hud .systems {
   pointer-events: auto;
   min-width: 0;
-  background: rgba(4, 6, 14, 0.86);
-  border: 1px solid #2a3350;
-  border-radius: 10px;
-  padding: 11px 12px;
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
+  backdrop-filter: blur(16px) saturate(125%);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--panel-shadow), var(--panel-lip);
+  padding: 13px 14px;
 }
 
 .hud .systems-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #e8ecf5;
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.005em;
+  color: var(--ink);
   line-height: 1.25;
 }
 
 .hud .systems-count {
   font-family: ui-monospace, "SFMono-Regular", monospace;
   font-size: 10px;
-  color: #7d8bb0;
-  margin: 2px 0 9px;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+  margin: 3px 0 11px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line-soft);
 }
 
 /* Two glyph buttons rather than "‹ System" / "System ›". The panel already
@@ -447,40 +620,55 @@ body:has(.app[style*='width']) {
   pointer-events: auto;
 }
 
-/* Slightly tighter than before. min-height keeps the tap floor while the
-   padding comes down, so "smaller" is a visual change and not a reachability
-   regression — check:mobile enforces the 44px. */
+/* The base chip. min-height keeps the tap floor that check:mobile enforces;
+   everything else is what stops a control from reading as a rectangle drawn on
+   the sky — a lit top edge, a shadow under it, and a press that actually
+   moves. */
 .hud button {
-  background: rgba(4, 6, 14, 0.62);
-  border: 1px solid #2a3350;
-  color: #cdd6ee;
+  background: var(--chip);
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
   min-height: 44px;
-  padding: 6px 12px;
-  border-radius: 7px;
-  font-size: 11.5px;
+  padding: 7px 14px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  box-shadow: var(--chip-shadow);
+  transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.08s;
 }
 
 .hud button:hover {
-  border-color: #4a7dff;
-  color: #fff;
+  background: var(--chip-hot);
+  border-color: var(--accent);
+  color: var(--ink);
 }
 
-.hud .nav span {
-  font-family: ui-monospace, "SFMono-Regular", monospace;
-  font-size: 11px;
-  color: #7d8bb0;
+.hud button:active {
+  transform: translateY(1px);
 }
+
+.hud button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* `.hud .nav span` lived here to style the "3 / 10" counter. The counter moved
+   into the panel as .pager-count and nothing in .nav carries a span any more,
+   so the rule went with it — a selector that matches nothing is the same kind
+   of quiet lie as the dead .facts-toggle rule this file used to carry. */
 
 .hud .dial {
   font-family: ui-monospace, "SFMono-Regular", monospace;
   font-size: 11px;
   letter-spacing: 0.06em;
-  color: #c9a06a;
-  border: 1px solid #2a3350;
-  border-radius: 7px;
-  padding: 7px 10px;
+  color: #d9ae74;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--panel-shadow), var(--panel-lip);
+  padding: 9px 12px;
   margin-bottom: 10px;
 }
 
@@ -488,7 +676,8 @@ body:has(.app[style*='width']) {
   font-family: ui-monospace, "SFMono-Regular", monospace;
   font-size: 10px;
   letter-spacing: 0.1em;
-  color: #5c6889;
+  color: var(--ink-faint);
+  text-shadow: var(--halo);
 }
 
 /* MB-05 — compact layout. The three regions stay where they are; what
@@ -598,14 +787,34 @@ body:has(.app[style*='width']) {
   }
 }
 
-/* Two ceilings, smaller wins. 42dvh keeps the HUD's three bands — top bar,
-   panel, nav — inside the 72% coverage cap on every portrait phone in the
-   gate; the 220px subtrahend is what keeps a landscape phone's centred panel
-   clear of a top bar with the scale ladder open, where dvh alone is not
-   enough (360px tall: 42dvh is 151px, and the ladder leaves 140px). */
+/* Two ceilings, smaller wins. Up from 42dvh, which was set when the panel was
+   prose alone: it now carries a masthead and the pager, and those two bands
+   cost ~118px before a word of description is shown.
+
+   50dvh, not more, and the binding case is NOT the system rung the gate
+   defaults to. On the cluster rung the redshift toggle keeps a floor band
+   alive, so the union is three bands rather than two: on a 320x568 phone that
+   is 44 + 284 + 54 = 67%, against the 72% cap. At 56dvh the same rung
+   measures 73% and fails, while `--rungs system` still reports green.
+
+   The 150px subtrahend keeps a short window's centred panel clear of the top
+   bar with the scale ladder open. */
 .hud.compact .hud-side .facts {
-  max-height: min(42dvh, calc(100dvh - 220px));
-  padding: 10px 12px;
+  max-height: min(50dvh, calc(100dvh - 150px));
+}
+
+/* The bands carry the panel's padding now, so compact tightens them
+   individually rather than the panel as a whole. */
+.hud.compact .facts-head {
+  padding: 12px 14px 10px 16px;
+}
+
+.hud.compact .facts-body {
+  padding: 11px 14px 12px 16px;
+}
+
+.hud.compact .facts-pager {
+  padding: 9px 10px;
 }
 
 /* Nothing shares the floor with the nav any more — the drawers are on the
@@ -629,9 +838,9 @@ body:has(.app[style*='width']) {
    the facts, italic, dimmed, set off by a rule rather than a heading. It
    should read as a line written at the foot of a page, not as a credit. */
 .hud .dedication {
-  margin: 10px 0 0;
-  padding-top: 8px;
-  border-top: 1px solid #2a3350;
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
   font-size: 11px;
   font-style: italic;
   letter-spacing: 0.04em;
@@ -650,22 +859,24 @@ body:has(.app[style*='width']) {
 }
 
 .hud .ladder button {
-  background: transparent;
-  border: 1px solid #2a3350;
-  color: #7d8bb0;
-  padding: 3px 10px;
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line-soft);
+  box-shadow: none;
+  color: var(--ink-faint);
+  padding: 3px 11px;
+  border-radius: 7px;
   font-family: ui-monospace, "SFMono-Regular", monospace;
   font-size: 9px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
 
 .hud .ladder button.active {
-  border-color: #4a7dff;
-  color: #e8ecf5;
+  background: linear-gradient(180deg, rgba(90, 136, 255, 0.32), rgba(90, 136, 255, 0.14));
+  border-color: var(--accent);
+  color: #fff;
 }
 
 .hud.compact .hint {
@@ -698,9 +909,11 @@ body:has(.app[style*='width']) {
     padding: 6px 11px;
   }
 
-  .hud .facts-toggle {
-    min-height: 44px;
-  }
+  /* .facts-toggle was here, and had been since before the HUD was split into
+     regions — a rule asserting the tap floor for a class no element has
+     carried in a long time. Removed rather than repointed: the tab it was
+     presumably meant for is .facts-tab, which asserts its own floor on both
+     axes a few hundred lines up. */
 }
 
 /* Narrow portrait — small phones, and the 320px floor that still ships. */
@@ -739,14 +952,14 @@ body:has(.app[style*='width']) {
    beside it; and the ladder stops wrapping to a second row, scrolling
    sideways instead, because vertical space is the scarce one here. */
 @media (max-height: 480px) and (orientation: landscape) {
-  .hud.compact {
-    right: auto;
-    width: min(56vw, 440px);
-    bottom: max(8px, env(safe-area-inset-bottom));
-    /* A side column may use its full height: the sky stays visible beside it
-       rather than above it, which is not true in portrait. */
-    max-height: calc(100dvh - max(8px, env(safe-area-inset-bottom)) - 8px);
-  }
+  /* The width clamp that used to live here — `.hud.compact { right: auto;
+     width: min(56vw, 440px) }` — is gone, and its removal is the fix for the
+     switcher tab sitting in the middle of the frame on top of the sun. It was
+     written when the HUD was ONE panel, where narrowing the container narrowed
+     the panel. The HUD is four independently anchored regions now, so clamping
+     the container just moves every right-anchored region inboard to 56vw and
+     leaves them floating in open sky. Regions size themselves; the container
+     is only a coordinate space and wants to stay the full frame. */
 
   .hud.compact .views {
     flex-wrap: nowrap;
@@ -769,11 +982,34 @@ body:has(.app[style*='width']) {
   }
 
   .hud.compact .cls {
-    margin: 1px 0 6px;
+    margin: 2px 0 0;
   }
 
-  .hud.compact .facts {
-    padding: 8px 10px;
+  /* Vertical space is the scarce one here, and the panel's two fixed bands eat
+     it before the prose gets any. Tighten them and let the panel take nearly
+     the full height — the sky is BESIDE it in landscape, not above it, which
+     is the whole reason the coverage cap is 98% in this orientation. */
+  .hud.compact .facts-head {
+    padding: 9px 12px 8px 14px;
+  }
+
+  .hud.compact .facts-body {
+    padding: 9px 12px 10px 14px;
+  }
+
+  .hud.compact .facts-pager {
+    padding: 7px 9px;
+  }
+
+  /* 128px, not 96. The panel is CENTRED, so its height spends itself in both
+     directions from the middle: at 96 a 740x360 phone gave it 264px, which put
+     its lower edge at y=312 and the cluster rung's redshift button starts at
+     306. The overlap was four pixels of panel over a live control, and no gate
+     saw it — check:mobile compares button rects to button rects, and the thing
+     doing the covering was a panel. 128 leaves an 8px gap against the same
+     button, and the arithmetic is: centre 180, half-height 116, floor at 306. */
+  .hud.compact .hud-side .facts {
+    max-height: calc(100dvh - 128px);
   }
 
   .hud.compact .hint {
@@ -781,12 +1017,19 @@ body:has(.app[style*='width']) {
   }
 }
 
-/* Tablets and up keep the roomier desktop panel even on touch. */
+/* Tablets and up keep the roomier desktop panel even on touch. Sized on the
+   PANEL, not on the container — same reason as the landscape block above: a
+   container clamp drags the right-hand tab to 52vw and strands it mid-sky. */
 @media (pointer: coarse) and (min-width: 760px) {
-  .hud.compact {
-    left: max(20px, env(safe-area-inset-left));
-    right: auto;
-    width: min(52vw, 460px);
+  .hud.compact .hud-side {
+    max-width: min(420px, calc(52vw));
+  }
+
+  /* 54dvh. A tablet has the room for more, and 62 measured 71% on an iPad mini
+     against the 72% cap — passing on the one rung with a floor band, with a
+     single percent of margin for a longer entry. */
+  .hud.compact .hud-side .facts {
+    max-height: min(54dvh, calc(100dvh - 200px));
   }
 }
 
