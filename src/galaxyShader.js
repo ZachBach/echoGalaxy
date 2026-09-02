@@ -38,7 +38,11 @@ export function applyGalaxyCfg(U, cfg) {
   U.bar.value = cfg.type === 'barred' ? (cfg.bar ?? 0.4) : 0
   U.randomness.value = cfg.randomness ?? 0.32
   U.thickness.value = cfg.thickness ?? 0.36
-  U.shapeExp.value = cfg.type === 'elliptical' ? 2 : 0.7
+  // cfg wins where it says so. The type-keyed pair stays as the default, so
+  // the four original classes are untouched; the override is what lets a
+  // lenticular sit between the disc's 0.7 and the elliptical's 2 without
+  // earning a branch of its own.
+  U.shapeExp.value = cfg.shapeExp ?? (cfg.type === 'elliptical' ? 2 : 0.7)
   U.tempCore.value = cfg.tempCore ?? 4500
   U.tempRim.value = cfg.tempRim ?? 9000
 }
