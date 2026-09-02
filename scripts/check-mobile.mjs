@@ -17,9 +17,16 @@
  * type at module scope, so a device override set afterwards would be too late
  * to affect the decision under test.
  *
- * The facts pane is OPENED for the measurement. Collapsed is the easy case and
- * passes trivially; expanded is where a HUD runs off the screen, so the gate
- * measures the state that actually breaks.
+ * A drawer is OPENED for the measurement. Collapsed is the easy case and passes
+ * trivially; expanded is where a HUD runs off the screen, so the gate measures
+ * the state that actually breaks.
+ *
+ * On compact the facts and systems drawers are mutually exclusive, so "both
+ * open" is no longer a reachable state and opening them in sequence would close
+ * the first. Each is therefore measured ALONE, asserted actually open, and the
+ * worse of the two is the number that has to clear the cap. The reported row
+ * names which state won, so a passing line can never be read as covering a
+ * state it did not measure.
  *
  * Run:
  *   npm run check:mobile
@@ -100,6 +107,32 @@ const MEASURE = `(() => {
     return q.width > 0 && (q.right > vw + 0.5 || q.bottom > vh + 0.5 || q.left < -0.5 || q.top < -0.5); });
   const tiny = btns.filter((b) => { const q = b.getBoundingClientRect();
     return q.width > 0 && (q.width < ${MIN_TARGET} || q.height < ${MIN_TARGET}); });
+  // On screen and big enough is not the same as tappable. Two anchored regions
+  // can land on the same row and print over each other: "‹ Prev" sat across the
+  // right third of "‹ Facts" on every phone, in the collapsed state a reader
+  // meets FIRST, and this gate showed nine green ticks because it only asked
+  // whether a control existed and had size.
+  //
+  // Measured by RECT INTERSECTION, not by elementFromPoint. Hit-testing the
+  // centre was tried and is not good enough: it only catches a control that is
+  // covered at its midpoint, and the real overlap here was a third of the way
+  // in from one edge — the centre of "‹ Facts" was still clear, so a
+  // centre-probe reported the layout healthy while the button was visibly
+  // buried. Two interactive controls should not intersect at all, so that is
+  // what gets asserted. 1px of tolerance for sub-pixel layout rounding.
+  const rects = btns.map((b) => [b, b.getBoundingClientRect()])
+    .filter(([, q]) => q.width > 1 && q.height > 1);
+  const label = (b) => (b.textContent || '').trim().slice(0, 18) || b.className;
+  const clash = [];
+  for (let i = 0; i < rects.length; i++) for (let j = i + 1; j < rects.length; j++) {
+    const [ba, qa] = rects[i], [bb, qb] = rects[j];
+    if (ba.contains(bb) || bb.contains(ba)) continue; // nested controls are not a clash
+    const ox = Math.min(qa.right, qb.right) - Math.max(qa.left, qb.left);
+    const oy = Math.min(qa.bottom, qb.bottom) - Math.max(qa.top, qb.top);
+    if (ox > 1 && oy > 1) clash.push(label(ba) + ' / ' + label(bb) +
+      ' overlap ' + Math.round(ox) + 'x' + Math.round(oy) + 'px');
+  }
+  const buried = clash;
   return {
     vw, vh,
     overflowX: de.scrollWidth - vw,
@@ -108,6 +141,7 @@ const MEASURE = `(() => {
     compact: hud.classList.contains('compact'),
     buttons: btns.length,
     offscreen: off.map((b) => (b.textContent || '').trim().slice(0, 18)),
+    buried,
     tiny: tiny.map((b) => (b.textContent || '').trim().slice(0, 18) +
       ' ' + Math.round(b.getBoundingClientRect().width) + 'x' + Math.round(b.getBoundingClientRect().height)),
   };
@@ -119,7 +153,7 @@ try {
   vite = await startVite()
 
   for (const rung of rungs) {
-    console.log(`\n— ${rung} — facts open, ${devices.length} viewports`)
+    console.log(`\n— ${rung} — worst drawer state, ${devices.length} viewports`)
     for (const [name, w, h, dpr] of devices) {
       const page = await openBrowser({
         port: 9890, profile: `mobile-${rung}-${name}`,
@@ -151,25 +185,62 @@ try {
         }
         await sleep(900)
 
-        // Open the facts drawer. The control is .facts-tab since the HUD split;
-        // the old .facts-toggle selector silently matched nothing, which meant
-        // this gate was measuring a CLOSED panel while reporting "facts open".
-        await page.ev(`(() => { const t = document.querySelector('.facts-tab');
-          if (t && !document.querySelector('.hud .facts')) { t.click(); return true } return false })()`)
-        // ...and the system drawer, so the measurement is of the WORST case
-        // rather than a tidy one. Both open at once is a state a reader can
-        // reach, so it is the state the cap has to hold for.
-        await page.ev(`(() => { const t = document.querySelector('.systems-tab');
-          if (t && !document.querySelector('.hud .systems')) { t.click(); return true } return false })()`)
-        await sleep(500)
+        // Both drawers open at once USED to be the worst case, and this gate
+        // opened both to measure it. On compact they are now mutually
+        // exclusive — opening one closes the other — so that state cannot be
+        // reached, and clicking both in sequence would open the facts, then
+        // close them again, and report a collapsed panel as "facts open".
+        // That is precisely the deception the dead .facts-toggle selector
+        // used to cause, so it is not repeated: each drawer is measured on
+        // its own and the WORST of the two is the number that must clear the
+        // cap. Every state is asserted open before it is trusted.
+        // COLLAPSED is measured too, and it is not an afterthought: it is the
+        // state a phone starts in, and it is where "‹ Prev" was found sitting
+        // on top of "‹ Facts". Opening a drawer before measuring meant this
+        // gate had never once looked at the layout a reader actually meets.
+        const closeAll = () => page.ev(`(() => {
+          for (const [t, p] of [['.facts-tab', '.hud .facts'], ['.systems-tab', '.hud .systems']]) {
+            const b = document.querySelector(t);
+            if (b && document.querySelector(p)) b.click();
+          } })()`)
 
-        const m = await page.ev(MEASURE)
+        const measureDrawer = async (label, tabSel, panelSel) => {
+          await closeAll()
+          await sleep(350)
+          if (tabSel === null) return { label, ...(await page.ev(MEASURE)) }
+          const found = await page.ev(`(() => { const b = document.querySelector('${tabSel}');
+            if (!b) return false; b.click(); return true })()`)
+          if (!found) return null
+          await sleep(500)
+          if (!(await page.ev(`!!document.querySelector('${panelSel}')`)))
+            return { label, error: `the ${label} drawer never opened — measurement would be of a closed panel` }
+          return { label, ...(await page.ev(MEASURE)) }
+        }
+
+        const states = []
+        for (const [label, tab, panel] of [
+          ['collapsed', null, null],
+          ['facts', '.facts-tab', '.hud .facts'],
+          ['systems', '.systems-tab', '.hud .systems'],
+        ]) {
+          const r = await measureDrawer(label, tab, panel)
+          if (r) states.push(r)
+        }
+        // Coverage is a property of the worst state; reachability is a property
+        // of EVERY state, so the two are aggregated differently. Taking both
+        // from the worst-coverage state would let a buried control in the
+        // collapsed layout pass unseen behind a roomier state's number.
+        const m = states.reduce((a, b) => (a.error ? a : b.error ? b : b.hudPct > a.hudPct ? b : a), states[0])
         const landscape = w > h
         const cap = landscape ? MAX_HUD_PCT_LANDSCAPE : MAX_HUD_PCT_PORTRAIT
         const problems = []
-        if (m.error) problems.push(m.error)
-        if (m.offscreen?.length) problems.push(`${m.offscreen.length} control(s) offscreen: ${m.offscreen.join(', ')}`)
-        if (m.tiny?.length) problems.push(`${m.tiny.length} target(s) under ${MIN_TARGET}px: ${m.tiny.join(', ')}`)
+        for (const st of states) {
+          if (st.error) { problems.push(st.error); continue }
+          const where = `(${st.label})`
+          if (st.offscreen?.length) problems.push(`${st.offscreen.length} control(s) offscreen ${where}: ${st.offscreen.join(', ')}`)
+          if (st.tiny?.length) problems.push(`${st.tiny.length} target(s) under ${MIN_TARGET}px ${where}: ${st.tiny.join(', ')}`)
+          if (st.buried?.length) problems.push(`${st.buried.length} control(s) covered by something else ${where}: ${st.buried.join(', ')}`)
+        }
         if (m.overflowX > 0) problems.push(`${m.overflowX}px horizontal overflow`)
         if (m.hudPct > cap) problems.push(`HUD covers ${m.hudPct}% of the screen (cap ${cap}%)`)
 
@@ -177,7 +248,7 @@ try {
         console.log(
           `  ${problems.length ? '✗' : '✓'} ${name.padEnd(17)} ${(w + 'x' + h).padEnd(9)}` +
           ` hud ${String(m.hudH).padStart(4)}px ${String(m.hudPct).padStart(3)}%` +
-          ` ${m.buttons} controls`,
+          ` ${m.buttons} controls  ${m.label} open`,
         )
         for (const p of problems) console.log(`      ! ${p}`)
       } finally {

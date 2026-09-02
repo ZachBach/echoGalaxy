@@ -749,7 +749,15 @@ export default function App() {
         <aside className={'hud-side' + (factsOpen ? ' open' : '')}>
           <button
             className="facts-tab"
-            onClick={() => setFactsOpen((o) => !o)}
+            onClick={() => {
+              const next = !factsOpen
+              setFactsOpen(next)
+              // On compact the two drawers open toward each other from
+              // opposite edges, so on anything narrower than ~600px their
+              // panels would meet in the middle. They take turns instead.
+              // Desktop has room for both at once and keeps them independent.
+              if (next && compactLayout) setSystemsOpen(false)
+            }}
             aria-expanded={factsOpen}
             aria-controls="facts-panel"
           >
@@ -793,7 +801,11 @@ export default function App() {
           <aside className={'hud-left' + (systemsOpen ? ' open' : '')}>
             <button
               className="systems-tab"
-              onClick={() => setSystemsOpen((o) => !o)}
+              onClick={() => {
+                const next = !systemsOpen
+                setSystemsOpen(next)
+                if (next && compactLayout) setFactsOpen(false)
+              }}
               aria-expanded={systemsOpen}
               aria-controls="systems-panel"
             >

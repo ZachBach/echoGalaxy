@@ -520,89 +520,109 @@ body:has(.app[style*='width']) {
   font-size: 14px;
 }
 
-/* The drawer becomes a sheet: full width, anchored to the bottom, above the
-   nav rather than beside it. Vertical centring and a fixed width are both
-   wrong on a phone — the first hides the subject, the second leaves a
-   200px-wide column of text. */
+/* The facts stay a SIDE drawer on a phone, on the LEFT edge — the tab holds
+   the edge at mid-height and the panel opens rightward into the sky.
+
+   It used to be a bottom sheet spanning the full width, and that is what put
+   every mobile problem in the bottom-left corner at once: the tab, the nav
+   row and the two-line gesture hint all claimed the same 90px of floor, and
+   opening the sheet shoved the nav into the middle of the frame on top of the
+   planets. Anchoring the drawer to the left edge takes it off the floor
+   entirely, so the bottom belongs to the navigation again and needs none of
+   the offsets that used to keep those two apart.
+
+   Mid-height, not top or bottom anchored: a centred panel's vertical span
+   sits BETWEEN the top bar's band and the nav's, so the coverage gate unions
+   three separate bands rather than one tall merged one — which is also why
+   the panel height below is capped the way it is. */
 .hud.compact .hud-side {
-  top: auto;
-  bottom: max(10px, env(safe-area-inset-bottom));
+  top: 50%;
+  bottom: auto;
   left: max(10px, env(safe-area-inset-left));
-  right: max(10px, env(safe-area-inset-right));
-  transform: none;
-  max-width: none;
-  flex-direction: column-reverse;
-  align-items: flex-start;
-  gap: 6px;
+  right: auto;
+  transform: translateY(-50%);
+  flex-direction: row; /* tab holds the edge, panel grows inboard */
+  gap: 8px;
+  max-width: min(
+    348px,
+    calc(100vw - max(10px, env(safe-area-inset-left)) - max(10px, env(safe-area-inset-right)))
+  );
 }
 
-/* Horizontal again — a vertical tab in a horizontal sheet reads as a mistake.
-   Still 44px tall for the tap-target floor. */
-.hud.compact .facts-tab {
-  writing-mode: horizontal-tb;
-  align-self: flex-start;
-  padding: 12px 14px;
-  letter-spacing: 0.1em;
+/* Only the system rung carries a right-edge tab, and the facts panel has to
+   stop short of it or it prints straight over the control. Scoped with :has
+   so the other five rungs keep the wider column. 52px = the 44px tab plus a
+   gutter. */
+.hud.compact:has(.hud-left) .hud-side {
+  max-width: min(
+    348px,
+    calc(
+      100vw - max(10px, env(safe-area-inset-left)) - max(10px, env(safe-area-inset-right)) - 52px
+    )
+  );
 }
 
-/* On a phone the left drawer keeps its tab but the panel narrows, and it sits
-   above the bottom sheet rather than beside it — there is no beside. */
+/* With the facts holding the left edge, the system switcher mirrors it to the
+   right — the same shape on the opposite side, at the same height, which is
+   the desktop arrangement with the two swapped. row-reverse is inherited and
+   is what puts the TAB against the right edge with the panel growing inboard.
+
+   Level with the facts panel deliberately, not above or below it. .hud-left is
+   one of the four regions whose vertical spans the coverage gate unions, so a
+   tab parked in otherwise-empty sky adds its full 44px as a fresh band; sitting
+   inside the facts panel's band it is already counted and costs nothing. Parked
+   just above the nav it measured 71% on a 320x568 phone against a 72% cap —
+   passing, with no margin for a longer catalogue entry.
+
+   The two drawers take turns on compact (App.jsx): the panels would overlap in
+   the middle of any phone narrower than ~600px, so only one is ever open. Only
+   the TABS coexist, and they are at opposite edges. */
 .hud.compact .hud-left {
-  left: max(10px, env(safe-area-inset-left));
-  max-width: min(180px, calc(100vw - 90px));
+  left: auto;
+  right: max(10px, env(safe-area-inset-right));
+  max-width: min(240px, calc(100vw - 24px));
 }
 
 .hud.compact .systems-name {
   font-size: 12px;
 }
 
-/* The nav starts clear of the left tab. On compact the sheet lifts the nav
-   up the screen and the left drawer is vertically centred, so the two meet:
-   the tab landed on top of "‹ Prev". Scoped with :has so a rung without a
-   system drawer keeps the full width. */
-.hud.compact:has(.hud-left) .hud-bottom {
-  left: calc(max(10px, env(safe-area-inset-left)) + 54px);
-}
-
 /* The smallest phones and short landscape windows. A 320x568 screen has ~150
    fewer vertical pixels than an iPhone SE, and the fixed parts of the HUD —
-   a 44px bar, a 44px nav row — do not shrink with it, so the sheet has to
-   give up the difference or the HUD swallows the sky. */
+   a 44px bar, a 44px nav row — do not shrink with it. The panel's own cap
+   below is written against 100dvh so it already gives that difference back;
+   what is left here is the line worth losing. */
 @media (max-width: 340px), (max-height: 600px) {
-  .hud.compact .hud-side .facts {
-    max-height: 32dvh;
-  }
-  .hud.compact:has(.hud-side.open) .hud-bottom {
-    bottom: calc(32dvh + max(10px, env(safe-area-inset-bottom)) + 54px);
-  }
   .hud.compact .hint {
     display: none; /* the gesture hint is the most expendable line here */
   }
 }
 
+/* Two ceilings, smaller wins. 42dvh keeps the HUD's three bands — top bar,
+   panel, nav — inside the 72% coverage cap on every portrait phone in the
+   gate; the 220px subtrahend is what keeps a landscape phone's centred panel
+   clear of a top bar with the scale ladder open, where dvh alone is not
+   enough (360px tall: 42dvh is 151px, and the ladder leaves 140px). */
 .hud.compact .hud-side .facts {
-  width: 100%;
-  /* 36dvh, not 46: with the top bar and the nav also on screen, a taller
-     sheet pushed the HUD's total coverage over the 72% cap on a 320px phone.
-     It scrolls, so height costs legibility of the sky, not of the facts. */
-  max-height: 36dvh;
+  max-height: min(42dvh, calc(100dvh - 220px));
   padding: 10px 12px;
 }
 
-/* With the sheet occupying the bottom, the nav sits above it and keeps the
-   full width — nothing is beside it to avoid any more. */
+/* Nothing shares the floor with the nav any more — the drawers are on the
+   edges — so it keeps the full width in every state. */
 .hud.compact .hud-bottom {
+  left: max(10px, env(safe-area-inset-left));
   right: max(10px, env(safe-area-inset-right));
   bottom: max(10px, env(safe-area-inset-bottom));
   gap: 6px;
 }
 
-/* When the sheet is open it owns the bottom, so the nav lifts clear of it
-   rather than stacking underneath and running off-screen. */
-.hud.compact:has(.hud-side.open) .hud-bottom {
-  /* Sit directly on top of the sheet, not floating above it. A gap between
-     the two counts as extra covered screen once their spans are unioned. */
-  bottom: calc(36dvh + max(10px, env(safe-area-inset-bottom)) + 54px);
+/* The gesture hint wraps to two lines on a phone and sprawls across the scene.
+   With a drawer open there is already a panel explaining what you are looking
+   at, so the hint is the first thing to go. */
+.hud.compact:has(.hud-side.open) .hint,
+.hud.compact:has(.hud-left.open) .hint {
+  display: none;
 }
 
 /* A dedication on a catalogue entry. Deliberately understated: smaller than
