@@ -204,6 +204,33 @@ const unprofiled = topRanked.filter((r) => !byName.has(r.name))
 if (unprofiled.length) fail(`top-16 stars without a profile: ${unprofiled.map((r) => r.name).join(', ')}`)
 else pass(`all ${topRanked.length} top-16 brightest stars carry a profile`)
 
+/* 9 — Local Group star budget --------------------------------------- *
+ * LocalGroup.jsx opens with a budget rule: every member's `count` together
+ * sums to exactly 24,000, so the whole group rung costs what the single
+ * galaxy view costs. That was a comment and nothing more, which is a
+ * dangerous shape for an invariant — adding a member is a two-line edit and
+ * blowing the budget is invisible until someone profiles a phone. The file
+ * is read as TEXT because it is JSX and node cannot import it; the same
+ * reason Sky.jsx is read as text in the shots gate.                       */
+console.log('\n[9] Local Group star budget')
+{
+  const BUDGET = 24_000
+  const text = readFileSync(join(src, 'LocalGroup.jsx'), 'utf8')
+  const members = [...text.matchAll(/id: '([^']+)',\s*\n\s*cfg: \{[^}]*?count: (\d+)/g)]
+  if (!members.length) {
+    fail('could not read any member counts out of LocalGroup.jsx')
+  } else {
+    const total = members.reduce((n, m) => n + Number(m[2]), 0)
+    if (total !== BUDGET)
+      fail(
+        `the ${members.length} Local Group members spend ${total.toLocaleString()} stars, ` +
+        `not the ${BUDGET.toLocaleString()} the budget rule promises ` +
+        `(${total > BUDGET ? '+' : ''}${(total - BUDGET).toLocaleString()})`,
+      )
+    else pass(`${members.length} members spend exactly ${BUDGET.toLocaleString()} stars`)
+  }
+}
+
 /* summary ----------------------------------------------------------- */
 console.log('\n─────────────────────────────────────────')
 console.log(`entries          ${entryCount}`)

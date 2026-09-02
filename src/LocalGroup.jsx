@@ -23,7 +23,7 @@ import {
 export const MEMBERS = [
   {
     id: 'milkyway',
-    cfg: { type: 'barred', count: 8000, arms: 2, spin: 1.05, radius: 8, bar: 0.42, randomness: 0.28, thickness: 0.34, tempCore: 4000, tempRim: 10000 },
+    cfg: { type: 'barred', count: 7500, arms: 2, spin: 1.05, radius: 8, bar: 0.42, randomness: 0.28, thickness: 0.34, tempCore: 4000, tempRim: 10000 },
     pos: [-8, 0, 10],
     rot: [0.35, 0.4, 0.1],
     info: {
@@ -44,7 +44,7 @@ export const MEMBERS = [
   },
   {
     id: 'andromeda',
-    cfg: { type: 'spiral', count: 9000, arms: 2, spin: 1.3, radius: 9, randomness: 0.3, thickness: 0.36, tempCore: 4300, tempRim: 10500 },
+    cfg: { type: 'spiral', count: 8400, arms: 2, spin: 1.3, radius: 9, randomness: 0.3, thickness: 0.36, tempCore: 4300, tempRim: 10500 },
     pos: [16, 4, -10],
     rot: [1.15, -0.3, 0.35],
     info: {
@@ -64,7 +64,7 @@ export const MEMBERS = [
   },
   {
     id: 'triangulum',
-    cfg: { type: 'spiral', count: 3000, arms: 3, spin: 1.4, radius: 4, randomness: 0.34, thickness: 0.3, tempCore: 5000, tempRim: 11500 },
+    cfg: { type: 'spiral', count: 2700, arms: 3, spin: 1.4, radius: 4, randomness: 0.34, thickness: 0.3, tempCore: 5000, tempRim: 11500 },
     pos: [24, -2, 2],
     rot: [0.5, 0.9, -0.2],
     info: {
@@ -83,7 +83,7 @@ export const MEMBERS = [
   },
   {
     id: 'lmc',
-    cfg: { type: 'irregular', count: 1200, radius: 2, thickness: 0.5, tempCore: 6500, tempRim: 12000 },
+    cfg: { type: 'irregular', count: 1150, radius: 2, thickness: 0.5, tempCore: 6500, tempRim: 12000 },
     pos: [-4.5, -2.5, 13.5],
     rot: [0.2, 0, 0.4],
     info: {
@@ -123,7 +123,7 @@ export const MEMBERS = [
   },
   {
     id: 'm32',
-    cfg: { type: 'elliptical', count: 1000, radius: 1.3, thickness: 0.4, tempCore: 3900, tempRim: 3300 },
+    cfg: { type: 'elliptical', count: 850, radius: 1.3, thickness: 0.4, tempCore: 3900, tempRim: 3300 },
     pos: [14.5, 5.5, -8],
     rot: [0, 0, 0],
     info: {
@@ -143,7 +143,7 @@ export const MEMBERS = [
   },
   {
     id: 'm110',
-    cfg: { type: 'elliptical', count: 1000, radius: 1.6, thickness: 0.4, tempCore: 3800, tempRim: 3200 },
+    cfg: { type: 'elliptical', count: 850, radius: 1.6, thickness: 0.4, tempCore: 3800, tempRim: 3200 },
     pos: [18.5, 2, -13],
     rot: [0.3, 0, 0.5],
     info: {
@@ -157,6 +157,102 @@ export const MEMBERS = [
           'formation — a small mystery.',
         'Charles Messier drew it in 1773 but never gave it a number; it ' +
           'joined his catalogue two centuries late, in 1967.',
+      ],
+    },
+  },
+  // The four below fill the gaps the first seven left. Two dwarf
+  // spheroidals, because dSphs are the Local Group's most NUMEROUS class by
+  // a wide margin and the scene showed none of them; one irregular that
+  // orbits neither giant, because "everything huddles around a big spiral"
+  // was the wrong lesson to teach; and the group's only starburst.
+  //
+  // Their counts are funded by trimming the seven above, not added on top —
+  // the budget rule at the head of this file is the whole reason the group
+  // rung costs what the single-galaxy view costs. check:content enforces the
+  // 24,000 now rather than trusting the comment.
+  {
+    id: 'sculptor',
+    cfg: { type: 'elliptical', count: 300, radius: 1.4, thickness: 0.55, shapeExp: 1.0, tempCore: 3800, tempRim: 3300 },
+    pos: [-16, 8.4, 6.7],
+    rot: [0, 0, 0],
+    info: {
+      name: 'Sculptor Dwarf', label: 'Dwarf spheroidal · Milky Way satellite',
+      description:
+        'A faint haze of old stars orbiting the Milky Way, so thinly spread ' +
+        'you could look straight through it without noticing. Galaxies like ' +
+        'this one are the most common kind in the Local Group, and the ' +
+        'hardest of all to find.',
+      facts: [
+        'The commonest sort of galaxy here, and among the last to be ' +
+          'noticed — it turned up on a photographic plate in 1937.',
+        'Almost no gas is left, so almost no new stars: it finished forming ' +
+          'them billions of years ago.',
+        'It weighs far more than its stars can account for, which makes ' +
+          'dwarf spheroidals some of the best hunting grounds for dark ' +
+          'matter.',
+      ],
+    },
+  },
+  {
+    id: 'fornax',
+    cfg: { type: 'elliptical', count: 350, radius: 1.5, thickness: 0.5, shapeExp: 1.05, tempCore: 3900, tempRim: 3400 },
+    pos: [-8, 12, 5.2],
+    rot: [0.2, 0, 0.3],
+    info: {
+      name: 'Fornax Dwarf', label: 'Dwarf spheroidal · Milky Way satellite',
+      description:
+        'The brightest of the Milky Way’s dwarf spheroidal satellites, and ' +
+        'the only one to have kept globular clusters of its own — a tiny ' +
+        'galaxy that still holds a few cities of stars.',
+      facts: [
+        'It owns six globular clusters, which is extraordinary for a galaxy ' +
+          'this small.',
+        'Unlike most dwarf spheroidals it went on making stars for billions ' +
+          'of years after its siblings stopped.',
+        'About 460,000 light-years away — nearly three times farther than ' +
+          'the Large Magellanic Cloud.',
+      ],
+    },
+  },
+  {
+    id: 'ngc6822',
+    cfg: { type: 'irregular', count: 600, radius: 1.7, thickness: 0.5, tempCore: 6400, tempRim: 11500 },
+    pos: [4, -8, 14],
+    rot: [0.4, 0.2, 0.1],
+    info: {
+      name: 'Barnard’s Galaxy (NGC 6822)', label: 'Irregular · nobody’s satellite',
+      description:
+        'An irregular galaxy adrift in the space between the Milky Way and ' +
+        'Andromeda, orbiting neither of them. Most of the Local Group ' +
+        'huddles close to one giant or the other; this one keeps its ' +
+        'distance from both.',
+      facts: [
+        'E. E. Barnard found it in 1884 with a five-inch telescope.',
+        'At about 1.6 million light-years out it is far enough to belong to ' +
+          'no one — it is a member of the group, not a satellite of anything.',
+        'Edwin Hubble studied it to help prove such smudges were galaxies in ' +
+          'their own right, not clouds inside our own.',
+      ],
+    },
+  },
+  {
+    id: 'ic10',
+    cfg: { type: 'irregular', count: 500, radius: 1.4, thickness: 0.5, tempCore: 7000, tempRim: 13000 },
+    pos: [10, 9, -15],
+    rot: [0.3, 0.5, 0],
+    info: {
+      name: 'IC 10', label: 'Irregular · the only starburst here',
+      description:
+        'The Local Group’s one starburst galaxy — a small irregular building ' +
+        'new stars far faster than something its size has any business ' +
+        'doing, seen through the dust of our own galaxy’s disc.',
+      facts: [
+        'It is crowded with Wolf-Rayet stars: massive suns in the short, ' +
+          'violent stage just before they explode.',
+        'We look at it straight through the plane of the Milky Way, which is ' +
+          'why its membership of the group was not settled until the 1990s.',
+        'The burst cannot last. It is spending gas far faster than it can ' +
+          'replace it.',
       ],
     },
   },
