@@ -139,7 +139,12 @@ npm run check:tsl       # vendor gate only (no sync)
 npm run sync:tsl        # sync from ../tsl-lib + gate + build
 npm run check:content   # astronomy content gate (ids, facts ladder, the 88)
 npm run check:planet    # planet materials on every obliquity + ring geometry
-npm run check:shots     # capture list: follow ids, sky modes, title cues
+npm run check:shots     # capture list: follow ids, sky modes, title cues, and
+                        # that each shot's `index` still points at the `entry`
+                        # id it claims. A shot on a rung whose roster the gate
+                        # can read MUST declare `entry` — a bare index is not
+                        # verifiable, and an in-range one that silently moved
+                        # is exactly how 22-ice-giant spent months on Venus
 npm run check:all       # all four gates, in order
 npm run check:shaders   # browser gate: every tsl-lib node AND material
                         # compiles and draws on BOTH backends (~3 min, two

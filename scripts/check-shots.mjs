@@ -159,18 +159,31 @@ console.log('\n[8] runtime')
   ok(`aspects available: ${Object.keys(ASPECTS).join(', ')} at BASE_H_FOV ${BASE_H_FOV}`)
 }
 
-// `index` picks which entry of a rung's cycle the shot captures, and until
-// now nothing checked it. That is the same shape of hazard as `follow`, and
-// quieter: an out-of-range index does not throw, it silently renders a
-// DIFFERENT object, and the frames look perfectly fine until someone who
-// knows the subject watches them. Inserting Sh 2-80 into the middle of the
-// nebula cycle moved the Crab from 1 to 2 and proved the point.
+// `index` picks which entry of a rung's cycle the shot captures. An
+// out-of-range index does not throw, it silently renders a DIFFERENT object,
+// and the frames look perfectly fine until someone who knows the subject
+// watches them. Inserting Sh 2-80 into the middle of the nebula cycle moved
+// the Crab from 1 to 2 and proved the point.
 //
-// App.jsx is read as text for the same reason Sky.jsx is — node cannot
-// import JSX. Only the lists that are literal arrays in App.jsx are
-// reachable this way; the rungs whose cycles are built elsewhere are
-// counted as unknown rather than guessed at, and said so out loud.
-console.log('\n[9] shot index stays inside its rung cycle')
+// A range check alone is not enough, and the proof is that it passed for
+// months over a live defect: `22-ice-giant` sat at index 11, which is Venus.
+// 11 is a perfectly legal index into a 13-entry cycle, so nothing complained
+// — Venus had been inserted ahead of the ice giant and the shot never moved.
+// A shot therefore also declares `entry`, the id it BELIEVES it is pointing
+// at, and the roster has to agree. That is what turns a silent repoint into
+// a failed gate.
+//
+// Rosters are read wherever they can be read honestly:
+//   galaxy  imported — galaxyData.js is pure data with no imports at all
+//   planet  parsed as TEXT: planetData.js pulls in planetRecipes, which
+//           reaches the vendored tsl-lib through extensionless specifiers
+//           node will not resolve, plus two JSX components. Same reason
+//           systemData.js is read as text above.
+//   nebula  length only, from App.jsx's literal array — its entries are
+//           objects exported by JSX components, so there are no ids to read.
+// Anything still unreadable is counted as unknown rather than guessed at,
+// and said so out loud.
+console.log('\n[9] shot index points at the entry it claims')
 {
   const appSrc = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8')
   const listLen = (name) => {
@@ -179,18 +192,73 @@ console.log('\n[9] shot index stays inside its rung cycle')
     const items = m[1].split(',').map((s) => s.trim()).filter(Boolean)
     return items.length || null
   }
+
+  // Ordered entry ids per rung, where they can be established.
+  const rosters = {}
+  rosters.galaxy = (await import('../src/galaxyData.js')).GALAXY_TYPES.map((g) => g.id)
+
+  // PLANET_TYPES mixes object literals with bare imported constants
+  // (BLACK_HOLE_INFO) and a spread of one (...STAR_INFO), so the ids are not
+  // all in the file being parsed. The id of an imported entry is resolved by
+  // following planetData's OWN import line to the module it names — nothing
+  // here hardcodes which file a constant lives in.
+  {
+    const src = readFileSync(new URL('../src/planetData.js', import.meta.url), 'utf8')
+    const constId = (name) => {
+      const im = src.match(new RegExp(`import \\{[^}]*\\b${name}\\b[^}]*\\} from '\\./([^']+)'`))
+      if (!im) return null
+      for (const ext of ['.jsx', '.js', '']) {
+        let mod
+        try { mod = readFileSync(new URL(`../src/${im[1]}${ext}`, import.meta.url), 'utf8') } catch { continue }
+        const m = mod.match(new RegExp(`export const ${name}\\s*=\\s*\\{[^}]*?id:\\s*'([^']+)'`))
+        if (m) return m[1]
+      }
+      return null
+    }
+    const body = src.slice(src.indexOf('export const PLANET_TYPES = ['))
+    const ids = []
+    let depth = 0
+    let cur = null
+    for (const line of body.split('\n').slice(1)) {
+      if (/^\]/.test(line)) break
+      if (depth === 0) {
+        const bare = line.match(/^\s{2}([A-Z][A-Z0-9_]*),\s*$/)
+        if (bare) { ids.push(constId(bare[1]) ?? `?${bare[1]}`); continue }
+        if (/^\s{2}\{/.test(line)) cur = null
+      }
+      if (cur === null && depth >= 0) {
+        const idm = line.match(/^\s+id:\s*'([^']+)'/)
+        const spm = line.match(/^\s+\.\.\.([A-Z][A-Z0-9_]*),/)
+        if (idm) cur = idm[1]
+        else if (spm) cur = constId(spm[1]) ?? `?${spm[1]}`
+      }
+      depth += (line.match(/\{/g) ?? []).length - (line.match(/\}/g) ?? []).length
+      if (depth === 0 && /^\s{2}\}/.test(line)) { ids.push(cur ?? '?'); cur = null }
+    }
+    if (ids.length && !ids.some((i) => i.startsWith('?'))) rosters.planet = ids
+    else fail(`could not read the planet roster cleanly: ${ids.join(', ') || '(empty)'}`)
+  }
+
   const lengths = { nebula: listLen('nebulaList') }
   let checked = 0
   const unknown = []
   for (const s of SHOTS) {
     if (s.index === undefined) continue
-    const n = lengths[s.scale]
+    const ids = rosters[s.scale]
+    const n = ids ? ids.length : lengths[s.scale]
     if (!n) { unknown.push(s.id); continue }
     checked += 1
-    if (s.index < 0 || s.index >= n)
+    if (s.index < 0 || s.index >= n) {
       fail(`${s.id}: index ${s.index} is outside the ${s.scale} cycle (0..${n - 1})`)
+    } else if (ids && !s.entry) {
+      fail(`${s.id}: declares no entry id, so its index cannot be verified — add entry: '${ids[s.index]}'`)
+    } else if (ids && ids[s.index] !== s.entry) {
+      fail(`${s.id}: index ${s.index} is "${ids[s.index]}", not the "${s.entry}" it claims`)
+    }
   }
-  if (!failed && checked) ok(`${checked} indexed shot(s) inside their cycle (nebula holds ${lengths.nebula})`)
+  if (!failed && checked)
+    ok(`${checked} indexed shot(s) point where they claim ` +
+       `(galaxy ${rosters.galaxy.length}, planet ${rosters.planet?.length ?? '?'}, nebula ${lengths.nebula})`)
   if (unknown.length)
     console.log(`  .. ${unknown.length} indexed shot(s) on rungs whose cycle this gate cannot read: ${unknown.join(', ')}`)
 }
