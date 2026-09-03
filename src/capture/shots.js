@@ -443,6 +443,57 @@ export const SHOTS = [
     to: { pos: [-0.6, 1.0, 3.2], target: [0, 0, 0] },
   },
   {
+    // Venus. The rung has thirteen entries and the reel had twelve shots;
+    // this is the one that was missing. Venus was inserted into PLANET_TYPES
+    // ahead of the ice giant and never got a shot of its own — the same edit
+    // that left 22-ice-giant pointing at index 11 and rendering Venus by
+    // accident for months. So it has in fact been filmed, repeatedly, under
+    // another planet's name. This is the shot that means it.
+    //
+    // `21b`, not a renumber. Inserting a real 22 would push every later id
+    // along and orphan the finished frame sets already on disk under the old
+    // names. Same reason 12b-wolfrayet carries a letter.
+    //
+    // Two properties are unique to this body on this rung and both argue for
+    // the same move:
+    //
+    // It turns BACKWARDS, and barely — spinRate -0.005, the only negative on
+    // the rung and slower than cloud's 0.018. Across four seconds the body
+    // supplies no motion whatsoever, so the camera has to supply all of it.
+    // Every other planet shot drifts +x to -x; this one runs -x to +x, alone
+    // in the reel, so the direction of travel carries the retrograde fact
+    // that no still frame can.
+    //
+    // And it has the widest terminator in the scene by a long way: dawn
+    // [-0.34, 0.62] with a night floor of 0.24, against mercury's
+    // [-0.02, 0.04] and 0.015. That is a deep atmosphere smearing the
+    // day/night edge into a band broad enough to hold a shot on. So the arc
+    // crosses the terminator instead of staying on the lit face.
+    //
+    // Checked rather than hoped: sunDir is normalize(-0.8, 0.35, 0.55), and
+    // dot(normalize(camera pos), sunDir) at the three keys runs
+    //
+    //     from 0.81  ->  via 0.64  ->  to 0.17
+    //
+    // so the sub-camera point starts well inside the lit hemisphere and ends
+    // just short of the terminator, which carries that soft edge from the
+    // limb into the middle of the frame over the four seconds. Distances hold
+    // 3.5-3.85, in family with its neighbours (cloud 4.24-3.42, ice giant
+    // 3.5-4.06), so it never pushes in — deliberately the opposite of what
+    // 21-cloud does two shots earlier with the same kind of opaque deck, so
+    // the two do not read as one idea filmed twice.
+    id: '21b-venus',
+    scale: 'planet',
+    index: 11,
+    entry: 'venus',
+    seconds: 4.2,
+    ease: 'inout',
+    fovLock: 'v',
+    from: { pos: [-1.9, -0.4, 3.2], target: [0, 0, 0] },
+    via: { pos: [-0.4, 0.2, 3.5] },
+    to: { pos: [1.8, 0.8, 3.3], target: [0, 0, 0] },
+  },
+  {
     // Ice giant. Same logic as 03-gas — lateral drift so bandedFlow reads
     // as movement in the bands — but eight bands instead of six and the
     // methane-blue ramp, which is the whole reason it is a separate
