@@ -143,6 +143,41 @@ const missingGenitive = CONSTELLATIONS.filter((c) => !c.genitive || !c.english)
 if (missingGenitive.length) fail(`missing genitive/english: ${missingGenitive.map((c) => c.id).join(', ')}`)
 else pass('every constellation has genitive + English name')
 
+/* The facts panel opens with `description`, so an entry without one renders a
+ * blank paragraph above its facts. Written by hand, deliberately — the
+ * alternative on the table was assembling a sentence from `english`,
+ * `brightest` and `notable`, which produces 88 paragraphs that read like
+ * assembled clauses in a catalogue where every other entry is written. A
+ * minimum length is asserted because the failure mode is a stub, not an
+ * absence. */
+const MIN_DESCRIPTION = 80
+const noDescription = CONSTELLATIONS.filter(
+  (c) => !c.description || c.description.trim().length < MIN_DESCRIPTION,
+)
+if (noDescription.length)
+  fail(
+    `${noDescription.length} constellation(s) missing a written description ` +
+      `(min ${MIN_DESCRIPTION} chars): ${noDescription.map((c) => c.abbr).join(', ')}`,
+  )
+else pass(`all ${CONSTELLATIONS.length} constellations carry a written description`)
+
+/* The join that makes the sky layer surfaceable at all: every content entry
+ * has to name a figure the catalogue actually draws, and every drawn figure
+ * has to have something written about it. Both directions are clean today and
+ * nothing else would notice if one rotted — a missing figure would light up
+ * nothing, and an unwritten one would page to a blank panel. skyCatalog.js is
+ * pure data (no imports), so it can be imported here outright. */
+{
+  const { FIGURE_SEGMENTS } = await import('../src/skyCatalog.js')
+  const drawn = new Set(FIGURE_SEGMENTS.map((s) => s[0]))
+  const noFigure = CONSTELLATIONS.filter((c) => !drawn.has(c.abbr)).map((c) => c.abbr)
+  const noEntry = [...drawn].filter((a) => !abbrs.includes(a))
+  if (noFigure.length) fail(`content with no drawn figure: ${noFigure.join(', ')}`)
+  if (noEntry.length) fail(`drawn figure with no content entry: ${noEntry.join(', ')}`)
+  if (!noFigure.length && !noEntry.length)
+    pass(`all ${drawn.size} drawn figures join their content entry by abbr, both ways`)
+}
+
 /* 7 — placeholder sweep -------------------------------------------- */
 console.log('\n[7] placeholder sweep')
 const PLACEHOLDERS = /\b(TODO|TBD|FIXME|Lorem ipsum|XXX|placeholder)\b/i
