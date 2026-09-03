@@ -26167,6 +26167,35 @@ export function figureFor(abbr) {
   return FIGURE_SEGMENTS.filter((s) => s[0] === abbr)
 }
 
+/**
+ * Mean unit direction of a figure's stars — the way to point a camera so the
+ * figure is on screen. Positions in STARS are already unit vectors, so this
+ * is the normalised sum of every segment endpoint; a figure's stars all lie
+ * within a few degrees of each other, so the mean is a fair centre and no
+ * spherical averaging subtlety is needed at this scale.
+ */
+export function figureDirection(abbr) {
+  let x = 0
+  let y = 0
+  let z = 0
+  let n = 0
+  for (const [a, ha, hb] of FIGURE_SEGMENTS) {
+    if (a !== abbr) continue
+    for (const hr of [ha, hb]) {
+      const s = STARS[HR_INDEX.get(hr)]
+      if (!s) continue
+      x += s[1]
+      y += s[2]
+      z += s[3]
+      n += 1
+    }
+  }
+  if (!n) return null
+  const len = Math.hypot(x, y, z)
+  if (!len) return null
+  return [x / len, y / len, z / len]
+}
+
 /** The 13 constellations the ecliptic actually passes through. */
 export const ZODIAC_ABBRS = [
   'Ari', 'Tau', 'Gem', 'Cnc', 'Leo', 'Vir',

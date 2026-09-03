@@ -34,6 +34,8 @@ export default function Sky({
   // figures read as something you notice second, after the subject — the
   // stars carry the richness now, and there are three times as many of them.
   figureOpacity = 0.22,
+  // SK-1: one IAU abbreviation to light up over the base layer, or null.
+  highlight = null,
 }) {
   const field = useMemo(
     () => (showStars ? buildStarField({ radius, magLimit, gain }) : null),
@@ -60,10 +62,32 @@ export default function Sky({
   )
   useEffect(() => () => ecl?.dispose(), [ecl])
 
+  // The selected figure, drawn again at full strength on top of the soft base
+  // layer. buildFigures already took an array for `which`, so this costs one
+  // extra LineSegments of at most 30 segments and no new machinery.
+  //
+  // Half a unit inside the base shell: both layers blend additively with
+  // depthWrite off so they cannot z-fight, but coincident geometry still
+  // shimmers under any camera movement, and the offset is free.
+  const hi = useMemo(
+    () =>
+      highlight
+        ? buildFigures({
+            radius: radius - 0.5,
+            which: [highlight],
+            color: 0x9fc2ff,
+            opacity: 0.95,
+          })
+        : null,
+    [highlight, radius],
+  )
+  useEffect(() => () => hi?.dispose(), [hi])
+
   return (
     <group>
       {field && <primitive object={field.sprite} />}
       {figs && <primitive object={figs.lines} />}
+      {hi && <primitive object={hi.lines} />}
       {ecl && <primitive object={ecl.lines} />}
     </group>
   )

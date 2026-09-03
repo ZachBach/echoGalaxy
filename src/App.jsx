@@ -24,6 +24,8 @@ import Effects from './Effects'
 import { createSkybox, bakeSkybox } from './skybox'
 import Sky, { SKY_INFO } from './Sky'
 import { GALAXY_TYPES } from './galaxyData'
+import { CONSTELLATIONS } from './constellationData'
+import { figureDirection } from './skyCatalog'
 import { PLANET_TYPES } from './planetData'
 import { createRenderer, backendName } from './renderer'
 import { factsFor, hasLadder, AUDIENCES, AUDIENCE_LABELS } from './factsLadder'
@@ -168,6 +170,33 @@ function ViewRig({ scale }) {
 // so drag/zoom stay natural around a moving world. Runs after ViewRig in
 // the tree, so on rung entry the persisted focus wins over the default
 // framing.
+// SK-1: the sky's answer to FocusRig. A constellation is not a place you can
+// fly to — it is a direction, painted on a shell 57 units out — so instead of
+// moving toward it the camera swings to the far side of the origin and looks
+// back through the scene at it.
+//
+// Without this the highlight is drawn correctly and is simply not on screen:
+// paging to Apus lights up a figure near the south celestial pole while the
+// camera is still looking along the ecliptic, and nothing appears to happen.
+// The subject stays centred in frame, so you get the system with its
+// constellation behind it rather than one or the other.
+function SkyRig({ abbr }) {
+  const camera = useThree((s) => s.camera)
+  const controls = useThree((s) => s.controls)
+  useEffect(() => {
+    if (!abbr) return
+    const d = figureDirection(abbr)
+    if (!d) return
+    // Keep whatever distance the reader had zoomed to; only the bearing moves.
+    const r = camera.position.length() || 10
+    camera.position.set(-d[0] * r, -d[1] * r, -d[2] * r)
+    camera.lookAt(0, 0, 0)
+    controls?.target?.set?.(0, 0, 0)
+    controls?.update?.()
+  }, [abbr, camera, controls])
+  return null
+}
+
 function FocusRig({ scale, focus }) {
   const camera = useThree((s) => s.camera)
   const controls = useThree((s) => s.controls)
@@ -379,6 +408,10 @@ export default function App() {
     CAPTURE?.scale === 'system' ? (CAPTURE.index ?? 0) : 0,
   )
   const [groupIndex, setGroupIndex] = useState(0)
+  // SK-1: null means the sky overlay is off. 0 is The Real Sky, 1..88 are the
+  // IAU figures. Kept out of the rung indices on purpose so leaving the sky
+  // restores whatever object you were on.
+  const [skyIndex, setSkyIndex] = useState(null)
   // SN-07: the nebula rung cycles star birth and star death
   const [nebulaIndex, setNebulaIndex] = useState(
     CAPTURE?.scale === 'nebula' ? (CAPTURE.index ?? 0) : 0,
@@ -423,7 +456,40 @@ export default function App() {
   // carry factsKids + factsAdvanced; the older catalogues carry a flat
   // `facts` that factsFor() falls back to, so this state changes nothing
   // for them and the switch below stays hidden on those rungs.
-  const [audience, setAudience] = useState('kids')
+  // SK-1: the reading level, remembered. Asked once on first load, because
+  // until now this switch has never rendered at all — hasLadder() was false
+  // for every reachable entry, so the two-rung facts had nothing to govern.
+  // The constellations changed that.
+  //
+  // Every storage access is wrapped: a blocked localStorage (private mode, a
+  // browser set to refuse site data) must degrade to "don't ask, don't
+  // remember" rather than take the app down or ask on every single load.
+  const [audience, setAudience] = useState(() => {
+    try {
+      const v = localStorage.getItem('eg:audience')
+      if (v === 'kids' || v === 'advanced') return v
+    } catch {
+      /* storage unavailable — fall through to the default */
+    }
+    return 'kids'
+  })
+  const [askLevel, setAskLevel] = useState(() => {
+    if (CAPTURE) return false // never in front of a frame being rendered
+    try {
+      return !localStorage.getItem('eg:audience')
+    } catch {
+      return false
+    }
+  })
+  const chooseLevel = useCallback((a) => {
+    setAudience(a)
+    setAskLevel(false)
+    try {
+      localStorage.setItem('eg:audience', a)
+    } catch {
+      /* the choice still holds for this session */
+    }
+  }, [])
   // CB-10: the cluster rung's redshift-space toggle — one boolean; the
   // scene glides its uniform toward the target (snaps when frozen).
   const [zSpace, setZSpace] = useState(false)
@@ -499,6 +565,9 @@ export default function App() {
   // read as a sequence; the cost of that choice is that shot 13's index
   // moved, which shots.js records.
   const nebulaList = useMemo(() => [NEBULA_INFO, WR_INFO, CRAB_INFO], [])
+  // The Real Sky leads, then the 88 in IAU order. check:content asserts every
+  // one of them names a figure skyCatalog actually draws.
+  const skyList = useMemo(() => [SKY_INFO, ...CONSTELLATIONS], [])
 
   let info
   let list
@@ -533,11 +602,49 @@ export default function App() {
   }
   info = list ? list[index] : CLUSTER_INFO
 
+  // The sky is only DRAWN on the planet and system rungs, and that is a
+  // physical claim rather than a budget one: a constellation is a line-of-sight
+  // coincidence seen from Earth, so from the galaxy rung outward you are not
+  // standing anywhere those figures mean anything. The browser is available
+  // exactly where the figures are, and the condition below mirrors the <Sky>
+  // mount so the two cannot drift.
+  const skyAvailable =
+    SKY_MODE !== 'off' && (rung.id === 'system' || rung.id === 'planet')
+
+  // Climbing off a rung that draws the sky closes it, rather than leaving the
+  // overlay armed and invisible until you come back down.
+  useEffect(() => {
+    if (!skyAvailable) setSkyIndex(null)
+  }, [skyAvailable])
+
+  // SK-1: the sky takeover. Third instance of the GH-12/CB-11 pattern — the
+  // panel's subject is replaced without touching any rung's focus index, so
+  // leaving the sky drops you back exactly where you were.
+  //
+  // The sky is not a rung and deliberately never became one: the ladder is a
+  // scale journey and the sky is a VIEWPOINT, drawn on every rung already. It
+  // overlays whichever rung you are standing on.
+  //
+  // Entry 0 is SKY_INFO — "The Real Sky", which had been imported into this
+  // file and never used since the day it was written — then the 88 figures,
+  // exactly as GROUP_INFO leads the Local Group list.
+  if (skyIndex !== null && skyAvailable) {
+    list = skyList
+    index = skyIndex
+    setIndex = setSkyIndex
+    info = skyList[skyIndex]
+  }
+
   // GH-12 call: while the god is at work (a body held or off its rail),
   // the info panel becomes the God's Hands payload — the facts arrive at
   // the exact moment the user is doing the thing they explain. No cycle
   // entry (that would perturb the focus indices); order restored, the
   // panel hands back.
+  //
+  // Ranked ABOVE the sky on purpose: flinging a planet is something you just
+  // did with your hands, and an explanation of it outranks whatever you were
+  // reading. Redshift below is ranked the other way — it is a mode you are
+  // sitting in, not an action, so a reader who has gone to the sky keeps it.
   const godPanel = rung.id === 'system' && (god.held || god.wild)
   if (godPanel) info = GODS_HANDS_INFO
 
@@ -546,8 +653,13 @@ export default function App() {
   if (rung.id === 'cluster' && zSpace) info = REDSHIFT_INFO
 
   // Camera focus target for the focused entry (null = overview framing).
+  // Suppressed entirely while the sky is up: focus flies the camera at a body
+  // in the scene, and the thing being read about is painted on the shell 57
+  // units out in every direction. There is nothing to fly to.
   let focus = null
-  if (rung.id === 'group' && groupIndex > 0) {
+  if (skyIndex !== null && skyAvailable) {
+    focus = null
+  } else if (rung.id === 'group' && groupIndex > 0) {
     const m = MEMBERS[groupIndex - 1]
     const r = m.cfg.radius ?? 2
     focus = { kind: 'static', pos: m.pos, dist: r * 2.6, min: r * 0.9 }
@@ -593,6 +705,9 @@ export default function App() {
         <TouchPolicy />
         {!CAPTURE && <ViewRig scale={scale} />}
         {!CAPTURE && <FocusRig scale={scale} focus={focus} />}
+        {!CAPTURE && (
+          <SkyRig abbr={skyIndex > 0 && skyAvailable ? skyList[skyIndex].abbr : null} />
+        )}
         {/* zoom-through suspends while focused: focus zoom ranges sit
             below the rung's stops and would false-trigger a descent */}
         {!CAPTURE && !focus && !god.held && (
@@ -609,11 +724,15 @@ export default function App() {
             constellations would be a lie told from the wrong vantage point.
             `?sky=` overrides: off | stars | all (all 88 figures). */}
         {SKY_MODE !== 'off' && (rung.id === 'system' || rung.id === 'planet') && (
+          /* Browsing the sky forces the figures on and forces all 88: a reader
+             paging to Lacerta with ?sky=stars, or with the zodiac subset,
+             would otherwise be highlighting a figure that is not drawn. */
           <Sky
             radius={rung.sky - 2}
-            showFigures={SKY_MODE !== 'stars'}
-            figures={SKY_MODE === 'all' ? 'all' : 'zodiac'}
+            showFigures={skyIndex !== null || SKY_MODE !== 'stars'}
+            figures={skyIndex !== null || SKY_MODE === 'all' ? 'all' : 'zodiac'}
             showEcliptic={rung.id === 'system' && SKY_MODE !== 'stars'}
+            highlight={skyIndex > 0 ? skyList[skyIndex].abbr : null}
           />
         )}
         {rung.id === 'planet' &&
@@ -693,6 +812,36 @@ export default function App() {
           />
         )}
       </Canvas>
+
+      {askLevel && (
+        <div className="level" role="dialog" aria-modal="true" aria-labelledby="level-title">
+          <div className="level-card">
+            <div className="level-kicker">echoGalaxy</div>
+            <h2 id="level-title">How should the facts read?</h2>
+            <p>
+              Every object here carries two sets of facts, written separately
+              rather than one simplified from the other.
+            </p>
+            <div className="level-choices">
+              <button onClick={() => chooseLevel('kids')}>
+                <b>{AUDIENCE_LABELS.kids}</b>
+                <span>
+                  Plain language and concrete pictures. Nothing you would have
+                  to un-learn later.
+                </span>
+              </button>
+              <button onClick={() => chooseLevel('advanced')}>
+                <b>{AUDIENCE_LABELS.advanced}</b>
+                <span>
+                  The real numbers, the mechanism, and the named physics
+                  behind it.
+                </span>
+              </button>
+            </div>
+            <p className="level-foot">Switchable any time, from the facts panel.</p>
+          </div>
+        </div>
+      )}
 
       {!CAPTURE && !gl && <div className="boot">initializing renderer…</div>}
       {!CAPTURE && <div className={'scale-fade' + (fading ? ' active' : '')} />}
@@ -818,6 +967,27 @@ export default function App() {
                   </div>
                 </dl>
               </section>
+              {skyAvailable && (
+                <section>
+                  <h2>The sky</h2>
+                  <p className="menu-note">
+                    Every star above you is a real one, in its real place. All
+                    88 constellations are drawn — page through them and each
+                    lights up in turn.
+                  </p>
+                  <button
+                    className="menu-action"
+                    onClick={() => {
+                      setSkyIndex(skyIndex === null ? 0 : null)
+                      setMenuOpen(false)
+                    }}
+                  >
+                    {skyIndex === null
+                      ? 'Browse the constellations'
+                      : 'Back to the ' + rung.label.toLowerCase()}
+                  </button>
+                </section>
+              )}
             </div>
           )}
         </div>

@@ -185,6 +185,16 @@ try {
         }
         await sleep(900)
 
+        // SK-1: every viewport runs on a fresh Chrome profile, so localStorage
+        // is empty and the reading-level modal is up over the HUD. Dismiss it
+        // before measuring — otherwise this gate reports on a layout sitting
+        // behind a full-frame overlay that no returning reader ever sees, and
+        // its coverage and overlap numbers describe a state that is real for
+        // exactly one page load.
+        await page.ev(`(() => { const b = document.querySelector('.level-choices button');
+          if (b) b.click() })()`)
+        await sleep(300)
+
         // Both drawers open at once USED to be the worst case, and this gate
         // opened both to measure it. On compact they are now mutually
         // exclusive — opening one closes the other — so that state cannot be
