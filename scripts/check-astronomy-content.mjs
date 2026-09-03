@@ -239,6 +239,104 @@ const unprofiled = topRanked.filter((r) => !byName.has(r.name))
 if (unprofiled.length) fail(`top-16 stars without a profile: ${unprofiled.map((r) => r.name).join(', ')}`)
 else pass(`all ${topRanked.length} top-16 brightest stars carry a profile`)
 
+/* 10 — star profiles resolve to real catalogue stars ------------------ *
+ * SK-2. A profile carries `name` and `designation`; the catalogue is keyed by
+ * HR number. Nothing joined the two, so `hr` was added by hand — which means
+ * it is exactly the kind of field that is wrong silently: a plausible number
+ * points at a real star that is simply the wrong one, and a marker appears in
+ * a confident, incorrect place.
+ *
+ * Position is the check that actually catches that. Magnitude is a weaker
+ * signal here, because two of these genuinely disagree with the catalogue for
+ * astronomical reasons rather than clerical ones — and both are already
+ * declared in fields the profile carries:
+ *
+ *   eta-carinae  catalogue 6.21, profile 4.5. A luminous blue variable that
+ *                was magnitude -0.8 in 1843 and 8th a century later. Its
+ *                magRange [-1.0, 7.9] brackets the catalogue's value.
+ *   acrux        catalogue 1.33, profile 0.76. The catalogue lists the
+ *                component; the profile gives what the naked eye sees, which
+ *                is the sum. Its `spectral` names both stars.
+ *
+ * So the magnitude rule has two escapes and both are read from data already
+ * present, rather than from a list of exceptions maintained here.            */
+console.log('\n[10] star profiles resolve to catalogue stars')
+{
+  const { STARS, HR_INDEX, figureDirection, figureRadius } = await import('../src/skyCatalog.js')
+  const MAG_LIMIT = 7.5
+  const MAG_TOLERANCE = 0.6
+  // Each figure is measured against its OWN extent plus a margin, because one
+  // number cannot describe both Crux (2.1 degrees across) and Hydra (62). A
+  // fixed 25 was tried and failed on Achernar, which is a real member of
+  // Eridanus sitting 36.9 degrees off centre — the river runs that far, and
+  // the star's name means "end of the river". The margin covers members that
+  // are not themselves endpoints of the drawn stick figure.
+  const DEGREE_MARGIN = 8
+
+  const abbrByName = new Map(CONSTELLATIONS.map((c) => [c.name, c.abbr]))
+  let checked = 0
+  let bad = 0
+
+  // A bright profile with no `hr` is the failure that matters most: it is a
+  // star the sky draws and the app cannot point at.
+  const unmapped = STAR_PROFILES.filter(
+    (p) => p.id !== 'sol' && typeof p.mag === 'number' && p.mag <= MAG_LIMIT && !p.hr,
+  )
+  if (unmapped.length) {
+    fail(`bright profile(s) with no hr: ${unmapped.map((p) => p.id).join(', ')}`)
+    bad += unmapped.length
+  }
+
+  for (const p of STAR_PROFILES) {
+    if (!p.hr) continue
+    checked += 1
+    const i = HR_INDEX.get(p.hr)
+    if (i === undefined) {
+      fail(`${p.id}: HR ${p.hr} is not in the catalogue`)
+      bad += 1
+      continue
+    }
+    const s = STARS[i]
+    const dir = abbrByName.has(p.constellation)
+      ? figureDirection(abbrByName.get(p.constellation))
+      : null
+    if (dir) {
+      const dot = Math.max(-1, Math.min(1, s[1] * dir[0] + s[2] * dir[1] + s[3] * dir[2]))
+      const deg = (Math.acos(dot) * 180) / Math.PI
+      const reach = (figureRadius(abbrByName.get(p.constellation)) ?? 0) + DEGREE_MARGIN
+      if (deg > reach) {
+        fail(
+          `${p.id}: HR ${p.hr} sits ${deg.toFixed(1)}° from the centre of ` +
+            `${p.constellation}, which only reaches ${reach.toFixed(1)}° — wrong star`,
+        )
+        bad += 1
+        continue
+      }
+    }
+    const catMag = s[4]
+    const varies = Array.isArray(p.magRange) && catMag >= p.magRange[0] && catMag <= p.magRange[1]
+    const multiple = typeof p.spectral === 'string' && p.spectral.includes('+')
+    if (Math.abs(catMag - p.mag) > MAG_TOLERANCE && !varies && !multiple) {
+      fail(
+        `${p.id}: catalogue magnitude ${catMag} against profile ${p.mag}, ` +
+          `and neither magRange nor a multiple spectral type explains it`,
+      )
+      bad += 1
+    }
+  }
+  if (!bad)
+    pass(
+      `${checked} star profiles resolve, sit inside their own constellation's ` +
+        `reach, and agree on magnitude`,
+    )
+
+  const faint = STAR_PROFILES.filter((p) => p.id !== 'sol' && !p.hr)
+  console.log(
+    `  .. ${faint.length} profile(s) fainter than V ${MAG_LIMIT} carry no hr and ` +
+      `are not drawn: ${faint.map((p) => p.name).join(', ')}`,
+  )
+}
+
 /* 9 — Local Group star budget --------------------------------------- *
  * LocalGroup.jsx opens with a budget rule: every member's `count` together
  * sums to exactly 24,000, so the whole group rung costs what the single

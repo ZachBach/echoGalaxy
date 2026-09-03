@@ -25,7 +25,8 @@ import { createSkybox, bakeSkybox } from './skybox'
 import Sky, { SKY_INFO } from './Sky'
 import { GALAXY_TYPES } from './galaxyData'
 import { CONSTELLATIONS } from './constellationData'
-import { figureDirection } from './skyCatalog'
+import { figureDirection, STARS, HR_INDEX } from './skyCatalog'
+import { STAR_PROFILES } from './starData'
 import { PLANET_TYPES } from './planetData'
 import { createRenderer, backendName } from './renderer'
 import { factsFor, hasLadder, AUDIENCES, AUDIENCE_LABELS } from './factsLadder'
@@ -170,6 +171,53 @@ function ViewRig({ scale }) {
 // so drag/zoom stay natural around a moving world. Runs after ViewRig in
 // the tree, so on rung entry the persisted focus wins over the default
 // framing.
+/**
+ * Nudge a bearing sideways by `deg`, about an axis perpendicular to it.
+ *
+ * SkyRig puts the camera on the far side of the origin and looks back through
+ * the scene, so whatever it aims at lands dead centre — with the rung's own
+ * subject sitting directly in front of it. A constellation is large enough to
+ * surround the subject and reads fine. A single star does not: Betelgeuse
+ * arrived exactly behind the Sun, and its reticle looked like a mark ON the
+ * Sun rather than a star far beyond it. Tilting the aim a little puts the star
+ * off to one side, still well inside the frame, with clear sky around it.
+ *
+ * 22 degrees, not 14: at 14 the reticle landed at roughly the same screen
+ * radius as the outer orbits, so it kept arriving on top of a planet. Further
+ * out is emptier.
+ */
+function tiltDirection(dir, deg) {
+  if (!dir) return null
+  const [x, y, z] = dir
+  // any vector not parallel to dir, crossed with it, gives a perpendicular axis
+  const up = Math.abs(y) < 0.9 ? [0, 1, 0] : [1, 0, 0]
+  let ax = up[1] * z - up[2] * y
+  let ay = up[2] * x - up[0] * z
+  let az = up[0] * y - up[1] * x
+  const al = Math.hypot(ax, ay, az) || 1
+  ax /= al
+  ay /= al
+  az /= al
+  // Rodrigues: v cos + (a x v) sin + a (a . v)(1 - cos)
+  const t = (deg * Math.PI) / 180
+  const c = Math.cos(t)
+  const sn = Math.sin(t)
+  const dot = ax * x + ay * y + az * z
+  return [
+    x * c + (ay * z - az * y) * sn + ax * dot * (1 - c),
+    y * c + (az * x - ax * z) * sn + ay * dot * (1 - c),
+    z * c + (ax * y - ay * x) * sn + az * dot * (1 - c),
+  ]
+}
+
+/** Unit direction of a catalogue star, by HR number. */
+function starDirection(hr) {
+  const i = hr == null ? undefined : HR_INDEX.get(hr)
+  if (i === undefined) return null
+  const s = STARS[i]
+  return [s[1], s[2], s[3]]
+}
+
 // SK-1: the sky's answer to FocusRig. A constellation is not a place you can
 // fly to — it is a direction, painted on a shell 57 units out — so instead of
 // moving toward it the camera swings to the far side of the origin and looks
@@ -180,12 +228,12 @@ function ViewRig({ scale }) {
 // camera is still looking along the ecliptic, and nothing appears to happen.
 // The subject stays centred in frame, so you get the system with its
 // constellation behind it rather than one or the other.
-function SkyRig({ abbr }) {
+function SkyRig({ dir }) {
   const camera = useThree((s) => s.camera)
   const controls = useThree((s) => s.controls)
+  const key = dir ? dir.join(',') : null
   useEffect(() => {
-    if (!abbr) return
-    const d = figureDirection(abbr)
+    const d = key ? key.split(',').map(Number) : null
     if (!d) return
     // Keep whatever distance the reader had zoomed to; only the bearing moves.
     const r = camera.position.length() || 10
@@ -193,7 +241,7 @@ function SkyRig({ abbr }) {
     camera.lookAt(0, 0, 0)
     controls?.target?.set?.(0, 0, 0)
     controls?.update?.()
-  }, [abbr, camera, controls])
+  }, [key, camera, controls])
   return null
 }
 
@@ -412,6 +460,11 @@ export default function App() {
   // IAU figures. Kept out of the rung indices on purpose so leaving the sky
   // restores whatever object you were on.
   const [skyIndex, setSkyIndex] = useState(null)
+  // Which catalogue the sky pager is walking: 'figures' (The Real Sky + the
+  // 88) or 'stars' (the named profiles). Two lists rather than one of 128,
+  // because "next" should mean the next constellation OR the next star, never
+  // "the 89th thing, which happens to be where the stars begin".
+  const [skyView, setSkyView] = useState('figures')
   // SN-07: the nebula rung cycles star birth and star death
   const [nebulaIndex, setNebulaIndex] = useState(
     CAPTURE?.scale === 'nebula' ? (CAPTURE.index ?? 0) : 0,
@@ -567,7 +620,13 @@ export default function App() {
   const nebulaList = useMemo(() => [NEBULA_INFO, WR_INFO, CRAB_INFO], [])
   // The Real Sky leads, then the 88 in IAU order. check:content asserts every
   // one of them names a figure skyCatalog actually draws.
-  const skyList = useMemo(() => [SKY_INFO, ...CONSTELLATIONS], [])
+  const figureList = useMemo(() => [SKY_INFO, ...CONSTELLATIONS], [])
+  // Only the profiles the catalogue actually draws. The other eight are real
+  // stars and stay in the data — they are simply fainter than the V 7.5 limit
+  // this sky is built to, so there is no dot to ring. Pointing a reticle at
+  // where they would be if you could see them would be a lie told confidently.
+  const starList = useMemo(() => STAR_PROFILES.filter((p) => p.hr), [])
+  const skyList = skyView === 'stars' ? starList : figureList
 
   let info
   let list
@@ -652,6 +711,17 @@ export default function App() {
   // what the eye is seeing (the GH-12 takeover pattern).
   if (rung.id === 'cluster' && zSpace) info = REDSHIFT_INFO
 
+  // Where the sky wants the camera pointed — one bearing for both views, so
+  // SkyRig does not need to know which catalogue is being walked.
+  const skyLookAt =
+    !skyAvailable || skyIndex === null
+      ? null
+      : skyView === 'stars'
+        ? tiltDirection(starDirection(skyList[skyIndex]?.hr), 22)
+        : skyIndex > 0
+          ? figureDirection(skyList[skyIndex].abbr)
+          : null
+
   // Camera focus target for the focused entry (null = overview framing).
   // Suppressed entirely while the sky is up: focus flies the camera at a body
   // in the scene, and the thing being read about is painted on the shell 57
@@ -705,9 +775,7 @@ export default function App() {
         <TouchPolicy />
         {!CAPTURE && <ViewRig scale={scale} />}
         {!CAPTURE && <FocusRig scale={scale} focus={focus} />}
-        {!CAPTURE && (
-          <SkyRig abbr={skyIndex > 0 && skyAvailable ? skyList[skyIndex].abbr : null} />
-        )}
+        {!CAPTURE && <SkyRig dir={skyLookAt} />}
         {/* zoom-through suspends while focused: focus zoom ranges sit
             below the rung's stops and would false-trigger a descent */}
         {!CAPTURE && !focus && !god.held && (
@@ -732,7 +800,14 @@ export default function App() {
             showFigures={skyIndex !== null || SKY_MODE !== 'stars'}
             figures={skyIndex !== null || SKY_MODE === 'all' ? 'all' : 'zodiac'}
             showEcliptic={rung.id === 'system' && SKY_MODE !== 'stars'}
-            highlight={skyIndex > 0 ? skyList[skyIndex].abbr : null}
+            highlight={
+              skyView === 'figures' && skyIndex > 0 ? skyList[skyIndex].abbr : null
+            }
+            markStar={
+              skyView === 'stars' && skyIndex !== null
+                ? starDirection(skyList[skyIndex]?.hr)
+                : null
+            }
           />
         )}
         {rung.id === 'planet' &&
@@ -978,14 +1053,34 @@ export default function App() {
                   <button
                     className="menu-action"
                     onClick={() => {
-                      setSkyIndex(skyIndex === null ? 0 : null)
+                      setSkyView('figures')
+                      setSkyIndex(0)
                       setMenuOpen(false)
                     }}
                   >
-                    {skyIndex === null
-                      ? 'Browse the constellations'
-                      : 'Back to the ' + rung.label.toLowerCase()}
+                    Browse the 88 constellations
                   </button>
+                  <button
+                    className="menu-action"
+                    onClick={() => {
+                      setSkyView('stars')
+                      setSkyIndex(0)
+                      setMenuOpen(false)
+                    }}
+                  >
+                    Browse the named stars
+                  </button>
+                  {skyIndex !== null && (
+                    <button
+                      className="menu-action menu-leave"
+                      onClick={() => {
+                        setSkyIndex(null)
+                        setMenuOpen(false)
+                      }}
+                    >
+                      Back to the {rung.label.toLowerCase()}
+                    </button>
+                  )}
                 </section>
               )}
             </div>

@@ -26196,6 +26196,33 @@ export function figureDirection(abbr) {
   return [x / len, y / len, z / len]
 }
 
+/**
+ * How far a figure REACHES: the greatest angle, in degrees, between its mean
+ * direction and any of its own drawn stars.
+ *
+ * A single tolerance cannot describe both Crux and Eridanus. Achernar is a
+ * genuine member of Eridanus and sits 36.9 degrees off its centre, because the
+ * river runs some sixty degrees down the sky and Achernar is its end — the
+ * name says so. Measuring each figure's own extent is the only bar that means
+ * the same thing for all 88.
+ */
+export function figureRadius(abbr) {
+  const dir = figureDirection(abbr)
+  if (!dir) return null
+  let max = 0
+  for (const [a, ha, hb] of FIGURE_SEGMENTS) {
+    if (a !== abbr) continue
+    for (const hr of [ha, hb]) {
+      const s = STARS[HR_INDEX.get(hr)]
+      if (!s) continue
+      const dot = Math.max(-1, Math.min(1, s[1] * dir[0] + s[2] * dir[1] + s[3] * dir[2]))
+      const deg = (Math.acos(dot) * 180) / Math.PI
+      if (deg > max) max = deg
+    }
+  }
+  return max
+}
+
 /** The 13 constellations the ecliptic actually passes through. */
 export const ZODIAC_ABBRS = [
   'Ari', 'Tau', 'Gem', 'Cnc', 'Leo', 'Vir',

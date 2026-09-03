@@ -187,6 +187,47 @@ export function buildFigures({
 }
 
 /**
+ * SK-2 — a reticle around one named star.
+ *
+ * A constellation can be highlighted by redrawing its own lines brighter. A
+ * single star cannot: it is one dot among 25,199, and turning it up just makes
+ * a slightly brighter dot in a field full of them. So the marker is a ring
+ * AROUND the position rather than a mark on it, which reads instantly and
+ * never obscures the thing it points at.
+ *
+ * Sits just inside the star shell and faces the origin, so it is edge-on to
+ * nothing and always presents as a circle to a camera looking outward.
+ */
+export function buildStarMarker({ dir, radius = 57, color = 0x9fc2ff, size = 0.9 } = {}) {
+  const geometry = new THREE.RingGeometry(size, size * 1.18, 56)
+
+  const material = new MeshBasicNodeMaterial()
+  material.colorNode = TSL.color(color)
+  material.opacityNode = TSL.float(0.92)
+  material.transparent = true
+  material.depthWrite = false
+  material.depthTest = false
+  material.side = THREE.DoubleSide
+  material.blending = THREE.AdditiveBlending
+
+  const mesh = new THREE.Mesh(geometry, material)
+  mesh.position.set(dir[0] * radius, dir[1] * radius, dir[2] * radius)
+  mesh.lookAt(0, 0, 0)
+  mesh.frustumCulled = false
+  mesh.renderOrder = -7
+
+  return {
+    mesh,
+    geometry,
+    material,
+    dispose: () => {
+      geometry.dispose()
+      material.dispose()
+    },
+  }
+}
+
+/**
  * The ecliptic itself — the Sun's annual path, and the line that defines
  * which constellations are "the zodiac" at all. In this scene it is simply
  * the circle y = 0, because the catalogue was generated in ecliptic

@@ -346,6 +346,19 @@ body:has(.app[style*='width']) {
   font-size: 13px;
 }
 
+.hud .menu-action + .menu-action {
+  margin-top: 7px;
+}
+
+/* Leaving is a different kind of verb from the two that enter, so it does not
+   look like a third destination. */
+.hud .menu-action.menu-leave {
+  background: transparent;
+  box-shadow: none;
+  border-color: var(--line-soft);
+  color: var(--ink-faint);
+}
+
 /* Second and later sections rule off from the one above. Nothing uses this
    yet — the menu ships with Moving around alone — but it is the shape the
    next entry drops into. */

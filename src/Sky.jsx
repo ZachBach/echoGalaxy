@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react'
-import { buildStarField, buildFigures, buildEcliptic } from './skyMaterial'
+import { buildStarField, buildFigures, buildEcliptic, buildStarMarker } from './skyMaterial'
 
 // <Sky> (ZD) — the real sky, from the real catalogue.
 //
@@ -36,6 +36,8 @@ export default function Sky({
   figureOpacity = 0.22,
   // SK-1: one IAU abbreviation to light up over the base layer, or null.
   highlight = null,
+  // SK-2: a unit direction to ring, or null. One named star among 25,199.
+  markStar = null,
 }) {
   const field = useMemo(
     () => (showStars ? buildStarField({ radius, magLimit, gain }) : null),
@@ -83,11 +85,21 @@ export default function Sky({
   )
   useEffect(() => () => hi?.dispose(), [hi])
 
+  // Keyed on the components rather than the array, so a caller passing a fresh
+  // array of the same direction does not rebuild the mesh every render.
+  const mk = useMemo(
+    () => (markStar ? buildStarMarker({ dir: markStar, radius: radius - 1, size: 1.7 }) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [markStar?.[0], markStar?.[1], markStar?.[2], radius],
+  )
+  useEffect(() => () => mk?.dispose(), [mk])
+
   return (
     <group>
       {field && <primitive object={field.sprite} />}
       {figs && <primitive object={figs.lines} />}
       {hi && <primitive object={hi.lines} />}
+      {mk && <primitive object={mk.mesh} />}
       {ecl && <primitive object={ecl.lines} />}
     </group>
   )
