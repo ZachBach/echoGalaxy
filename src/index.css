@@ -214,9 +214,15 @@ body:has(.app[style*='width']) {
   min-width: 0;
 }
 
-/* The ? sits hard right, opposite the ☰ — the two ends of the top bar are the
-   two things you reach for when you do not know what to do. */
-.hud .help-btn {
+/* The menu sits hard right, opposite the ☰ — the two ends of the top bar are
+   the two things you reach for when you do not know what to do.
+
+   Three dots, deliberately NOT a second hamburger. The scale ladder owns ☰ at
+   the other end, and two identical glyphs at opposite ends of one bar is the
+   same failure this HUD already fixed once, when "‹ System" sat directly above
+   "‹ Prev" and the pair read as two Previous buttons. Dots also carry the right
+   meaning: ☰ is a list you open, ⋯ is "there is more here". */
+.hud .menu-btn {
   pointer-events: auto;
   flex: 0 0 auto;
   margin-left: auto;
@@ -224,22 +230,58 @@ body:has(.app[style*='width']) {
   height: 44px;
   min-height: 44px;
   padding: 0;
+  display: grid;
+  place-items: center;
   border-radius: 11px;
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1;
-  color: var(--ink-dim);
 }
 
-.hud .help-btn.open {
+.hud .menu-btn.open {
   background: var(--chip-hot);
   border-color: var(--accent);
-  color: var(--ink);
+}
+
+/* Same construction as .burger's bars: the middle dot is the box, the outer
+   two are pseudo-elements, so one element draws all three and they cannot
+   drift apart. */
+.hud .menu-btn .dots,
+.hud .menu-btn .dots::before,
+.hud .menu-btn .dots::after {
+  display: block;
+  width: 3.5px;
+  height: 3.5px;
+  border-radius: 50%;
+  background: #b9c4e0;
+}
+
+.hud .menu-btn .dots {
+  position: relative;
+}
+
+.hud .menu-btn .dots::before,
+.hud .menu-btn .dots::after {
+  content: "";
+  position: absolute;
+  left: 0;
+}
+
+.hud .menu-btn .dots::before { top: -6.5px; }
+.hud .menu-btn .dots::after  { top: 6.5px; }
+
+.hud .menu-btn:hover .dots,
+.hud .menu-btn:hover .dots::before,
+.hud .menu-btn:hover .dots::after,
+.hud .menu-btn.open .dots,
+.hud .menu-btn.open .dots::before,
+.hud .menu-btn.open .dots::after {
+  background: var(--ink);
 }
 
 /* Right-aligned under the button that opens it, and capped so a long entry
-   scrolls rather than running off the bottom of a short screen. */
-.hud .help {
+   scrolls rather than running off the bottom of a short screen. Built as
+   SECTIONS from the start: the next thing that needs a home in the top bar
+   should be an entry in here, not another 44px button in a row with space for
+   about one more. */
+.hud .menu {
   pointer-events: auto;
   align-self: flex-end;
   width: min(340px, 100%);
@@ -255,7 +297,7 @@ body:has(.app[style*='width']) {
   padding: 13px 15px 14px;
 }
 
-.hud .help h2 {
+.hud .menu h2 {
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.14em;
@@ -264,7 +306,7 @@ body:has(.app[style*='width']) {
   margin-bottom: 11px;
 }
 
-.hud .help dl > div + div {
+.hud .menu dl > div + div {
   margin-top: 11px;
   padding-top: 11px;
   border-top: 1px solid var(--line-soft);
@@ -272,7 +314,7 @@ body:has(.app[style*='width']) {
 
 /* The gesture is the heading and the outcome is the body — a reader scanning
    for "how do I get closer" is scanning the left column, not the prose. */
-.hud .help dt {
+.hud .menu dt {
   font-family: ui-monospace, "SFMono-Regular", monospace;
   font-size: 10.5px;
   letter-spacing: 0.08em;
@@ -281,10 +323,19 @@ body:has(.app[style*='width']) {
   margin-bottom: 3px;
 }
 
-.hud .help dd {
+.hud .menu dd {
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--ink-dim);
+}
+
+/* Second and later sections rule off from the one above. Nothing uses this
+   yet — the menu ships with Moving around alone — but it is the shape the
+   next entry drops into. */
+.hud .menu section + section {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid var(--line);
 }
 
 /* The top bar is the one region with no panel behind it — it floats on the

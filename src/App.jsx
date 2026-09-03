@@ -408,9 +408,9 @@ export default function App() {
   const [rungsOpen, setRungsOpen] = useState(
     () => !(typeof matchMedia === 'function' && matchMedia(COMPACT_QUERY).matches),
   )
-  // The controls panel behind the ? in the top bar. Closed by default on every
-  // screen: it explains what to do, so it must not be the thing in the way.
-  const [helpOpen, setHelpOpen] = useState(false)
+  // The menu behind the ⋯ in the top bar. Closed by default on every screen:
+  // it explains what to do, so it must not be the thing in the way.
+  const [menuOpen, setMenuOpen] = useState(false)
   // The system switcher, in its own drawer on the left. It used to sit in the
   // bottom stack directly above Prev/Next, which put "‹ System" and "‹ Prev"
   // one under the other — two buttons leading with the same glyph, reading as
@@ -735,30 +735,33 @@ export default function App() {
               <span className="brand">echoGalaxy</span>
               <span className="subject">{info.name}</span>
             </div>
-            {/* The controls, on demand. They used to live only in the one-line
-                hint on the floor, which wrapped to two lines on a phone, sat
-                under everything else in the reading order, and vanished
-                entirely the moment a drawer opened — so the explanation was
-                least available exactly when someone was most likely to be
-                lost. A button states that help exists. */}
+            {/* The menu. A ? would only ever hold help; this holds sections,
+                so the next thing that needs a home here is an entry rather
+                than another button in a bar that has room for about one more.
+—
+                Three dots, NOT a second ☰. The scale ladder already owns the
+                hamburger at the other end of this bar, and two identical
+                glyphs at opposite ends is precisely the failure this HUD
+                already fixed once, when "‹ System" sat above "‹ Prev" and read
+                as two Previous buttons. Same lesson, different axis. */}
             <button
-              className={'help-btn' + (helpOpen ? ' open' : '')}
+              className={'menu-btn' + (menuOpen ? ' open' : '')}
               onClick={() => {
-                const next = !helpOpen
-                setHelpOpen(next)
-                // Help hangs from the top bar and the facts sit on the floor;
-                // on a phone they meet in the middle. Same turn-taking rule
-                // the two drawers already follow.
+                const next = !menuOpen
+                setMenuOpen(next)
+                // The menu hangs from the top bar and the facts sit on the
+                // floor; on a phone they meet in the middle. Same turn-taking
+                // rule the two drawers already follow.
                 if (next && compactLayout) {
                   setFactsOpen(false)
                   setSystemsOpen(false)
                 }
               }}
-              aria-expanded={helpOpen}
-              aria-controls="help-panel"
-              aria-label={helpOpen ? 'Hide the controls' : 'How to move around'}
+              aria-expanded={menuOpen}
+              aria-controls="menu-panel"
+              aria-label={menuOpen ? 'Close the menu' : 'Open the menu'}
             >
-              ?
+              <span className="dots" aria-hidden="true" />
             </button>
           </div>
           {rungsOpen && (
@@ -775,44 +778,46 @@ export default function App() {
               ))}
             </div>
           )}
-          {helpOpen && (
-            <div className="help" id="help-panel">
-              <h2>Moving around</h2>
-              <dl>
-                <div>
-                  <dt>{COARSE ? 'Drag' : 'Click and drag'}</dt>
-                  <dd>Turn the camera around whatever you are looking at.</dd>
-                </div>
-                <div>
-                  <dt>{COARSE ? 'Pinch' : 'Scroll'}</dt>
-                  <dd>Move closer or further away.</dd>
-                </div>
-                <div>
-                  <dt>{COARSE ? 'Pinch past the edge' : 'Keep zooming out'}</dt>
-                  <dd>
-                    Change scale — out to the next rung up, in to the next one
-                    down. The ladder under ☰ jumps straight to any of them.
-                  </dd>
-                </div>
-                {rung.id === 'system' && (
+          {menuOpen && (
+            <div className="menu" id="menu-panel">
+              <section>
+                <h2>Moving around</h2>
+                <dl>
                   <div>
-                    <dt>{COARSE ? 'Drag a planet' : 'Grab a planet'}</dt>
+                    <dt>{COARSE ? 'Drag' : 'Click and drag'}</dt>
+                    <dd>Turn the camera around whatever you are looking at.</dd>
+                  </div>
+                  <div>
+                    <dt>{COARSE ? 'Pinch' : 'Scroll'}</dt>
+                    <dd>Move closer or further away.</dd>
+                  </div>
+                  <div>
+                    <dt>{COARSE ? 'Pinch past the edge' : 'Keep zooming out'}</dt>
                     <dd>
-                      Pick a world up and fling it. Its new orbit is solved from
-                      the speed you release it at, so it is real physics rather
-                      than an animation — and ☄ Restore order puts everything
-                      back on its rails.
+                      Change scale — out to the next rung up, in to the next
+                      one down. The ladder under ☰ jumps straight to any.
                     </dd>
                   </div>
-                )}
-                <div>
-                  <dt>‹ Prev · Next ›</dt>
-                  <dd>
-                    Step through the objects on this rung. They sit at the foot
-                    of the facts panel, beside the count.
-                  </dd>
-                </div>
-              </dl>
+                  {rung.id === 'system' && (
+                    <div>
+                      <dt>{COARSE ? 'Drag a planet' : 'Grab a planet'}</dt>
+                      <dd>
+                        Pick a world up and fling it. Its new orbit is solved
+                        from the speed you release it at, so it is real physics
+                        rather than an animation — and ☄ Restore order puts
+                        everything back on its rails.
+                      </dd>
+                    </div>
+                  )}
+                  <div>
+                    <dt>‹ Prev · Next ›</dt>
+                    <dd>
+                      Step through the objects on this rung. They sit at the
+                      foot of the facts panel, beside the count.
+                    </dd>
+                  </div>
+                </dl>
+              </section>
             </div>
           )}
         </div>
@@ -826,7 +831,7 @@ export default function App() {
             onClick={() => {
               const next = !factsOpen
               setFactsOpen(next)
-              if (next && compactLayout) setHelpOpen(false)
+              if (next && compactLayout) setMenuOpen(false)
               // On compact the two drawers open toward each other from
               // opposite edges, so on anything narrower than ~600px their
               // panels would meet in the middle. They take turns instead.
@@ -905,7 +910,7 @@ export default function App() {
               onClick={() => {
                 const next = !systemsOpen
                 setSystemsOpen(next)
-                if (next && compactLayout) setHelpOpen(false)
+                if (next && compactLayout) setMenuOpen(false)
                 if (next && compactLayout) setFactsOpen(false)
               }}
               aria-expanded={systemsOpen}

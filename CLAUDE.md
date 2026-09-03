@@ -284,13 +284,20 @@ switcher), `.hud-bottom`. Rules worth keeping:
   ~38dvh and lands back across the subject. `:has(#rung-menu)` pushes the dock
   further down when the scale ladder is open, that being the one thing that
   grows the top bar.
-- The controls live behind the **`?` in the top bar**, not in the floor hint.
-  The hint wrapped to two lines on every phone, sat last in the reading order,
-  and vanished when a drawer opened — least available exactly when it was most
-  needed. It is `display: none` on compact now and kept on desktop.
-- **Help takes turns with the drawers on compact** for the same reason the two
-  drawers take turns with each other: it hangs from the top bar, they sit on
-  the floor, and on a phone they meet in the middle.
+- The controls live behind the **`⋮` menu at the top right**, not in the floor
+  hint. The hint wrapped to two lines on every phone, sat last in the reading
+  order, and vanished when a drawer opened — least available exactly when it
+  was most needed. It is `display: none` on compact now and kept on desktop.
+- That menu is built as **sections**, and the next thing needing a home in the
+  top bar should be an entry in it rather than another 44px button — the row
+  has space for about one more and then it is full.
+- **Dots, not a second hamburger.** The scale ladder owns `☰` at the left end;
+  two identical glyphs at opposite ends of one bar is the same failure this HUD
+  already fixed once, when "‹ System" sat above "‹ Prev" and read as two
+  Previous buttons. `☰` is a list you open, `⋮` is "there is more here".
+- **The menu takes turns with the drawers on compact** for the same reason the
+  two drawers take turns with each other: it hangs from the top bar, they sit
+  on the floor, and on a phone they meet in the middle.
 - Use `dvh`, not `vh`. `100vh` is the LARGE viewport, so on mobile the bottom
   of the layout sits under the browser chrome.
 
