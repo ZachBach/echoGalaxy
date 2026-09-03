@@ -9,11 +9,27 @@ import App from './App.jsx'
 const devParams = import.meta.env.DEV
   ? new URLSearchParams(window.location.search)
   : null
+
+// `system` is the one flag that is double-booked, and it is checked BY VALUE
+// for that reason while every other route below checks presence.
+//
+// App reads ?system=<id> to pick a star system (initialSystemIndex), and the
+// dev route wants ?system=1 for the standalone scene. With a presence check
+// the route always won, so in dev ?system=proxima-centauri silently rendered
+// SystemLab on the DEFAULT system — a documented flag that could not work,
+// failing by showing you a plausible wrong answer rather than an error.
+//
+// Production was never affected (devParams is null there) and neither was
+// capture, which pins its system from the shot definition rather than the
+// URL. It cost a debugging round to find, which is exactly what it will cost
+// the next person.
+const devSystemLab = devParams?.get('system') === '1'
+
 const Root = devParams?.has('lab')
   ? lazy(() => import('./Lab.jsx'))
   : devParams?.has('planet')
     ? lazy(() => import('./PlanetLab.jsx'))
-    : devParams?.has('system')
+    : devSystemLab
       ? lazy(() => import('./SystemLab.jsx'))
       : devParams?.has('group')
         ? lazy(() => import('./LocalGroupLab.jsx'))

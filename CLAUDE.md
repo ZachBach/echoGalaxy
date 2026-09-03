@@ -115,13 +115,24 @@ so passing two means the first one listed wins:
 ```
 ?lab=1       tsl-lib portability lab — all 71 entries (28 nodes + 43 materials)
 ?planet=1    planet recipes         (&type=<recipe> pins one, &spin=0 freezes)
-?system=1    the orbital scene
+?system=1    the orbital scene      (BY VALUE — see below)
 ?group=1     Local Group
 ?pillars=1   the Pillars volume
 ?cluster=1   Coma
 ?crab=1      the Crab remnant
 ?wr=1        Sh 2-80, the Wolf-Rayet shell
 ```
+
+Every route above tests the flag's **presence** except `system`, which tests
+for the literal value `1`. `system` is the only name that is double-booked:
+`App` also reads `?system=<id>` to choose a star system. Under a presence
+check the dev route always won, so in dev `?system=proxima-centauri` rendered
+SystemLab on its *default* system — a documented flag that could not work, and
+one that failed by showing a plausible wrong answer instead of an error.
+Production was never affected (the whole block is DEV-only) and neither was
+capture, which pins its system from the shot definition rather than the URL.
+If you add a route whose name collides with an `App` param, check it by value
+for the same reason.
 
 Debug flags that work anywhere: `?backend=webgl` (force the WebGL2
 backend), `?simulate-no-webgpu` (hide `navigator.gpu` so the real fallback

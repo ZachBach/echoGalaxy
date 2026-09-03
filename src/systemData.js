@@ -381,5 +381,222 @@ const trappistSystem = {
   ],
 }
 
-export const SYSTEMS = [solarSystem, trappistSystem]
+const proximaPlanet = (letter, r, size, phase, recipe, atmo, label, description, facts) => ({
+  id: `proxima-${letter}`,
+  recipe,
+  atmo,
+  r,
+  size,
+  phase,
+  info: {
+    name: `Proxima Centauri ${letter}`,
+    label,
+    description,
+    facts: [
+      ...facts,
+      'Proxima Centauri is the closest star to the Sun, about 4.24 light-years away.',
+      'Their separations are visually expanded here so their Keplerian motion can be inspected.',
+    ],
+  },
+})
+
+// The nearest system there is. Worth having beside the Solar System for one
+// reason above the others: the answer to "are there planets around the next
+// star over" turns out to be yes, and the next star over is this one.
+const proximaSystem = {
+  id: 'proxima-centauri',
+  info: {
+    id: 'proxima-centauri-system',
+    name: 'Proxima Centauri',
+    label: 'Red dwarf · the nearest star of all',
+    description:
+      'The closest star to the Sun, and close enough that its planets are the ' +
+      'nearest worlds outside our own system — a small, dim red dwarf with at ' +
+      'least two planets and a third strong candidate further out.',
+    facts: [
+      'At 4.24 light-years it is the nearest star to the Sun, and it still takes light over four years to reach us.',
+      'It is a flare star: it erupts violently enough that an unshielded planet nearby could have its atmosphere stripped away.',
+      'It is the third member of the Alpha Centauri system, orbiting the two Sun-like stars there at a great distance.',
+      'The scene expands the orbits for study; their ordering and Kepler timing are the point.',
+    ],
+  },
+  star: {
+    render: {
+      radius: 0.84,
+      // A flare star wears a big, hot, active corona — that is the thing about
+      // Proxima worth seeing, and the reason its shell runs wider and stronger
+      // than TRAPPIST-1's despite the two being near neighbours in class.
+      coronaScale: 1.42,
+      bodyColor: 0xff8a5e,
+      coronaColor: 0xff5a34,
+      coronaStrength: 0.88,
+    },
+    info: {
+      id: 'proxima-star',
+      name: 'Proxima Centauri',
+      label: 'Red dwarf · the nearest star',
+      description:
+        'A small, cool red dwarf. Despite being our closest stellar neighbour ' +
+        'it is far too faint to see without a telescope.',
+      facts: [
+        'At about an eighth of the Sun’s mass it is barely heavy enough to fuse hydrogen at all.',
+        'A flare can brighten it by a large factor within minutes, then fade again.',
+        'It burns its fuel so slowly that it will still be shining trillions of years from now.',
+      ],
+    },
+  },
+  orbits: [
+    proximaPlanet(
+      'd', 2.4, 0.2, 0.11, PLANET_RECIPES.mercury, false,
+      'First orbit · a scorched sub-Earth',
+      'A small, hot world orbiting so close to the star that its year lasts a matter of days.',
+      ['Proxima Centauri d is roughly a quarter of Earth’s mass, on a five-day orbit.'],
+    ),
+    proximaPlanet(
+      'b', 3.5, 0.3, 0.58, PLANET_RECIPES.rocky, ATMOSPHERES.rocky,
+      'Second orbit · the nearest temperate world',
+      'A roughly Earth-mass planet in the star’s temperate zone — the closest ' +
+      'world of its kind to Earth that anyone has found.',
+      [
+        'Proxima Centauri b receives about as much energy from its star as Earth does from the Sun.',
+        'Its year lasts a little over eleven Earth days.',
+        'Whether it kept an atmosphere against the star’s flares is the open question about it.',
+      ],
+    ),
+    proximaPlanet(
+      'c', 7.2, 0.44, 0.27, PLANET_RECIPES.iceGiant, ATMOSPHERES.iceGiant,
+      'Third orbit · a cold outer candidate',
+      'A cold super-Earth or small ice giant far out from the star, still ' +
+      'listed as a candidate rather than a confirmed world.',
+      ['Proxima Centauri c takes about five Earth YEARS to complete one orbit.'],
+    ),
+  ],
+}
+
+const kepler90Planet = (letter, r, size, phase, recipe, atmo, label, description, facts) => ({
+  id: `kepler90-${letter}`,
+  recipe,
+  atmo,
+  r,
+  size,
+  phase,
+  info: {
+    name: `Kepler-90 ${letter}`,
+    label,
+    description,
+    facts: [
+      ...facts,
+      'Every one of Kepler-90’s eight planets orbits closer to its star than Earth orbits the Sun.',
+      'Their separations are visually expanded here so their Keplerian motion can be inspected.',
+    ],
+  },
+})
+
+// Eight planets around a Sun-like star, which makes this the system that ties
+// ours on planet count — and the reason it belongs next to the Solar System in
+// the switcher. The lesson is in the comparison: the same eight worlds, the
+// same kind of star, and the whole family packed inside Earth's orbit.
+//
+// Letters run b, c, i, d, e, f, g, h by DISTANCE, not alphabetically. Planets
+// are lettered in order of discovery, and i was found last — in 2017, by a
+// neural network — so it lands third from the star in a sequence that
+// otherwise looks mis-sorted. That is real and is left alone.
+const kepler90System = {
+  id: 'kepler-90',
+  info: {
+    id: 'kepler-90-system',
+    name: 'Kepler-90',
+    label: 'Sun-like star · eight worlds, all inside Earth’s orbit',
+    description:
+      'The first system found to match the Solar System’s eight planets, about ' +
+      '2,800 light-years away. The resemblance stops at the count: every one of ' +
+      'those eight worlds orbits closer to its star than Earth does to the Sun.',
+    facts: [
+      'It was the first system known to hold eight planets, tying the Solar System.',
+      'The eighth, Kepler-90 i, was found in 2017 by a neural network trained to spot transits human searches had missed.',
+      'The whole system would fit inside Earth’s orbit — a Solar System’s worth of planets in a Mercury’s worth of space.',
+      'Like our own, the small rocky worlds orbit close in and the giants further out; the pattern repeats at a smaller scale.',
+    ],
+  },
+  star: {
+    render: {
+      radius: 1.24,
+      coronaScale: 1.22,
+      coronaColor: 0xffc266,
+      coronaStrength: 0.78,
+    },
+    info: {
+      id: 'kepler-90-star',
+      name: 'Kepler-90',
+      label: 'G-type main-sequence star · slightly hotter than the Sun',
+      description:
+        'A Sun-like star a little larger and hotter than our own — close enough ' +
+        'in kind that the comparison between the two systems is a fair one.',
+      facts: [
+        'It is a G-type main-sequence star, the same broad class as the Sun.',
+        'It sits roughly 2,800 light-years away, far beyond anything visible to the naked eye.',
+        'Its planets were all found by watching for the tiny dip in its light as each one crossed in front.',
+      ],
+    },
+  },
+  orbits: [
+    kepler90Planet(
+      'b', 2.1, 0.24, 0.07, PLANET_RECIPES.mercury, false,
+      'First orbit · a scorched rocky world',
+      'The innermost planet, close enough to its star that a year lasts a week.',
+      ['Kepler-90 b completes an orbit in about seven Earth days.'],
+    ),
+    kepler90Planet(
+      'c', 2.6, 0.22, 0.51, PLANET_RECIPES.lava, ATMOSPHERES.lava,
+      'Second orbit · a molten rocky world',
+      'A small world receiving enough stellar heat to keep its surface glowing.',
+      ['Kepler-90 c takes about 8.7 Earth days to go round.'],
+    ),
+    kepler90Planet(
+      'i', 3.15, 0.24, 0.29, PLANET_RECIPES.desert, ATMOSPHERES.desert,
+      'Third orbit · the one a machine found',
+      'A hot rocky world missed by every human search of the same data, and the ' +
+      'planet that brought this system level with our own.',
+      [
+        'Kepler-90 i was found in 2017 by a neural network trained on Kepler’s light curves.',
+        'Its transit signal was too faint for the earlier searches to call it a planet.',
+      ],
+    ),
+    kepler90Planet(
+      'd', 4.2, 0.36, 0.72, PLANET_RECIPES.venus, ATMOSPHERES.venus,
+      'Fourth orbit · a shrouded super-Earth',
+      'A world about three times Earth’s width, well inside the region our own ' +
+      'system reserves for Mercury.',
+      ['Kepler-90 d has a year of roughly 60 Earth days.'],
+    ),
+    kepler90Planet(
+      'e', 5.1, 0.34, 0.15, PLANET_RECIPES.cloud, ATMOSPHERES.cloud,
+      'Fifth orbit · a mini-Neptune',
+      'A thick-atmosphered world of a kind the Solar System does not have at all.',
+      ['Kepler-90 e completes an orbit in about 92 Earth days.'],
+    ),
+    kepler90Planet(
+      'f', 6.1, 0.36, 0.63, PLANET_RECIPES.iceGiant, ATMOSPHERES.iceGiant,
+      'Sixth orbit · a cooler mini-Neptune',
+      'The outermost of the system’s three middle worlds, and the last before ' +
+      'the giants.',
+      ['Kepler-90 f takes about 125 Earth days to complete one orbit.'],
+    ),
+    kepler90Planet(
+      'g', 7.9, 0.58, 0.38, PLANET_RECIPES.gas, ATMOSPHERES.gas,
+      'Seventh orbit · a gas giant',
+      'A giant roughly Saturn’s size, orbiting where our own system keeps Venus.',
+      ['Kepler-90 g has a year of about 211 Earth days.'],
+    ),
+    kepler90Planet(
+      'h', 10.2, 0.68, 0.84, PLANET_RECIPES.gas, ATMOSPHERES.gas,
+      'Eighth orbit · the outermost giant',
+      'The largest planet of the eight, near Jupiter’s size, and still closer to ' +
+      'its star than Earth is to the Sun.',
+      ['Kepler-90 h takes about 331 Earth days — nearly an Earth year — to go round.'],
+    ),
+  ],
+}
+
+export const SYSTEMS = [solarSystem, trappistSystem, proximaSystem, kepler90System]
 export const DEFAULT_SYSTEM = SYSTEMS[0]
