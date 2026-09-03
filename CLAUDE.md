@@ -267,13 +267,30 @@ switcher), `.hud-bottom`. Rules worth keeping:
   `.facts-body` (the only flexible child — `flex: 1 1 auto; min-height: 0`,
   and the only thing that scrolls), `.facts-pager` footer. The panel carries
   the object pager, which is why it now defaults **open** on touch as well.
-- Its height has **two ceilings and the smaller wins** — a `dvh` fraction that
-  keeps sky visible plus a `calc(100dvh - Npx)` that keeps a *centred* panel
-  clear of the top bar and the floor. Capping overflow alone once let the
-  facts expand to 97% of an iPhone SE, which is legal and useless.
-- Remember the panel is **centred**: height spends itself in *both* directions
-  from the middle, so a cap has to be read as `centre ± h/2` against whatever
-  else is anchored. That is what the landscape `- 128px` is doing.
+- On compact it is **bottom-anchored, and must stay under the subject**. It
+  was centred once and that was a real bug: on an iPhone SE the planet
+  occupies y 217–436 and a centred panel covered 167–500, so opening the facts
+  hid the thing the facts described. Measure before changing the cap — hide
+  the HUD, screenshot, scan for rows carrying a bright run. 38dvh puts the
+  sheet's top edge at 404 against a 436 limb.
+- On desktop it stays **centred**, where height spends itself in *both*
+  directions from the middle, so a cap there reads as `centre ± h/2` against
+  whatever else is anchored. That is what the landscape `- 128px` is doing.
+- **On compact `.hud-bottom` docks under the TOP bar**, and the class name is
+  the only thing still pointing down. The floor belongs to the facts drawer,
+  and putting the sheet there sat the collapsed tab exactly on the cluster
+  rung's redshift toggle — 44×44, all nine viewports. Offsetting sideways only
+  fixes the collapsed state; with the sheet open the region has to clear
+  ~38dvh and lands back across the subject. `:has(#rung-menu)` pushes the dock
+  further down when the scale ladder is open, that being the one thing that
+  grows the top bar.
+- The controls live behind the **`?` in the top bar**, not in the floor hint.
+  The hint wrapped to two lines on every phone, sat last in the reading order,
+  and vanished when a drawer opened — least available exactly when it was most
+  needed. It is `display: none` on compact now and kept on desktop.
+- **Help takes turns with the drawers on compact** for the same reason the two
+  drawers take turns with each other: it hangs from the top bar, they sit on
+  the floor, and on a phone they meet in the middle.
 - Use `dvh`, not `vh`. `100vh` is the LARGE viewport, so on mobile the bottom
   of the layout sits under the browser chrome.
 

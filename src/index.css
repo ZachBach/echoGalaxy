@@ -139,8 +139,13 @@ body:has(.app[style*='width']) {
   pointer-events: none;
 }
 
+/* Stretched, not shrink-to-fit. `.hud-top` is a flex-start column, so this row
+   sized itself to its content and the ?'s `margin-left: auto` had no free
+   space to push into — it sat against the subject name instead of the far
+   edge. The row has to span the region before "hard right" means anything. */
 .hud .top-bar {
   display: flex;
+  align-self: stretch;
   align-items: center;
   gap: 11px;
 }
@@ -207,6 +212,79 @@ body:has(.app[style*='width']) {
   flex-direction: column;
   gap: 1px;
   min-width: 0;
+}
+
+/* The ? sits hard right, opposite the ☰ — the two ends of the top bar are the
+   two things you reach for when you do not know what to do. */
+.hud .help-btn {
+  pointer-events: auto;
+  flex: 0 0 auto;
+  margin-left: auto;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 11px;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ink-dim);
+}
+
+.hud .help-btn.open {
+  background: var(--chip-hot);
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+/* Right-aligned under the button that opens it, and capped so a long entry
+   scrolls rather than running off the bottom of a short screen. */
+.hud .help {
+  pointer-events: auto;
+  align-self: flex-end;
+  width: min(340px, 100%);
+  max-height: min(62dvh, calc(100dvh - 120px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
+  backdrop-filter: blur(16px) saturate(125%);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--panel-shadow), var(--panel-lip);
+  padding: 13px 15px 14px;
+}
+
+.hud .help h2 {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 11px;
+}
+
+.hud .help dl > div + div {
+  margin-top: 11px;
+  padding-top: 11px;
+  border-top: 1px solid var(--line-soft);
+}
+
+/* The gesture is the heading and the outcome is the body — a reader scanning
+   for "how do I get closer" is scanning the left column, not the prose. */
+.hud .help dt {
+  font-family: ui-monospace, "SFMono-Regular", monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 3px;
+}
+
+.hud .help dd {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-dim);
 }
 
 /* The top bar is the one region with no panel behind it — it floats on the
@@ -725,12 +803,13 @@ body:has(.app[style*='width']) {
    three separate bands rather than one tall merged one — which is also why
    the panel height below is capped the way it is. */
 .hud.compact .hud-side {
-  top: 50%;
-  bottom: auto;
+  top: auto;
+  bottom: max(10px, env(safe-area-inset-bottom));
   left: max(10px, env(safe-area-inset-left));
   right: auto;
-  transform: translateY(-50%);
+  transform: none;
   flex-direction: row; /* tab holds the edge, panel grows inboard */
+  align-items: flex-end; /* both sit ON the floor, not centred on each other */
   gap: 8px;
   max-width: min(
     348px,
@@ -766,9 +845,16 @@ body:has(.app[style*='width']) {
    The two drawers take turns on compact (App.jsx): the panels would overlap in
    the middle of any phone narrower than ~600px, so only one is ever open. Only
    the TABS coexist, and they are at opposite edges. */
+/* Bottom-anchored for the same reason the facts are: centred put it across
+   the subject. The two drawers take turns on compact, so whichever is open
+   has the floor to itself. */
 .hud.compact .hud-left {
+  top: auto;
+  bottom: max(10px, env(safe-area-inset-bottom));
   left: auto;
   right: max(10px, env(safe-area-inset-right));
+  transform: none;
+  align-items: flex-end;
   max-width: min(240px, calc(100vw - 24px));
 }
 
@@ -787,20 +873,19 @@ body:has(.app[style*='width']) {
   }
 }
 
-/* Two ceilings, smaller wins. Up from 42dvh, which was set when the panel was
-   prose alone: it now carries a masthead and the pager, and those two bands
-   cost ~118px before a word of description is shown.
+/* The panel sits UNDER the subject now, not across it. It used to be centred
+   at 50% and that was the bug: on an iPhone SE the planet occupies y 217-436
+   and the panel covered 167-500, so opening the facts hid the very thing the
+   facts were about. Measured, not guessed — hide the HUD, screenshot, and
+   scan for the rows carrying a bright run.
 
-   50dvh, not more, and the binding case is NOT the system rung the gate
-   defaults to. On the cluster rung the redshift toggle keeps a floor band
-   alive, so the union is three bands rather than two: on a 320x568 phone that
-   is 44 + 284 + 54 = 67%, against the 72% cap. At 56dvh the same rung
-   measures 73% and fails, while `--rungs system` still reports green.
-
-   The 150px subtrahend keeps a short window's centred panel clear of the top
-   bar with the scale ladder open. */
+   38dvh is the trade. At 667px tall that puts the sheet's top edge at 404
+   against the planet's lower limb at 436, so a reader loses the bottom ~30px
+   of the globe and keeps all of it that carries the terminator and the
+   pattern. Taller reads more comfortably and starts eating the subject; the
+   body scrolls, so height costs sky rather than words. */
 .hud.compact .hud-side .facts {
-  max-height: min(50dvh, calc(100dvh - 150px));
+  max-height: 38dvh;
 }
 
 /* The bands carry the panel's padding now, so compact tightens them
@@ -817,20 +902,42 @@ body:has(.app[style*='width']) {
   padding: 9px 10px;
 }
 
-/* Nothing shares the floor with the nav any more — the drawers are on the
-   edges — so it keeps the full width in every state. */
+/* On compact this region DOCKS UNDER THE TOP BAR rather than sitting on the
+   floor, and the class name is the only thing left pointing down.
+—
+   The floor belongs to the facts drawer now. Moving the sheet down there put
+   the collapsed "‹ Facts" tab straight back on top of the cluster rung's
+   redshift toggle — a 44x44 exact overlap on all nine viewports, which is the
+   same contest that the sheet's original bottom placement lost, reintroduced
+   by fixing a different problem. check:mobile caught it, which is the whole
+   reason its overlap test exists.
+—
+   Offsetting sideways only fixes the collapsed state: with the sheet open the
+   region has to clear ~38dvh of panel, which lands it back across the subject.
+   Docking at the top clears both states with one rule and no state-dependent
+   arithmetic, and the band it lands in is empty — the subject starts around
+   y 217 on an iPhone SE and this sits at 62-106. */
 .hud.compact .hud-bottom {
+  top: calc(max(10px, env(safe-area-inset-top)) + 52px);
+  bottom: auto;
   left: max(10px, env(safe-area-inset-left));
   right: max(10px, env(safe-area-inset-right));
-  bottom: max(10px, env(safe-area-inset-bottom));
   gap: 6px;
 }
 
-/* The gesture hint wraps to two lines on a phone and sprawls across the scene.
-   With a drawer open there is already a panel explaining what you are looking
-   at, so the hint is the first thing to go. */
-.hud.compact:has(.hud-side.open) .hint,
-.hud.compact:has(.hud-left.open) .hint {
+/* Unless the scale ladder is open, which is the one thing that grows the top
+   bar. Six rungs wrap to two rows of 44px chips, so the dock clears them. */
+.hud.compact:has(#rung-menu) .hud-bottom {
+  top: calc(max(10px, env(safe-area-inset-top)) + 156px);
+}
+
+/* The floor hint is gone from compact entirely — the ? in the top bar is where
+   the controls live now. It wrapped to two lines on every phone, sprawled
+   across the scene, sat last in the reading order, and disappeared the moment
+   a drawer opened, which is to say it was least available exactly when someone
+   was most likely to need it. A button that is always there beats a caption
+   that is sometimes there. Desktop keeps it: one line, no wrap, no contest. */
+.hud.compact .hint {
   display: none;
 }
 
@@ -1033,9 +1140,11 @@ body:has(.app[style*='width']) {
   }
 }
 
-/* Notched phones: the badge sits under the status bar without this. */
+/* Notched phones: the badge sits under the status bar without this. Pushed
+   below the top bar's own height as well, because the ? button now occupies
+   the corner the badge used to have to itself. Dev-only either way. */
 .backend-badge {
-  top: max(16px, env(safe-area-inset-top));
+  top: max(64px, calc(env(safe-area-inset-top) + 50px));
   right: max(18px, env(safe-area-inset-right));
 }
 
