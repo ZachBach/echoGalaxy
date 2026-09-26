@@ -130,6 +130,12 @@ WebView runs the (fully verified) WebGL2 fallback.
 
 ### Helix voice assistant (Android)
 
+Helix itself lives in the separate `helix` repo and is installed here as
+`@aureliusdynamic/helix-capacitor` (`file:../../helix/capacitor`, so the helix repo
+must sit at `C:/Users/Auerbach/helix` next to this checkout for now). This app
+keeps only its astronomy command parser, action allowlist and UI. Rules:
+`helix/CONTRACT.md`.
+
 Helix is available in the Capacitor Android app. Wake-word detection uses
 Picovoice Porcupine; speech recognition uses Android's on-device recognizer
 (Android 12+ with an installed on-device recognition service); speech output

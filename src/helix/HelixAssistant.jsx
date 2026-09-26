@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { registerPlugin } from '@capacitor/core'
+import { Helix } from '@aureliusdynamic/helix-capacitor'
 import { askHelix } from './client.js'
 import { parseHelixCommand } from './actions.js'
 
-const Helix = registerPlugin('Helix')
 
 function errorMessage(error) {
   return error instanceof Error ? error.message : 'Helix could not complete that request.'

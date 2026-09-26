@@ -1,13 +1,7 @@
 package com.echogalaxy.app;
 
-import android.os.Bundle;
-
 import com.getcapacitor.BridgeActivity;
 
-public class MainActivity extends BridgeActivity {
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        registerPlugin(HelixPlugin.class);
-        super.onCreate(savedInstanceState);
-    }
-}
+// The Helix plugin comes from @aureliusdynamic/helix-capacitor and is
+// registered automatically by `npx cap sync`.
+public class MainActivity extends BridgeActivity {}

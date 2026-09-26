@@ -7,4 +7,7 @@ export default defineConfig({
   // the Aurelius site at /galaxy/ (same pattern as /helix/ and /ikos/)
   base: './',
   plugins: [react()],
+  // The shared Helix package (file:../../helix/capacitor) imports @capacitor/core
+  // as a peer. Resolve it from this app so there is one copy of the bridge.
+  resolve: { dedupe: ['@capacitor/core'] },
 })
