@@ -21,6 +21,7 @@ video/*
 *.keystore
 *.jks
 android/keystore.properties
+android/app/src/main/assets/helix_android.ppn
 
 # credentials and environment — nothing here today, and the rule exists so
 # that stays true. Vite exposes any VITE_-prefixed var to the CLIENT bundle,

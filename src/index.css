@@ -1229,6 +1229,156 @@ body:has(.app[style*='width']) {
   right: max(18px, env(safe-area-inset-right));
 }
 
+/* Helix stays in the lower-right corner, clear of the scale ladder and nav. */
+.helix-widget {
+  position: absolute;
+  z-index: 12;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+  color: var(--ink);
+}
+
+.helix-panel {
+  width: min(340px, calc(100vw - 28px));
+  max-height: min(44dvh, 380px);
+  overflow-y: auto;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: var(--panel-shadow), var(--panel-lip);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  pointer-events: auto;
+}
+
+.helix-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.helix-kicker {
+  color: var(--ink-faint);
+  font-family: ui-monospace, "SFMono-Regular", monospace;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+
+.helix-heading h2 {
+  margin-top: 3px;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.helix-indicator,
+.helix-launcher-live {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #66718e;
+}
+
+.helix-indicator.live,
+.helix-launcher-live {
+  background: #65e5b0;
+  box-shadow: 0 0 12px rgba(101, 229, 176, 0.8);
+}
+
+.helix-status {
+  margin-top: 6px;
+  color: var(--ink-dim);
+  font-size: 11px;
+}
+
+.helix-actions {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.hud .helix-actions button {
+  width: 100%;
+  min-height: 44px;
+  text-align: left;
+}
+
+.hud .helix-actions button.armed {
+  border-color: rgba(101, 229, 176, 0.65);
+  color: #a4f2d1;
+}
+
+.hud .helix-actions button:disabled {
+  cursor: progress;
+  opacity: 0.65;
+}
+
+.helix-privacy,
+.helix-transcript,
+.helix-answer,
+.helix-error {
+  margin-top: 11px;
+  color: var(--ink-dim);
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.helix-privacy {
+  color: var(--ink-faint);
+}
+
+.helix-answer b,
+.helix-transcript b {
+  color: var(--ink);
+}
+
+.helix-error {
+  color: #ffb2a8;
+}
+
+.hud .helix-launcher {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 92px;
+  min-height: 44px;
+  padding: 7px 13px;
+  border-color: rgba(120, 157, 255, 0.58);
+  color: #edf2ff;
+  pointer-events: auto;
+}
+
+.helix-launcher > span:first-child {
+  color: #9eb9ff;
+  font-size: 17px;
+}
+
+.helix-launcher-live {
+  width: 7px;
+  height: 7px;
+}
+
+@media (max-width: 380px) {
+  .helix-panel {
+    width: min(320px, calc(100vw - 20px));
+    max-height: 40dvh;
+    padding: 13px;
+  }
+
+  .helix-widget {
+    right: max(10px, env(safe-area-inset-right));
+    bottom: max(10px, env(safe-area-inset-bottom));
+  }
+}
+
 /* Respect a user who has asked the OS for less motion. */
 @media (prefers-reduced-motion: reduce) {
   .scale-fade,

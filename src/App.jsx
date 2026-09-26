@@ -1,5 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
+import { Capacitor } from '@capacitor/core'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Vector3 } from 'three'
 import Galaxy from './Galaxy'
@@ -32,6 +33,7 @@ import { createRenderer, backendName } from './renderer'
 import { factsFor, hasLadder, AUDIENCES, AUDIENCE_LABELS } from './factsLadder'
 import CaptureRig from './capture/CaptureRig'
 import { shotById, ASPECTS } from './capture/shots'
+import HelixAssistant from './helix/HelixAssistant'
 
 const params = new URLSearchParams(window.location.search)
 const FROZEN = import.meta.env.DEV && params.has('freeze')
@@ -751,6 +753,45 @@ export default function App() {
 
   const go = (delta) => setIndex?.((i) => (i + delta + list.length) % list.length)
 
+  const helixContext = {
+    scaleId: rung.id,
+    scaleLabel: rung.label,
+    subject: info.name,
+    canCycle: Boolean(list && setIndex && list.length > 1),
+    redshiftSpace: rung.id === 'cluster' && zSpace,
+    system: rung.id === 'system' ? system.name : undefined,
+  }
+
+  const handleHelixAction = (action) => {
+    if (action.type === 'navigate-scale') {
+      const target = SCALES.findIndex((candidate) => candidate.id === action.scaleId)
+      if (target < 0) return null
+      shiftScale(target)
+      return `Showing ${SCALES[target].label}.`
+    }
+
+    if (action.type === 'navigate-object') {
+      if (!list || !setIndex || list.length < 2) return null
+      const target = (index + action.direction + list.length) % list.length
+      go(action.direction)
+      return `Showing ${list[target].name}.`
+    }
+
+    if (action.type === 'navigate-system') {
+      if (rung.id !== 'system') return null
+      shiftSystem(action.direction)
+      return 'Changed star system.'
+    }
+
+    if (action.type === 'set-redshift') {
+      if (rung.id !== 'cluster') return null
+      setZSpace(action.enabled)
+      return action.enabled ? 'Redshift space is on.' : 'Back in real space.'
+    }
+
+    return null
+  }
+
   return (
     <div
       className="app"
@@ -1150,16 +1191,33 @@ export default function App() {
                   two-line gesture hint and lost. In the panel's footer it is
                   attached to the thing it pages through, and the floor is
                   free. God's Hands suppresses it for the same reason it always
-                  did: the cannonball dial is the control that matters then. */}
-              {!godPanel && list && (
+                  did: the cannonball dial is the control that matters then.
+
+                  Rendered even when there is no list to cycle (the cluster
+                  rung — "one formation, no cycle"): `.facts-pager::before` is
+                  the ONLY place the body's bottom fade lives, so a list-less
+                  rung silently lost the "there's more, scroll" cue along with
+                  the buttons it genuinely doesn't need. Measured on a phone:
+                  CLUSTER_INFO's and REDSHIFT_INFO's facts (Zwicky's discovery
+                  among them) sat 526-740px below a ~150px compact viewport
+                  with nothing on screen suggesting they existed — the
+                  description just looked like the whole entry. An empty
+                  footer band still carries the fade and matches every other
+                  rung's floor, without implying a cycle this rung doesn't
+                  have. */}
+              {!godPanel && (
                 <nav className="facts-pager" aria-label="Browse this scale">
-                  <button onClick={() => go(-1)} aria-label="Previous">‹ Prev</button>
-                  <span className="pager-count">
-                    {index + 1}
-                    <i>/</i>
-                    {list.length}
-                  </span>
-                  <button onClick={() => go(1)} aria-label="Next">Next ›</button>
+                  {list && (
+                    <>
+                      <button onClick={() => go(-1)} aria-label="Previous">‹ Prev</button>
+                      <span className="pager-count">
+                        {index + 1}
+                        <i>/</i>
+                        {list.length}
+                      </span>
+                      <button onClick={() => go(1)} aria-label="Next">Next ›</button>
+                    </>
+                  )}
                 </nav>
               )}
             </div>
@@ -1229,6 +1287,9 @@ export default function App() {
                 : 'drag to orbit · scroll to zoom · zoom past the edge to change scale'}
           </div>
         </div>
+        {Capacitor.getPlatform() === 'android' && (
+          <HelixAssistant context={helixContext} onAction={handleHelixAction} />
+        )}
       </div>
       )}
     </div>

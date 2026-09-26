@@ -128,6 +128,45 @@ alternatives — one Play listing uses one of them; trade-offs are laid
 out in ZACHTODOS. The TWA is the WebGPU-keeping path; Capacitor's
 WebView runs the (fully verified) WebGL2 fallback.
 
+### Helix voice assistant (Android)
+
+Helix is available in the Capacitor Android app. Wake-word detection uses
+Picovoice Porcupine; speech recognition uses Android's on-device recognizer
+(Android 12+ with an installed on-device recognition service); speech output
+uses Android text-to-speech. Wake-word listening is foreground-only and
+pauses when the app leaves the foreground.
+
+For local development:
+
+1. Add `PICOVOICE_ACCESS_KEY=<your Picovoice AccessKey>` to
+   `android/local.properties`. Preserve the existing `sdk.dir` entry.
+2. Put your Android “Helix” keyword model at
+   `android/app/src/main/assets/helix_android.ppn`. Both this model and
+   `local.properties` are ignored by Git; do not commit either.
+3. Set `VITE_HELIX_API_URL=https://your-assistant.example` in the ignored
+   root `.env.local`, then build/sync the Android app. Leave it unset to use
+   local voice controls without remote Q&A.
+
+The server contract is `POST /v1/assistant/chat` with JSON
+`{ "message": "...", "context": { "scaleId": "...", "subject": "..." } }`.
+Return `{ "answer": "..." }`, optionally with one allowlisted `action`:
+
+```json
+{ "answer": "Showing the galaxy.", "action": { "type": "navigate-scale", "scaleId": "galaxy" } }
+```
+
+Supported actions are `navigate-scale` (`scaleId`: `planet`, `system`,
+`nebula`, `galaxy`, `group`, or `cluster`), `navigate-object` and
+`navigate-system` (`direction`: `-1` or `1`), and `set-redshift`
+(`enabled`: boolean). The app validates actions before applying them.
+Only recognized text and the current scene context are sent to the configured
+server; microphone audio is processed locally and is never uploaded by Helix.
+Without an endpoint, remote questions report a setup error; local navigation
+phrases still work.
+
+Run the JS tests and production build with `npm test` and `npm run build`.
+Then run `npx cap sync android` and build/debug the native app from `android`
+with `.\gradlew.bat assembleDebug`.
 
 ## Structure
 

@@ -2,7 +2,6 @@
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
-  "teammateMode": "in-process",
   "permissions": {
     "allow": [
       "Read(**)",
@@ -14,7 +13,10 @@
       "Bash(npm run check:tsl)",
       "Bash(git status)",
       "Bash(git diff*)",
-      "Bash(git log*)"
+      "Bash(git log*)",
+      "Bash(node \"C:/Users/Auerbach/AppData/Local/Temp/claude/c--Users-Auerbach-AureliusDynamicSolutons-echoGalaxy/6a72badd-3738-42ff-b978-ba20672caa23/scratchpad/smoke-upstream.mjs\")",
+      "Bash(node -e \"const fs=require\\('fs'\\);const p=JSON.parse\\(fs.readFileSync\\('node_modules/three/package.json','utf8'\\)\\);console.log\\(JSON.stringify\\(p.exports,null,1\\)\\)\")"
     ]
-  }
+  },
+  "teammateMode": "in-process"
 }
