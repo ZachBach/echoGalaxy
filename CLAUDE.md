@@ -283,7 +283,10 @@ switcher), `.hud-bottom`. Rules worth keeping:
   fixes the collapsed state; with the sheet open the region has to clear
   ~38dvh and lands back across the subject. `:has(#rung-menu)` pushes the dock
   further down when the scale ladder is open, that being the one thing that
-  grows the top bar.
+  grows the top bar. **In landscape the dock sits top-RIGHT**, clear of the
+  facts column: top-left with the ladder open put it at y 166–210, inside the
+  facts panel's band, so the redshift toggle printed over the masthead and
+  the Hide tab. Landscape has open sky beside the column; portrait does not.
 - The controls live behind the **`⋮` menu at the top right**, not in the floor
   hint. The hint wrapped to two lines on every phone, sat last in the reading
   order, and vanished when a drawer opened — least available exactly when it
@@ -297,21 +300,38 @@ switcher), `.hud-bottom`. Rules worth keeping:
   Previous buttons. `☰` is a list you open, `⋮` is "there is more here".
 - **The menu takes turns with the drawers on compact** for the same reason the
   two drawers take turns with each other: it hangs from the top bar, they sit
-  on the floor, and on a phone they meet in the middle.
+  on the floor, and on a phone they meet in the middle. It takes turns with
+  the ☰ ladder too, hides the rung dock while open (the dock is later in the
+  DOM and printed straight over it), and is capped to stop above the floor
+  tabs, which otherwise painted over its last lines.
+- **Helix lives in the menu**, as its first section, on the Android build
+  only. It was a floating launcher bottom-right, which on a phone sat across
+  "‹ Prev/Next ›", the Systems tab and the facts panel — the floor has no free
+  corner on compact. `HelixAssistant` stays mounted (the wake word keeps
+  listening with the menu shut) and portals its view into the menu section; a
+  green dot on `⋮` shows the wake word is armed, so a live microphone is never
+  hidden behind a closed menu.
 - Use `dvh`, not `vh`. `100vh` is the LARGE viewport, so on mobile the bottom
   of the layout sits under the browser chrome.
 
-`npm run check:mobile` is the gate — 9 viewports × the three drawer states,
-including **collapsed**, which is the state a phone starts in. It asserts
-reachability, the 44px tap floor, no overflow, and a coverage cap; overlap is
-measured by **rect intersection between every pair of controls**, because
-hit-testing centres missed "‹ Prev" sitting across a third of "‹ Facts".
+`npm run check:mobile` is the gate — 9 viewports × five states: collapsed
+(the state a phone starts in), facts, systems, **ladder+facts** (how a reader
+arrives after jumping rungs from ☰) and the **⋮ menu** open. It asserts
+reachability, the 44px tap floor, no overflow, and a coverage cap (the menu
+state is exempt from the cap — it is an overlay opened to be read); overlap is
+measured by **rect intersection between every pair of controls, and between
+every panel and every control outside it**, because hit-testing centres
+missed "‹ Prev" sitting across a third of "‹ Facts". Controls inside a
+scroller are clipped to it first, so a menu entry scrolled out of view is not
+"offscreen". `--android` fakes the Capacitor bridge so Helix mounts; run it
+too after touching the menu.
 
-Two things it still cannot see, so check them by eye: a **panel** covering a
-control (it compares buttons to buttons — a facts panel four pixels over the
-cluster rung's toggle passed green), and any rung it was not asked about
-(`--rungs` defaults to `system`; the rungs with a floor band, like `cluster`,
-are the binding case for coverage).
+The ladder+facts and menu states and the panel check landed 2026-09-30, after
+the gate had printed 54/54 green over three real overlaps. Still unseen: the
+God's Hands state (the dial and ☄ Restore order), the sky browser, and any
+rung it was not asked about (`--rungs` defaults to `system`; `cluster`, with
+its rung dock, is the binding case — 71% on a 320×568 phone with the ladder
+open, against a 72% cap).
 
 The HUD is not rendered in capture mode, and both pixel gates hide it before
 screenshotting, so none of this can move a frame.

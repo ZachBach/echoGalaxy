@@ -28,9 +28,15 @@
  * names which state won, so a passing line can never be read as covering a
  * state it did not measure.
  *
+ * Two more states are measured since 2026-09-30, both found broken by eye
+ * after this gate had passed 54/54: the ⋮ menu open, and the scale ladder left
+ * open over the facts. Alongside them, a panel overlapping a control now fails
+ * — before, only button-on-button overlap was asserted.
+ *
  * Run:
  *   npm run check:mobile
  *   node scripts/check-mobile.mjs --rungs system,planet --devices iphone-se
+ *   node scripts/check-mobile.mjs --android      # mount Helix (Android build)
  */
 
 import { startVite, openBrowser, sleep, RUNGS } from './harness-cdp.mjs'
@@ -65,6 +71,13 @@ const arg = (k, d) => {
 }
 const rungArg = arg('rungs', 'system')
 const rungs = rungArg.split(',').map((s) => s.trim()).filter(Boolean)
+// --android fakes the Capacitor bridge so Capacitor.getPlatform() answers
+// 'android' and Helix mounts — its section in the ⋮ menu is otherwise never
+// rendered by any gate, and the floating widget it replaced sat on three
+// controls on every phone without one noticing. The bridge swallows every
+// native call, so Helix shows its error state; that is fine for layout.
+const ANDROID = argv.includes('--android')
+const FAKE_ANDROID_BRIDGE = 'window.androidBridge = { postMessage() {} };'
 const devArg = arg('devices', null)
 const devices = devArg
   ? DEVICES.filter((d) => devArg.split(',').map((s) => s.trim()).includes(d[0]))
@@ -102,8 +115,23 @@ const MEASURE = `(() => {
   }
   if (curA !== null) covered += curB - curA;
   const r = { height: covered };
-  const btns = [...document.querySelectorAll('.hud button')];
-  const off = btns.filter((b) => { const q = b.getBoundingClientRect();
+  // Visible controls only. The rung dock is visibility:hidden while the menu
+  // is open on compact, and a hidden control cannot be tapped or buried.
+  const shown = (e) => e.checkVisibility({ visibilityProperty: true, opacityProperty: true });
+  const btns = [...document.querySelectorAll('.hud button')].filter(shown);
+  // A control inside a scroller (the menu, the facts body) is clipped to it:
+  // scrolled out of view it is reachable by scrolling, not offscreen, and its
+  // unclipped rect must not "overlap" whatever lies past the scroller's edge.
+  // Size is still judged on the real rect — clipping never makes a target small.
+  const seen = (b) => {
+    const q = b.getBoundingClientRect(), s = b.closest('.menu, .facts-body');
+    if (!s) return q;
+    const c = s.getBoundingClientRect();
+    const left = Math.max(q.left, c.left), top = Math.max(q.top, c.top);
+    const right = Math.min(q.right, c.right), bottom = Math.min(q.bottom, c.bottom);
+    return { left, top, right, bottom, width: Math.max(0, right - left), height: Math.max(0, bottom - top) };
+  };
+  const off = btns.filter((b) => { const q = seen(b);
     return q.width > 0 && (q.right > vw + 0.5 || q.bottom > vh + 0.5 || q.left < -0.5 || q.top < -0.5); });
   const tiny = btns.filter((b) => { const q = b.getBoundingClientRect();
     return q.width > 0 && (q.width < ${MIN_TARGET} || q.height < ${MIN_TARGET}); });
@@ -120,7 +148,7 @@ const MEASURE = `(() => {
   // centre-probe reported the layout healthy while the button was visibly
   // buried. Two interactive controls should not intersect at all, so that is
   // what gets asserted. 1px of tolerance for sub-pixel layout rounding.
-  const rects = btns.map((b) => [b, b.getBoundingClientRect()])
+  const rects = btns.map((b) => [b, seen(b)])
     .filter(([, q]) => q.width > 1 && q.height > 1);
   const label = (b) => (b.textContent || '').trim().slice(0, 18) || b.className;
   const clash = [];
@@ -130,6 +158,22 @@ const MEASURE = `(() => {
     const ox = Math.min(qa.right, qb.right) - Math.max(qa.left, qb.left);
     const oy = Math.min(qa.bottom, qb.bottom) - Math.max(qa.top, qb.top);
     if (ox > 1 && oy > 1) clash.push(label(ba) + ' / ' + label(bb) +
+      ' overlap ' + Math.round(ox) + 'x' + Math.round(oy) + 'px');
+  }
+  // A PANEL over a control, which button-to-button comparison cannot see and
+  // which CLAUDE.md listed as checked-by-eye only. Three real instances went
+  // unseen that way: the facts panel four pixels over the redshift toggle in
+  // landscape, the floor tabs and the rung dock printing across the open ⋮
+  // menu, and in landscape the dock landing on the facts masthead once the
+  // ladder was open. Either one is painting over the other, so the overlap
+  // itself is the failure; which one is on top only decides how it looks.
+  const panels = [...document.querySelectorAll('.hud .facts, .hud .systems, .hud .menu, .hud .dial')]
+    .filter(shown).map((p) => [p, p.getBoundingClientRect()]);
+  for (const [p, qp] of panels) for (const [b, qb] of rects) {
+    if (p.contains(b)) continue;
+    const ox = Math.min(qp.right, qb.right) - Math.max(qp.left, qb.left);
+    const oy = Math.min(qp.bottom, qb.bottom) - Math.max(qp.top, qb.top);
+    if (ox > 1 && oy > 1) clash.push('.' + p.classList[0] + ' panel / ' + label(b) +
       ' overlap ' + Math.round(ox) + 'x' + Math.round(oy) + 'px');
   }
   const buried = clash;
@@ -153,7 +197,7 @@ try {
   vite = await startVite()
 
   for (const rung of rungs) {
-    console.log(`\n— ${rung} — worst drawer state, ${devices.length} viewports`)
+    console.log(`\n— ${rung}${ANDROID ? ' (android)' : ''} — worst drawer state, ${devices.length} viewports`)
     for (const [name, w, h, dpr] of devices) {
       const page = await openBrowser({
         port: 9890, profile: `mobile-${rung}-${name}`,
@@ -165,6 +209,7 @@ try {
           screenWidth: w, screenHeight: h,
         })
         await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
+        if (ANDROID) await page.send('Page.addScriptToEvaluateOnNewDocument', { source: FAKE_ANDROID_BRIDGE })
 
         await page.send('Page.navigate', { url: `${vite.url}?scale=${rung}` })
         let ready = false
@@ -208,39 +253,59 @@ try {
         // state a phone starts in, and it is where "‹ Prev" was found sitting
         // on top of "‹ Facts". Opening a drawer before measuring meant this
         // gate had never once looked at the layout a reader actually meets.
+        // Everything that opens, closed: both drawers, the ⋮ menu, and the
+        // scale ladder (whose default differs by layout, so it is closed
+        // explicitly rather than assumed).
         const closeAll = () => page.ev(`(() => {
-          for (const [t, p] of [['.facts-tab', '.hud .facts'], ['.systems-tab', '.hud .systems']]) {
+          for (const [t, p] of [['.facts-tab', '.hud .facts'], ['.systems-tab', '.hud .systems'],
+                                ['.menu-btn', '#menu-panel'], ['.burger', '#rung-menu']]) {
             const b = document.querySelector(t);
             if (b && document.querySelector(p)) b.click();
           } })()`)
 
-        const measureDrawer = async (label, tabSel, panelSel) => {
+        // A state is a click sequence and the panels it must leave open. A
+        // state whose first control does not exist on this rung (no Systems
+        // tab off the system rung) is skipped; one whose panels did not open
+        // is an error, because measuring it would describe a closed panel.
+        const measureState = async ({ label, clicks, expect, coverage = true }) => {
           await closeAll()
           await sleep(350)
-          if (tabSel === null) return { label, ...(await page.ev(MEASURE)) }
-          const found = await page.ev(`(() => { const b = document.querySelector('${tabSel}');
-            if (!b) return false; b.click(); return true })()`)
-          if (!found) return null
-          await sleep(500)
-          if (!(await page.ev(`!!document.querySelector('${panelSel}')`)))
-            return { label, error: `the ${label} drawer never opened — measurement would be of a closed panel` }
-          return { label, ...(await page.ev(MEASURE)) }
+          for (const sel of clicks) {
+            const found = await page.ev(`(() => { const b = document.querySelector('${sel}');
+              if (!b) return false; b.click(); return true })()`)
+            if (!found) return null
+            await sleep(400)
+          }
+          for (const sel of expect) {
+            if (!(await page.ev(`!!document.querySelector('${sel}')`)))
+              return { label, coverage, error: `${sel} never opened in the ${label} state — measurement would be of a closed panel` }
+          }
+          return { label, coverage, ...(await page.ev(MEASURE)) }
         }
 
         const states = []
-        for (const [label, tab, panel] of [
-          ['collapsed', null, null],
-          ['facts', '.facts-tab', '.hud .facts'],
-          ['systems', '.systems-tab', '.hud .systems'],
+        for (const st of [
+          { label: 'collapsed', clicks: [], expect: [] },
+          { label: 'facts', clicks: ['.facts-tab'], expect: ['.hud .facts'] },
+          { label: 'systems', clicks: ['.systems-tab'], expect: ['.hud .systems'] },
+          // The ladder left open over the facts is how a reader arrives on a
+          // rung from ☰, so it is the state they meet after every jump — and
+          // the one where the landscape dock used to land on the masthead.
+          { label: 'ladder+facts', clicks: ['.burger', '.facts-tab'], expect: ['#rung-menu', '.hud .facts'] },
+          // The menu is an overlay the reader opened in order to read it, so
+          // it is held to reachability and overlap but not to the coverage
+          // cap, which is about what the HUD costs the sky while you look.
+          { label: 'menu', clicks: ['.menu-btn'], expect: ['#menu-panel'], coverage: false },
         ]) {
-          const r = await measureDrawer(label, tab, panel)
+          const r = await measureState(st)
           if (r) states.push(r)
         }
         // Coverage is a property of the worst state; reachability is a property
         // of EVERY state, so the two are aggregated differently. Taking both
         // from the worst-coverage state would let a buried control in the
         // collapsed layout pass unseen behind a roomier state's number.
-        const m = states.reduce((a, b) => (a.error ? a : b.error ? b : b.hudPct > a.hudPct ? b : a), states[0])
+        const capped = states.filter((s) => s.coverage)
+        const m = capped.reduce((a, b) => (a.error ? a : b.error ? b : b.hudPct > a.hudPct ? b : a), capped[0])
         const landscape = w > h
         const cap = landscape ? MAX_HUD_PCT_LANDSCAPE : MAX_HUD_PCT_PORTRAIT
         const problems = []

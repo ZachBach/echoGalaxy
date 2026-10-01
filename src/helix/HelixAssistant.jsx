@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Helix } from '@aureliusdynamic/helix-capacitor'
 import { askHelix } from './client.js'
 import { parseHelixCommand } from './actions.js'
@@ -8,8 +9,23 @@ function errorMessage(error) {
   return error instanceof Error ? error.message : 'Helix could not complete that request.'
 }
 
-export default function HelixAssistant({ context, onAction }) {
-  const [open, setOpen] = useState(false)
+/**
+ * Helix lives in a section of the ⋮ menu, not in a floating corner widget.
+ *
+ * It used to be a launcher pinned bottom-right with its panel opening above
+ * it, and on a phone that corner was already taken: the launcher sat across
+ * "Next ›" in the facts pager and on top of the Systems tab, and the panel
+ * opened over the subject without taking turns with either drawer. The floor
+ * has no free corner on compact, and the menu is where the next thing needing
+ * a home was always meant to go.
+ *
+ * The component stays MOUNTED whether or not the menu is open — the wake word
+ * keeps listening and an answer keeps arriving with the menu shut — and only
+ * its view is portalled into `slot`, the menu section App hands down while the
+ * menu is open. `onArmedChange` reports the wake word so App can mark the ⋮
+ * button: a live microphone must stay visible when its controls are not.
+ */
+export default function HelixAssistant({ context, onAction, slot, onArmedChange }) {
   const [armed, setArmed] = useState(false)
   const [status, setStatus] = useState('idle')
   const [transcript, setTranscript] = useState('')
@@ -23,6 +39,10 @@ export default function HelixAssistant({ context, onAction }) {
 
   contextRef.current = context
   actionRef.current = onAction
+
+  useEffect(() => {
+    onArmedChange?.(armed)
+  }, [armed, onArmedChange])
 
   const say = useCallback(async (text) => {
     try {
@@ -198,60 +218,44 @@ export default function HelixAssistant({ context, onAction }) {
     error: 'Needs attention',
   }[status] || status
 
-  return (
-    <section className={'helix-widget' + (open ? ' open' : '')} aria-label="Helix voice assistant">
-      {open && (
-        <div className="helix-panel">
-          <div className="helix-heading">
-            <div>
-              <span className="helix-kicker">VOICE ASSISTANT</span>
-              <h2>Helix</h2>
-            </div>
-            <span className={'helix-indicator ' + (status === 'listening' ? 'live' : '')} />
-          </div>
-          <p className="helix-status" aria-live="polite">{statusLabel}</p>
-          <div className="helix-actions">
-            <button
-              type="button"
-              className={armed ? 'armed' : ''}
-              aria-pressed={armed}
-              onClick={() => void (armed ? stopWakeWord() : startWakeWord())}
-            >
-              {armed ? 'Stop wake word' : 'Listen for “Helix”'}
-            </button>
-            <button
-              type="button"
-              onClick={() => void startQuestion()}
-              disabled={busy}
-            >
-              Ask a question
-            </button>
-          </div>
-          <p className="helix-privacy">
-            Wake detection and speech transcription run on this device. Only
-            transcripts and the current scene context go to your configured
-            Helix server; raw audio is not sent.
-          </p>
-          {transcript && (
-            <p className="helix-transcript"><b>You:</b> {transcript}</p>
-          )}
-          {answer && (
-            <p className="helix-answer" aria-live="polite"><b>Helix:</b> {answer}</p>
-          )}
-          {error && <p className="helix-error" role="alert">{error}</p>}
-        </div>
-      )}
+  if (!slot) return null
+
+  return createPortal(
+    <>
+      <div className="helix-heading">
+        <h2>Voice assistant · Helix</h2>
+        <span className={'helix-indicator' + (status === 'listening' ? ' live' : '')} />
+      </div>
+      <p className="helix-status" aria-live="polite">{statusLabel}</p>
       <button
         type="button"
-        className="helix-launcher"
-        aria-expanded={open}
-        aria-label={open ? 'Close Helix assistant' : 'Open Helix assistant'}
-        onClick={() => setOpen((value) => !value)}
+        className={'menu-action' + (armed ? ' armed' : '')}
+        aria-pressed={armed}
+        onClick={() => void (armed ? stopWakeWord() : startWakeWord())}
       >
-        <span aria-hidden="true">✦</span>
-        <span>Helix</span>
-        {armed && <span className="helix-launcher-live" aria-label="Wake word active" />}
+        {armed ? 'Stop wake word' : 'Listen for “Helix”'}
       </button>
-    </section>
+      <button
+        type="button"
+        className="menu-action"
+        onClick={() => void startQuestion()}
+        disabled={busy}
+      >
+        Ask a question
+      </button>
+      {transcript && (
+        <p className="helix-transcript"><b>You:</b> {transcript}</p>
+      )}
+      {answer && (
+        <p className="helix-answer" aria-live="polite"><b>Helix:</b> {answer}</p>
+      )}
+      {error && <p className="helix-error" role="alert">{error}</p>}
+      <p className="helix-privacy">
+        Wake detection and speech transcription run on this device. Only
+        transcripts and the current scene context go to your configured
+        Helix server; raw audio is not sent.
+      </p>
+    </>,
+    slot,
   )
 }

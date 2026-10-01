@@ -53,6 +53,10 @@ const SKY_PARAM = params.get('sky')
 const COARSE =
   typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
 
+// Helix (the voice assistant) needs the native plugin, so it exists only in
+// the Android build. The platform cannot change mid-session.
+const HELIX = Capacitor.getPlatform() === 'android'
+
 // LAYOUT is a different question from INPUT, and conflating them was the bug.
 // COARSE alone decided the compact HUD, which meant a touchscreen laptop got
 // the phone panel, a narrow desktop window did not get it, and — because a
@@ -499,6 +503,12 @@ export default function App() {
   // The menu behind the ⋯ in the top bar. Closed by default on every screen:
   // it explains what to do, so it must not be the thing in the way.
   const [menuOpen, setMenuOpen] = useState(false)
+  // Helix renders into a section of that menu (see HelixAssistant). The slot
+  // is the section's DOM node while the menu is open and null otherwise; the
+  // armed flag puts a live dot on ⋮ so a listening microphone is never hidden
+  // behind a closed menu.
+  const [helixSlot, setHelixSlot] = useState(null)
+  const [helixArmed, setHelixArmed] = useState(false)
   // The system switcher, in its own drawer on the left. It used to sit in the
   // bottom stack directly above Prev/Next, which put "‹ System" and "‹ Prev"
   // one under the other — two buttons leading with the same glyph, reading as
@@ -989,7 +999,14 @@ export default function App() {
           <div className="top-bar">
             <button
               className={'burger' + (rungsOpen ? ' open' : '')}
-              onClick={() => setRungsOpen((o) => !o)}
+              onClick={() => {
+                const next = !rungsOpen
+                setRungsOpen(next)
+                // The ladder and the menu both hang from this bar. On a phone,
+                // two ladder rows above the menu left it a sliver and pushed
+                // its foot onto the floor tabs, so they take turns there too.
+                if (next && compactLayout) setMenuOpen(false)
+              }}
               aria-expanded={rungsOpen}
               aria-controls="rung-menu"
               aria-label={rungsOpen ? 'Hide scales' : 'Show scales'}
@@ -1020,13 +1037,18 @@ export default function App() {
                 if (next && compactLayout) {
                   setFactsOpen(false)
                   setSystemsOpen(false)
+                  setRungsOpen(false)
                 }
               }}
               aria-expanded={menuOpen}
               aria-controls="menu-panel"
-              aria-label={menuOpen ? 'Close the menu' : 'Open the menu'}
+              aria-label={
+                (menuOpen ? 'Close the menu' : 'Open the menu') +
+                (helixArmed ? ' (Helix is listening)' : '')
+              }
             >
               <span className="dots" aria-hidden="true" />
+              {helixArmed && <span className="menu-live" aria-hidden="true" />}
             </button>
           </div>
           {rungsOpen && (
@@ -1045,6 +1067,11 @@ export default function App() {
           )}
           {menuOpen && (
             <div className="menu" id="menu-panel">
+              {/* First, because it is the one section with live state — an
+                  answer to read — and the menu opens scrolled to the top. */}
+              {HELIX && (
+                <section className="helix" aria-label="Helix voice assistant" ref={setHelixSlot} />
+              )}
               <section>
                 <h2>Moving around</h2>
                 <dl>
@@ -1287,8 +1314,13 @@ export default function App() {
                 : 'drag to orbit · scroll to zoom · zoom past the edge to change scale'}
           </div>
         </div>
-        {Capacitor.getPlatform() === 'android' && (
-          <HelixAssistant context={helixContext} onAction={handleHelixAction} />
+        {HELIX && (
+          <HelixAssistant
+            context={helixContext}
+            onAction={handleHelixAction}
+            slot={helixSlot}
+            onArmedChange={setHelixArmed}
+          />
         )}
       </div>
       )}

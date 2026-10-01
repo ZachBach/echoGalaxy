@@ -223,6 +223,7 @@ body:has(.app[style*='width']) {
    "‹ Prev" and the pair read as two Previous buttons. Dots also carry the right
    meaning: ☰ is a list you open, ⋯ is "there is more here". */
 .hud .menu-btn {
+  position: relative; /* anchors .menu-live, Helix's listening dot */
   pointer-events: auto;
   flex: 0 0 auto;
   margin-left: auto;
@@ -1012,6 +1013,29 @@ body:has(.app[style*='width']) {
   top: calc(max(10px, env(safe-area-inset-top)) + 156px);
 }
 
+/* The ⋮ menu hangs into exactly the band this dock occupies, and the dock is
+   later in the DOM, so it printed straight over the open menu — the redshift
+   toggle sat across the "Moving around" heading. The menu is transient and
+   takes turns with everything else on compact; the dock steps aside for it. */
+.hud.compact:has(#menu-panel) .hud-bottom {
+  visibility: hidden;
+}
+
+/* And the menu stops above the floor. Uncapped it ran down behind the facts
+   and Systems tabs, which painted over its last lines — half a tab printed on
+   the panel, on every phone. 50px is the top bar plus its gap (the ladder is
+   never open alongside the menu on compact, App.jsx); 96px is the taller of
+   the two floor tabs, "Systems ›" at 87, plus a gutter. */
+.hud.compact .menu {
+  max-height: min(
+    62dvh,
+    calc(
+      100dvh - max(10px, env(safe-area-inset-top)) - 50px - max(10px, env(safe-area-inset-bottom)) -
+        96px
+    )
+  );
+}
+
 /* The floor hint is gone from compact entirely — the ? in the top bar is where
    the controls live now. It wrapped to two lines on every phone, sprawled
    across the scene, sat last in the reading order, and disappeared the moment
@@ -1200,6 +1224,23 @@ body:has(.app[style*='width']) {
     max-height: calc(100dvh - 128px);
   }
 
+  /* The rung dock moves to the RIGHT here, clear of the facts column. Docked
+     top-left as in portrait, opening the ladder pushed it to y 166-210, which
+     is inside the facts panel's band (118-350 on a 740x360 phone): the
+     redshift toggle printed over the masthead and across 44x15px of the
+     "Hide ›" tab. Landscape has what portrait lacks — open sky beside the
+     column — so the dock takes it. 356px = the column's 348px cap plus a
+     gutter, measured from the same inset the column starts at. */
+  .hud.compact .hud-bottom {
+    left: calc(max(10px, env(safe-area-inset-left)) + 356px);
+    align-items: flex-end;
+  }
+
+  /* The ladder never wraps in landscape, so one row to clear, not two. */
+  .hud.compact:has(#rung-menu) .hud-bottom {
+    top: calc(max(10px, env(safe-area-inset-top)) + 108px);
+  }
+
   .hud.compact .hint {
     display: none; /* the gesture hint is the first thing worth losing */
   }
@@ -1229,154 +1270,93 @@ body:has(.app[style*='width']) {
   right: max(18px, env(safe-area-inset-right));
 }
 
-/* Helix stays in the lower-right corner, clear of the scale ladder and nav. */
-.helix-widget {
-  position: absolute;
-  z-index: 12;
-  right: max(14px, env(safe-area-inset-right));
-  bottom: max(14px, env(safe-area-inset-bottom));
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-  pointer-events: none;
-  color: var(--ink);
-}
+/* ── Helix, as a section of the ⋮ menu ───────────────────────────────
+   It was a floating launcher pinned bottom-right, and on compact that corner
+   was already spoken for: the launcher sat across "Next ›" in the facts pager
+   and on the Systems tab, and its panel opened over the subject without
+   taking turns with either drawer. The floor has no free corner on a phone,
+   so Helix moved into the menu — which already takes turns with everything.
+   HelixAssistant stays mounted and portals its view into `section.helix`. */
 
-.helix-panel {
-  width: min(340px, calc(100vw - 28px));
-  max-height: min(44dvh, 380px);
-  overflow-y: auto;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--panel);
-  box-shadow: var(--panel-shadow), var(--panel-lip);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-  pointer-events: auto;
-}
-
-.helix-heading {
+.hud .menu .helix-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
 }
 
-.helix-kicker {
-  color: var(--ink-faint);
-  font-family: ui-monospace, "SFMono-Regular", monospace;
-  font-size: 9px;
-  letter-spacing: 0.16em;
+.hud .menu .helix-heading h2 {
+  margin-bottom: 0;
 }
 
-.helix-heading h2 {
-  margin-top: 3px;
-  color: var(--ink);
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.helix-indicator,
-.helix-launcher-live {
+.helix-indicator {
+  flex: 0 0 auto;
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: #66718e;
 }
 
-.helix-indicator.live,
-.helix-launcher-live {
+.helix-indicator.live {
   background: #65e5b0;
   box-shadow: 0 0 12px rgba(101, 229, 176, 0.8);
 }
 
-.helix-status {
-  margin-top: 6px;
+/* Written at three-class weight on purpose: `.hud p` is (0,1,1), and the old
+   single-class rules lost to it, so the status line was quietly rendering at
+   the body size and colour the whole time. */
+.hud .menu .helix-status {
+  font-size: 12px;
   color: var(--ink-dim);
-  font-size: 11px;
+  margin: 0 0 10px;
 }
 
-.helix-actions {
-  display: grid;
-  gap: 7px;
-  margin-top: 12px;
-}
-
-.hud .helix-actions button {
-  width: 100%;
-  min-height: 44px;
-  text-align: left;
-}
-
-.hud .helix-actions button.armed {
+.hud .menu-action.armed {
   border-color: rgba(101, 229, 176, 0.65);
   color: #a4f2d1;
 }
 
-.hud .helix-actions button:disabled {
+.hud .menu-action:disabled {
   cursor: progress;
   opacity: 0.65;
 }
 
-.helix-privacy,
-.helix-transcript,
-.helix-answer,
-.helix-error {
-  margin-top: 11px;
-  color: var(--ink-dim);
-  font-size: 11px;
+.hud .menu .helix-transcript,
+.hud .menu .helix-answer,
+.hud .menu .helix-error,
+.hud .menu .helix-privacy {
+  font-size: 12px;
   line-height: 1.5;
+  color: var(--ink-dim);
+  margin: 10px 0 0;
   overflow-wrap: anywhere;
 }
 
-.helix-privacy {
-  color: var(--ink-faint);
-}
-
-.helix-answer b,
-.helix-transcript b {
+.hud .menu .helix-answer b,
+.hud .menu .helix-transcript b {
   color: var(--ink);
 }
 
-.helix-error {
+.hud .menu .helix-error {
   color: #ffb2a8;
 }
 
-.hud .helix-launcher {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-width: 92px;
-  min-height: 44px;
-  padding: 7px 13px;
-  border-color: rgba(120, 157, 255, 0.58);
-  color: #edf2ff;
-  pointer-events: auto;
+.hud .menu .helix-privacy {
+  color: var(--ink-faint);
 }
 
-.helix-launcher > span:first-child {
-  color: #9eb9ff;
-  font-size: 17px;
-}
-
-.helix-launcher-live {
+/* The wake word keeps listening with the menu shut, so the button that hides
+   Helix's controls carries its state: a live microphone is never invisible. */
+.hud .menu-live {
+  position: absolute;
+  top: 7px;
+  right: 7px;
   width: 7px;
   height: 7px;
-}
-
-@media (max-width: 380px) {
-  .helix-panel {
-    width: min(320px, calc(100vw - 20px));
-    max-height: 40dvh;
-    padding: 13px;
-  }
-
-  .helix-widget {
-    right: max(10px, env(safe-area-inset-right));
-    bottom: max(10px, env(safe-area-inset-bottom));
-  }
+  border-radius: 50%;
+  background: #65e5b0;
+  box-shadow: 0 0 10px rgba(101, 229, 176, 0.8);
 }
 
 /* Respect a user who has asked the OS for less motion. */
