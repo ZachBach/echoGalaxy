@@ -43,9 +43,11 @@ export function ringDensity(x) {
 // until Voyager 1 in 1979 and why they show up only in forward-scattered
 // light.
 //
-// So this profile is deliberately near the floor of visibility. It exists
-// to hint that something is there, which is what systemData asks for; a
-// second Saturn on Jupiter is a factual error a science audience catches.
+// So this profile is deliberately near the floor of visibility; a second
+// Saturn on Jupiter is a factual error a science audience catches. No body
+// uses it as of 2026-09-30 — even as a hint Jupiter's ring read as a ring
+// system, so systemData gives Jupiter none. Kept for a dusty ring that should
+// actually show, such as a forward-scattered close pass.
 export function dustRingDensity(x) {
   const main = band(x, 1.66, 1.84, 0.06)
   const gossamer = band(x, 1.84, RING_OUTER, 0.14).mul(0.3)

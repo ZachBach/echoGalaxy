@@ -222,6 +222,10 @@ which states Kepler's third law as motion instead of as a caption.
    re-render: Jupiter's ring is now translucent enough to see stars and the
    orbit rails through, and Saturn's is pixel-unchanged.
 
+   **Superseded 2026-09-30:** the ring is gone from Jupiter entirely — even at
+   gain 0.14 it read as a ring system. `28-jupiter-moons` frames will differ
+   from this render by the ring.
+
 2. **The auroral oval never renders — still open.** `Aurora.jsx` and
    `spaceWeather.js` are complete and `System.jsx` mounts the oval under
    `orbit.aurora` — but no orbit in `systemData.js` defines an `aurora` key,
